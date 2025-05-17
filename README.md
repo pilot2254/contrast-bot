@@ -2,6 +2,6 @@
 
 # Contrast Bot
 
-![banner](banner.png)
+![banner](banner-text.png)
 
 </div>
