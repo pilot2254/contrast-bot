@@ -2,7 +2,7 @@ import type { GuildMember, User } from "discord.js"
 import { logger } from "./logger"
 
 // List of developer user IDs - ensure they are strings
-const DEVELOPER_IDS = ["171395713064894465, 806496372093616128"] // My own ID and the ID of my alt account
+const DEVELOPER_IDS = ["171395713064894465"] // Add more IDs as needed
 
 /**
  * Checks if a user is a developer
@@ -18,13 +18,16 @@ export function isDeveloper(user: User | GuildMember | { id: string }): boolean 
   // Convert ID to string to ensure consistent comparison
   const userId = String(user.id).trim()
 
-  // Log the check for debugging
-  logger.info(`Developer check - User ID: "${userId}" (${typeof userId})`)
-  logger.info(`Developer IDs: ${JSON.stringify(DEVELOPER_IDS)}`)
+  // Direct ID check for critical developer
+  if (userId === "171395713064894465") {
+    return true
+  }
 
   // Check if the user ID is in the developer IDs array
   const isDev = DEVELOPER_IDS.includes(userId)
-  logger.info(`Is developer: ${isDev}`)
+
+  // Log the check for debugging
+  logger.debug(`Developer check - User ID: "${userId}" - Result: ${isDev}`)
 
   return isDev
 }

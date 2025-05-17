@@ -4,6 +4,10 @@ import { logger } from "./utils/logger"
 import fs from "fs"
 import path from "path"
 import type { Command } from "./utils/types"
+import { ensureDataDirectory } from "./utils/data-directory"
+
+// Ensure data directory exists
+ensureDataDirectory()
 
 // Create a new client instance with ALL required intents
 const client = new Client({

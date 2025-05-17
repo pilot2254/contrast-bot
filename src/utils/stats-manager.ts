@@ -1,6 +1,5 @@
-import fs from "fs"
-import path from "path"
 import { logger } from "./logger"
+import { loadJsonData, saveJsonData, ensureDataDirectory } from "./data-directory"
 
 // Define the stats structure
 interface BotStats {
@@ -10,8 +9,8 @@ interface BotStats {
   startTime: number
 }
 
-// Path to the stats file
-const STATS_FILE = path.join(process.cwd(), "bot-stats.json")
+// Filename for stats
+const STATS_FILENAME = "bot-stats.json"
 
 // Default stats
 const defaultStats: BotStats = {
@@ -29,16 +28,14 @@ let stats: BotStats
  */
 export function initStats(): void {
   try {
-    if (fs.existsSync(STATS_FILE)) {
-      const data = fs.readFileSync(STATS_FILE, "utf8")
-      stats = JSON.parse(data) as BotStats
-      logger.info("Stats loaded from file")
-    } else {
-      stats = { ...defaultStats }
-      logger.info("Stats initialized with default values")
-    }
+    // Ensure the data directory exists
+    ensureDataDirectory()
+
+    // Load stats from file
+    stats = loadJsonData<BotStats>(STATS_FILENAME, defaultStats)
+    logger.info("Stats loaded from file")
   } catch (error) {
-    logger.error("Failed to load stats file:", error)
+    logger.error("Failed to initialize stats:", error)
     stats = { ...defaultStats }
   }
 }
@@ -48,10 +45,9 @@ export function initStats(): void {
  */
 export function saveStats(): void {
   try {
-    const data = JSON.stringify(stats, null, 2)
-    fs.writeFileSync(STATS_FILE, data, "utf8")
+    saveJsonData(STATS_FILENAME, stats)
   } catch (error) {
-    logger.error("Failed to save stats file:", error)
+    logger.error("Failed to save stats:", error)
   }
 }
 

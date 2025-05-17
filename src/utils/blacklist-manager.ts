@@ -1,9 +1,8 @@
-import fs from "fs"
-import path from "path"
 import { logger } from "./logger"
+import { loadJsonData, saveJsonData, ensureDataDirectory } from "./data-directory"
 
-// Path to the blacklist file
-const BLACKLIST_FILE = path.join(process.cwd(), "blacklist.json")
+// Filename for blacklist
+const BLACKLIST_FILENAME = "blacklist.json"
 
 // Blacklist data structure
 interface BlacklistData {
@@ -25,17 +24,14 @@ let blacklist: BlacklistData
  */
 export function initBlacklist(): void {
   try {
-    if (fs.existsSync(BLACKLIST_FILE)) {
-      const data = fs.readFileSync(BLACKLIST_FILE, "utf8")
-      blacklist = JSON.parse(data) as BlacklistData
-      logger.info("Blacklist loaded from file")
-    } else {
-      blacklist = { ...defaultBlacklist }
-      logger.info("Blacklist initialized with default values")
-      saveBlacklist()
-    }
+    // Ensure the data directory exists
+    ensureDataDirectory()
+
+    // Load blacklist from file
+    blacklist = loadJsonData<BlacklistData>(BLACKLIST_FILENAME, defaultBlacklist)
+    logger.info("Blacklist loaded from file")
   } catch (error) {
-    logger.error("Failed to load blacklist file:", error)
+    logger.error("Failed to initialize blacklist:", error)
     blacklist = { ...defaultBlacklist }
     saveBlacklist()
   }
@@ -46,10 +42,9 @@ export function initBlacklist(): void {
  */
 function saveBlacklist(): void {
   try {
-    const data = JSON.stringify(blacklist, null, 2)
-    fs.writeFileSync(BLACKLIST_FILE, data, "utf8")
+    saveJsonData(BLACKLIST_FILENAME, blacklist)
   } catch (error) {
-    logger.error("Failed to save blacklist file:", error)
+    logger.error("Failed to save blacklist:", error)
   }
 }
 
