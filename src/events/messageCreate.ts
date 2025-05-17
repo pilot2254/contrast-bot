@@ -9,6 +9,16 @@ export const name = Events.MessageCreate
 export const once = false
 
 export async function execute(message: Message) {
+  // Handle bot mention (in servers, DMs, and group chats)
+  try {
+    // Import the mention handler dynamically to avoid circular dependencies
+    const { handleBotMention } = await import("../utils/mention-response")
+    const wasMention = await handleBotMention(message)
+    if (wasMention) return
+  } catch (error) {
+    logger.error("Error importing or using mention handler:", error)
+  }
+
   // Ignore messages from bots or without the prefix
   if (message.author.bot || !message.content.startsWith(config.prefix)) return
 

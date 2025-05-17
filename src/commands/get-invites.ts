@@ -2,14 +2,13 @@ import {
   SlashCommandBuilder,
   type ChatInputCommandInteraction,
   type Message,
-  EmbedBuilder,
   ChannelType,
   type TextChannel,
   type VoiceChannel,
   type NewsChannel,
   type StageChannel,
+  AttachmentBuilder,
 } from "discord.js"
-import { botInfo } from "../utils/bot-info"
 import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
 import { logger } from "../utils/logger"
 
@@ -17,6 +16,9 @@ import { logger } from "../utils/logger"
 export const data = new SlashCommandBuilder()
   .setName("get-invites")
   .setDescription("Generates one-time use invites for all servers")
+  .addBooleanOption((option) =>
+    option.setName("as_file").setDescription("Send the invites as a .txt file").setRequired(false),
+  )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -25,6 +27,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     logUnauthorizedAttempt(interaction.user.id, "get-invites")
     return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
   }
+
+  // Get option for file output
+  const asFile = interaction.options.getBoolean("as_file") || false
 
   // Defer reply as this might take some time
   await interaction.deferReply({ ephemeral: true })
@@ -98,42 +103,50 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
     }
 
-    // Create embeds (Discord has a limit on embed size, so we might need multiple)
-    const embeds = []
-    let currentEmbed = new EmbedBuilder()
-      .setTitle("Server Invites")
-      .setColor(botInfo.colors.primary)
-      .setDescription("One-time use invites valid for 1 hour")
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp()
+    // Format the results as text
+    let formattedText = `Server Invites (${results.length})\n`
+    formattedText += `Generated at: ${new Date().toISOString()}\n`
+    formattedText += `Requested by: ${interaction.user.tag}\n\n`
 
-    let fieldCount = 0
-    const MAX_FIELDS = 25 // Discord's limit
+    results.forEach((result) => {
+      formattedText += `${result.guild}\n`
+      formattedText += result.invite ? result.invite : `Error: ${result.error}`
+      formattedText += "\n\n"
+    })
 
-    for (const result of results) {
-      if (fieldCount >= MAX_FIELDS) {
-        // Start a new embed if we've reached the field limit
-        embeds.push(currentEmbed)
-        currentEmbed = new EmbedBuilder()
-          .setTitle("Server Invites (Continued)")
-          .setColor(botInfo.colors.primary)
-          .setFooter({ text: `Requested by ${interaction.user.tag}` })
-          .setTimestamp()
-        fieldCount = 0
-      }
+    if (asFile) {
+      // Send as a text file
+      const buffer = Buffer.from(formattedText, "utf-8")
+      const attachment = new AttachmentBuilder(buffer, { name: "server-invites.txt" })
 
-      currentEmbed.addFields({
-        name: result.guild,
-        value: result.invite || `Error: ${result.error}`,
-        inline: true,
+      await interaction.editReply({
+        content: `Generated invites for ${results.length} servers.`,
+        files: [attachment],
       })
-      fieldCount++
+    } else {
+      // Send as a message
+      // Discord has a 2000 character limit, so we might need to split the message
+      if (formattedText.length <= 2000) {
+        await interaction.editReply({
+          content: formattedText,
+        })
+      } else {
+        // Split into multiple messages if too long
+        const chunks = splitMessage(formattedText)
+        await interaction.editReply({
+          content: chunks[0],
+        })
+
+        // Send additional chunks as follow-up messages
+        for (let i = 1; i < chunks.length; i++) {
+          await interaction.followUp({
+            content: chunks[i],
+            ephemeral: true,
+          })
+        }
+      }
     }
 
-    embeds.push(currentEmbed)
-
-    // Send the embeds
-    await interaction.editReply({ embeds })
     logger.info(`Sent ${results.length} server invites to ${interaction.user.tag}`)
   } catch (error) {
     logger.error("Error generating invites:", error)
@@ -146,6 +159,7 @@ export const name = "get-invites"
 export const aliases = ["invites", "server-invites"]
 export const description = "Generates one-time use invites for all servers"
 export const category = "Developer"
+export const usage = "[as_file]"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
@@ -154,6 +168,9 @@ export async function run(message: Message, args: string[]) {
     logUnauthorizedAttempt(message.author.id, "get-invites")
     return message.reply("You don't have permission to use this command.")
   }
+
+  // Check if the user wants the output as a file
+  const asFile = args[0]?.toLowerCase() === "file" || args[0]?.toLowerCase() === "txt"
 
   // Send initial response
   const response = await message.reply("Generating invites for all servers...")
@@ -227,45 +244,73 @@ export async function run(message: Message, args: string[]) {
       }
     }
 
-    // Create embeds (Discord has a limit on embed size, so we might need multiple)
-    const embeds = []
-    let currentEmbed = new EmbedBuilder()
-      .setTitle("Server Invites")
-      .setColor(botInfo.colors.primary)
-      .setDescription("One-time use invites valid for 1 hour")
-      .setFooter({ text: `Requested by ${message.author.tag}` })
-      .setTimestamp()
+    // Format the results as text
+    let formattedText = `Server Invites (${results.length})\n`
+    formattedText += `Generated at: ${new Date().toISOString()}\n`
+    formattedText += `Requested by: ${message.author.tag}\n\n`
 
-    let fieldCount = 0
-    const MAX_FIELDS = 25 // Discord's limit
+    results.forEach((result) => {
+      formattedText += `${result.guild}\n`
+      formattedText += result.invite ? result.invite : `Error: ${result.error}`
+      formattedText += "\n\n"
+    })
 
-    for (const result of results) {
-      if (fieldCount >= MAX_FIELDS) {
-        // Start a new embed if we've reached the field limit
-        embeds.push(currentEmbed)
-        currentEmbed = new EmbedBuilder()
-          .setTitle("Server Invites (Continued)")
-          .setColor(botInfo.colors.primary)
-          .setFooter({ text: `Requested by ${message.author.tag}` })
-          .setTimestamp()
-        fieldCount = 0
-      }
+    if (asFile) {
+      // Send as a text file
+      const buffer = Buffer.from(formattedText, "utf-8")
+      const attachment = new AttachmentBuilder(buffer, { name: "server-invites.txt" })
 
-      currentEmbed.addFields({
-        name: result.guild,
-        value: result.invite || `Error: ${result.error}`,
-        inline: true,
+      await response.edit({
+        content: `Generated invites for ${results.length} servers.`,
+        files: [attachment],
       })
-      fieldCount++
+    } else {
+      // Send as a message
+      // Discord has a 2000 character limit, so we might need to split the message
+      if (formattedText.length <= 2000) {
+        await response.edit(formattedText)
+      } else {
+        // Split into multiple messages if too long
+        const chunks = splitMessage(formattedText)
+        await response.edit(chunks[0])
+
+        // Send additional chunks as follow-up messages
+        for (let i = 1; i < chunks.length; i++) {
+          // Check if the channel supports sending messages
+          if ("send" in message.channel) {
+            await message.channel.send(chunks[i])
+          } else {
+            logger.error("Cannot send follow-up message: channel does not support send method")
+          }
+        }
+      }
     }
 
-    embeds.push(currentEmbed)
-
-    // Send the embeds
-    await response.edit({ content: null, embeds })
     logger.info(`Sent ${results.length} server invites to ${message.author.tag}`)
   } catch (error) {
     logger.error("Error generating invites:", error)
     await response.edit("An error occurred while generating invites.")
   }
+}
+
+// Helper function to split messages that exceed Discord's character limit
+function splitMessage(text: string, maxLength = 2000): string[] {
+  const chunks: string[] = []
+
+  while (text.length > 0) {
+    let chunk = text.substring(0, maxLength)
+
+    // Try to split at a newline to avoid cutting in the middle of a line
+    if (text.length > maxLength) {
+      const lastNewline = chunk.lastIndexOf("\n\n")
+      if (lastNewline > 0) {
+        chunk = chunk.substring(0, lastNewline + 2)
+      }
+    }
+
+    chunks.push(chunk)
+    text = text.substring(chunk.length)
+  }
+
+  return chunks
 }
