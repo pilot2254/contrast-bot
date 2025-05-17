@@ -1,5 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
 import { config } from "../utils/config"
+import { botInfo } from "../utils/bot-info"
+import type { Command } from "../utils/types"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -24,7 +26,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
       .setTitle(`Command: ${commandName}`)
       .setDescription(command.data?.description || "No description available")
-      .setColor(0x5865f2)
+      .setColor(botInfo.colors.primary)
 
     return interaction.reply({ embeds: [embed], ephemeral: true })
   }
@@ -35,14 +37,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setDescription(
       `Use \`/help [command]\` or \`${config.prefix}help [command]\` for more info on a specific command.`,
     )
-    .setColor(0x5865f2)
+    .setColor(botInfo.colors.primary)
     .setFooter({ text: `${config.botName} • Prefix: ${config.prefix}` })
 
   // Group commands by category
   const categories = new Map<string, string[]>()
 
-  interaction.client.commands.forEach((command) => {
-    const category = (command as any).category || "Miscellaneous"
+  interaction.client.commands.forEach((command: Command) => {
+    const category = command.category || "Miscellaneous"
     if (!categories.has(category)) {
       categories.set(category, [])
     }
@@ -64,6 +66,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "help"
 export const aliases = ["commands", "cmds"]
 export const description = "Shows a list of available commands"
+export const category = "Utility"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
@@ -82,10 +85,10 @@ export async function run(message: Message, args: string[]) {
     const embed = new EmbedBuilder()
       .setTitle(`Command: ${commandName}`)
       .setDescription(command.description || "No description available")
-      .setColor(0x5865f2)
+      .setColor(botInfo.colors.primary)
 
     if (command.aliases?.length) {
-      embed.addFields({ name: "Aliases", value: command.aliases.map((a) => `\`${a}\``).join(", ") })
+      embed.addFields({ name: "Aliases", value: command.aliases.map((a: string) => `\`${a}\``).join(", ") })
     }
 
     if (command.usage) {
@@ -99,13 +102,13 @@ export async function run(message: Message, args: string[]) {
   const embed = new EmbedBuilder()
     .setTitle("Available Commands")
     .setDescription(`Use \`${config.prefix}help [command]\` for more info on a specific command.`)
-    .setColor(0x5865f2)
+    .setColor(botInfo.colors.primary)
     .setFooter({ text: `${config.botName} • Prefix: ${config.prefix}` })
 
   // Group commands by category
   const categories = new Map<string, string[]>()
 
-  message.client.prefixCommands.forEach((command) => {
+  message.client.prefixCommands.forEach((command: Command) => {
     const category = command.category || "Miscellaneous"
     if (!categories.has(category)) {
       categories.set(category, [])
