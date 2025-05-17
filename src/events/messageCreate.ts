@@ -1,6 +1,7 @@
 import { Events, type Message } from "discord.js"
 import { config } from "../utils/config"
 import { logger } from "../utils/logger"
+import { trackCommand } from "../utils/stats-manager"
 
 export const name = Events.MessageCreate
 export const once = false
@@ -24,6 +25,9 @@ export async function execute(message: Message) {
 
   // Execute command
   try {
+    // Track command usage
+    trackCommand(command.name || commandName)
+
     await command.run(message, args)
   } catch (error) {
     logger.error(`Error executing prefix command ${commandName}:`, error)

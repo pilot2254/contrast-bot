@@ -1,5 +1,6 @@
 import { Events, type Interaction } from "discord.js"
 import { logger } from "../utils/logger"
+import { trackCommand } from "../utils/stats-manager"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -15,6 +16,9 @@ export async function execute(interaction: Interaction) {
     }
 
     try {
+      // Track command usage
+      trackCommand(interaction.commandName)
+
       await command.execute?.(interaction)
     } catch (error) {
       logger.error(`Error executing command ${interaction.commandName}:`, error)

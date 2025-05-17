@@ -1,12 +1,16 @@
 import { type Client, Events, ActivityType } from "discord.js"
 import { logger } from "../utils/logger"
 import { config } from "../utils/config"
+import { updateGuildCount } from "../utils/stats-manager"
 
 export const name = Events.ClientReady
 export const once = true
 
 export async function execute(client: Client) {
   logger.info(`Ready! Logged in as ${client.user?.tag}`)
+
+  // Update guild count
+  updateGuildCount(client.guilds.cache.size)
 
   try {
     // First, set the status

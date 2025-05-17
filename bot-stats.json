@@ -1,0 +1,14 @@
+{
+  "commandsUsed": {
+    "bot-stats": 1,
+    "ping": 1,
+    "help": 2
+  },
+  "totalCommands": 4,
+  "guildCount": 1,
+  "lastReset": "2025-05-17T14:41:22.581Z",
+  "uptime": {
+    "start": 1747492901592,
+    "total": 19010
+  }
+}
