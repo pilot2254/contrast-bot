@@ -8,6 +8,7 @@ import {
 import { config } from "../utils/config"
 import dotenv from "dotenv"
 import { logger } from "../utils/logger"
+import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -17,6 +18,12 @@ export const data = new SlashCommandBuilder()
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
+  // Check if user is a developer
+  if (!isDeveloper(interaction.user)) {
+    logUnauthorizedAttempt(interaction.user.id, "reload")
+    return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
+  }
+
   await reloadConfig(interaction.client)
   await interaction.reply({ content: "Configuration reloaded successfully!", ephemeral: true })
 }
@@ -25,13 +32,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "reload"
 export const aliases = ["refresh"]
 export const description = "Reload the bot's configuration"
-export const category = "Admin"
+export const category = "Developer"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  // Check if user has admin permissions
-  if (!message.member?.permissions.has(PermissionFlagsBits.Administrator)) {
-    return message.reply("You need Administrator permissions to use this command.")
+  // Check if user is a developer
+  if (!isDeveloper(message.author)) {
+    logUnauthorizedAttempt(message.author.id, "reload")
+    return message.reply("You don't have permission to use this command.")
   }
 
   await reloadConfig(message.client)

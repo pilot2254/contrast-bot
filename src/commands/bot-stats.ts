@@ -1,39 +1,15 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
 import { botInfo } from "../utils/bot-info"
-import { getStats, resetStats } from "../utils/stats-manager"
+import { getStats } from "../utils/stats-manager"
 import { config } from "../utils/config"
 
 // Slash command definition
-export const data = new SlashCommandBuilder()
-  .setName("bot-stats")
-  .setDescription("Shows statistics about the bot")
-  .addSubcommand((subcommand) => subcommand.setName("show").setDescription("Show bot statistics"))
-  .addSubcommand((subcommand) => subcommand.setName("reset").setDescription("Reset bot statistics (Admin only)"))
+export const data = new SlashCommandBuilder().setName("bot-stats").setDescription("Shows statistics about the bot")
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const subcommand = interaction.options.getSubcommand()
-
-  if (subcommand === "reset") {
-    // Check if user has admin permissions
-    if (!interaction.memberPermissions?.has("Administrator")) {
-      return interaction.reply({
-        content: "You need Administrator permissions to reset bot statistics.",
-        ephemeral: true,
-      })
-    }
-
-    resetStats()
-    return interaction.reply({
-      content: "Bot statistics have been reset.",
-      ephemeral: true,
-    })
-  }
-
-  // Default to showing stats
   const stats = getStats()
   const embed = createStatsEmbed(stats, interaction.client.guilds.cache.size)
-
   await interaction.reply({ embeds: [embed] })
 }
 
@@ -42,24 +18,11 @@ export const name = "bot-stats"
 export const aliases = ["stats", "botstats"]
 export const description = "Shows statistics about the bot"
 export const category = "Utility"
-export const usage = "[reset]"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  if (args[0]?.toLowerCase() === "reset") {
-    // Check if user has admin permissions
-    if (!message.member?.permissions.has("Administrator")) {
-      return message.reply("You need Administrator permissions to reset bot statistics.")
-    }
-
-    resetStats()
-    return message.reply("Bot statistics have been reset.")
-  }
-
-  // Default to showing stats
   const stats = getStats()
   const embed = createStatsEmbed(stats, message.client.guilds.cache.size)
-
   await message.reply({ embeds: [embed] })
 }
 
@@ -73,8 +36,9 @@ function createStatsEmbed(stats: any, currentGuildCount: number) {
       .map(([cmd, count]: any) => `${cmd}: ${count} uses`)
       .join("\n") || "No commands used yet"
 
-  // Format uptime
-  const uptimeFormatted = formatUptime(stats.uptime.total)
+  // Calculate uptime
+  const uptime = Date.now() - stats.startTime
+  const uptimeFormatted = formatUptime(uptime)
 
   return new EmbedBuilder()
     .setTitle(`${config.botName} Statistics`)
@@ -82,11 +46,10 @@ function createStatsEmbed(stats: any, currentGuildCount: number) {
     .addFields(
       { name: "Total Commands Used", value: stats.totalCommands.toString(), inline: true },
       { name: "Server Count", value: currentGuildCount.toString(), inline: true },
-      { name: "Last Reset", value: `<t:${Math.floor(new Date(stats.lastReset).getTime() / 1000)}:R>`, inline: true },
+      { name: "Uptime", value: uptimeFormatted, inline: true },
       { name: "Top Commands", value: topCommands },
-      { name: "Total Uptime", value: uptimeFormatted },
     )
-    .setFooter({ text: `Use "${config.prefix}bot-stats reset" to reset statistics (Admin only)` })
+    .setFooter({ text: config.botName })
     .setTimestamp()
 }
 

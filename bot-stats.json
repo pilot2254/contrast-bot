@@ -1,10 +1,12 @@
 {
   "commandsUsed": {
-    "bot-stats": 1,
+    "bot-stats": 2,
     "ping": 1,
-    "help": 2
+    "help": 3,
+    "joke": 1,
+    "reload": 2
   },
-  "totalCommands": 4,
+  "totalCommands": 9,
   "guildCount": 1,
   "lastReset": "2025-05-17T14:41:22.581Z",
   "uptime": {
