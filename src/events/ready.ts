@@ -1,46 +1,89 @@
-import { type Client, Events } from "discord.js"
+import { type Client, Events, ActivityType } from "discord.js"
 import { logger } from "../utils/logger"
 import { config } from "../utils/config"
 
 export const name = Events.ClientReady
 export const once = true
 
-export function execute(client: Client) {
+export async function execute(client: Client) {
   logger.info(`Ready! Logged in as ${client.user?.tag}`)
 
-  // Set bot status and activity
-  client.user?.setPresence({
-    status: config.presence.status,
-    activities: [
-      {
-        name: config.presence.activity.name,
-        type: config.presence.activity.type,
-        url: config.presence.activity.url,
-      },
-    ],
-  })
+  try {
+    // First, set the status
+    await client.user?.setStatus(config.presence.status)
+    logger.info(`Status set to: ${config.presence.status}`)
 
-  logger.info(
-    `Status set to: ${config.presence.status} | Activity: ${getActivityTypeName(
-      config.presence.activity.type,
-    )} ${config.presence.activity.name}`,
-  )
+    // Wait a moment before setting activity (helps with Discord API)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Get activity details
+    const activityType = parseActivityType(config.presence.activity.type)
+    const activityName = config.presence.activity.name || `with Discord.js`
+
+    // Set activity using the direct method that works in activity-test
+    await client.user?.setActivity(activityName, { type: activityType })
+
+    logger.info(`Activity set to: ${getActivityTypeName(activityType)} ${activityName}`)
+    logger.info(`Using direct setActivity() method that works in activity-test`)
+
+    // Note about invisible status
+    if (config.presence.status === "invisible") {
+      logger.info(
+        "Note: Discord may show the bot as DND briefly before changing to invisible. This is normal behavior.",
+      )
+    }
+  } catch (error) {
+    logger.error("Failed to set presence:", error)
+  }
+}
+
+// Helper function to parse activity type
+function parseActivityType(type: any): ActivityType {
+  // If it's already a number, validate it's in range
+  if (typeof type === "number") {
+    if (type >= 0 && type <= 5 && type !== 4) {
+      // 4 is Custom which bots can't use
+      return type as ActivityType
+    }
+    return ActivityType.Playing // Default fallback
+  }
+
+  // If it's a string, convert it
+  if (typeof type === "string") {
+    switch (type.toString().toUpperCase()) {
+      case "PLAYING":
+        return ActivityType.Playing
+      case "STREAMING":
+        return ActivityType.Streaming
+      case "LISTENING":
+        return ActivityType.Listening
+      case "WATCHING":
+        return ActivityType.Watching
+      case "COMPETING":
+        return ActivityType.Competing
+      default:
+        return ActivityType.Playing
+    }
+  }
+
+  // Default fallback
+  return ActivityType.Playing
 }
 
 // Helper function to get activity type name
-function getActivityTypeName(type: number): string {
+function getActivityTypeName(type: ActivityType): string {
   switch (type) {
-    case 0:
+    case ActivityType.Playing:
       return "Playing"
-    case 1:
+    case ActivityType.Streaming:
       return "Streaming"
-    case 2:
+    case ActivityType.Listening:
       return "Listening to"
-    case 3:
+    case ActivityType.Watching:
       return "Watching"
-    case 4:
+    case ActivityType.Custom:
       return "Custom"
-    case 5:
+    case ActivityType.Competing:
       return "Competing in"
     default:
       return "Playing"

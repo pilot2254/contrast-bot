@@ -1,4 +1,10 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, PermissionFlagsBits } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type Message,
+  PermissionFlagsBits,
+  ActivityType,
+} from "discord.js"
 import { config } from "../utils/config"
 import dotenv from "dotenv"
 import { logger } from "../utils/logger"
@@ -42,11 +48,10 @@ async function reloadConfig(client: any) {
     config.prefix = process.env.PREFIX || "?"
     config.botName = process.env.BOT_NAME || "Contrast"
 
-    // Update presence settings
+    // Get presence settings from environment
     const status = process.env.STATUS?.toLowerCase() || "online"
-    const activityType = process.env.ACTIVITY_TYPE?.toUpperCase() || "PLAYING"
-    const activityName = process.env.ACTIVITY_NAME || `as ${process.env.BOT_NAME || "Contrast"}`
-    const activityUrl = process.env.ACTIVITY_URL
+    const activityTypeStr = process.env.ACTIVITY_TYPE?.toUpperCase() || "PLAYING"
+    const activityName = process.env.ACTIVITY_NAME || `with Discord.js`
 
     // Parse status
     let parsedStatus: "online" | "idle" | "dnd" | "invisible" = "online"
@@ -55,22 +60,22 @@ async function reloadConfig(client: any) {
     }
 
     // Parse activity type
-    let parsedActivityType = 0 // Playing
-    switch (activityType) {
+    let parsedActivityType: ActivityType = ActivityType.Playing
+    switch (activityTypeStr) {
       case "PLAYING":
-        parsedActivityType = 0
+        parsedActivityType = ActivityType.Playing
         break
       case "STREAMING":
-        parsedActivityType = 1
+        parsedActivityType = ActivityType.Streaming
         break
       case "LISTENING":
-        parsedActivityType = 2
+        parsedActivityType = ActivityType.Listening
         break
       case "WATCHING":
-        parsedActivityType = 3
+        parsedActivityType = ActivityType.Watching
         break
       case "COMPETING":
-        parsedActivityType = 5
+        parsedActivityType = ActivityType.Competing
         break
     }
 
@@ -78,22 +83,26 @@ async function reloadConfig(client: any) {
     config.presence.status = parsedStatus
     config.presence.activity.type = parsedActivityType
     config.presence.activity.name = activityName
-    config.presence.activity.url = activityUrl
 
-    // Update bot presence
-    await client.user?.setPresence({
-      status: parsedStatus,
-      activities: [
-        {
-          name: activityName,
-          type: parsedActivityType,
-          url: activityUrl,
-        },
-      ],
-    })
+    // First, set the status
+    await client.user?.setStatus(parsedStatus)
+    logger.info(`Status set to: ${parsedStatus}`)
 
-    logger.info("Configuration reloaded successfully")
-    logger.info(`Status: ${parsedStatus} | Activity: ${getActivityTypeName(parsedActivityType)} ${activityName}`)
+    // Wait a moment before setting activity (helps with Discord API)
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    // Set activity using the direct method that works in activity-test
+    await client.user?.setActivity(activityName, { type: parsedActivityType })
+
+    logger.info(`Activity set to: ${getActivityTypeName(parsedActivityType)} ${activityName}`)
+    logger.info(`Using direct setActivity() method that works in activity-test`)
+
+    // Note about invisible status
+    if (parsedStatus === "invisible") {
+      logger.info(
+        "Note: Discord may show the bot as DND briefly before changing to invisible. This is normal behavior.",
+      )
+    }
   } catch (error) {
     logger.error("Failed to reload configuration:", error)
     throw error
@@ -101,19 +110,19 @@ async function reloadConfig(client: any) {
 }
 
 // Helper function to get activity type name
-function getActivityTypeName(type: number): string {
+function getActivityTypeName(type: ActivityType): string {
   switch (type) {
-    case 0:
+    case ActivityType.Playing:
       return "Playing"
-    case 1:
+    case ActivityType.Streaming:
       return "Streaming"
-    case 2:
+    case ActivityType.Listening:
       return "Listening to"
-    case 3:
+    case ActivityType.Watching:
       return "Watching"
-    case 4:
+    case ActivityType.Custom:
       return "Custom"
-    case 5:
+    case ActivityType.Competing:
       return "Competing in"
     default:
       return "Playing"

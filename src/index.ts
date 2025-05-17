@@ -5,13 +5,14 @@ import fs from "fs"
 import path from "path"
 import type { Command } from "./utils/types"
 
-// Create a new client instance
+// Create a new client instance with ALL required intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildPresences, // Add this for presence support
   ],
   partials: [Partials.Channel, Partials.Message, Partials.User, Partials.GuildMember],
 })
