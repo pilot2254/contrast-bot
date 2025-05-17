@@ -1,7 +1,7 @@
 <div align="center">
 
-# Contrast Bot
-
 ![banner](banner-text.png)
+
+Invite me now! https://discord.com/oauth2/authorize?client_id=1339224975814688900
 
 </div>
