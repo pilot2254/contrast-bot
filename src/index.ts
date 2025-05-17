@@ -17,6 +17,9 @@ const client = new Client({
   partials: [Partials.Channel, Partials.Message, Partials.User, Partials.GuildMember],
 })
 
+// Make client globally available for reminder manager
+;(global as any).client = client
+
 // Extend the client to include commands
 declare module "discord.js" {
   interface Client {

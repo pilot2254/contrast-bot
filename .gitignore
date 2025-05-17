@@ -1,3 +1,7 @@
+# ContrastBot Files
+blacklist.json
+bot-stats.json
+
 # Logs
 logs
 *.log

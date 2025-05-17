@@ -2,6 +2,8 @@ import { Events, type Message } from "discord.js"
 import { config } from "../utils/config"
 import { logger } from "../utils/logger"
 import { trackCommand } from "../utils/stats-manager"
+import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
+import { isDeveloper } from "../utils/permissions"
 
 export const name = Events.MessageCreate
 export const once = false
@@ -22,6 +24,16 @@ export async function execute(message: Message) {
     [...message.client.prefixCommands.values()].find((cmd) => cmd.aliases?.includes(commandName))
 
   if (!command || !command.run) return
+
+  // Check if user is blacklisted
+  if (isBlacklisted(message.author.id)) {
+    return message.reply("You have been blacklisted from using this bot.")
+  }
+
+  // Check if maintenance mode is enabled (allow developers to bypass)
+  if (isMaintenanceMode() && !isDeveloper(message.author)) {
+    return message.reply("The bot is currently in maintenance mode. Please try again later.")
+  }
 
   // Execute command
   try {

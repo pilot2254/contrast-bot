@@ -1,6 +1,8 @@
 import { Events, type Interaction } from "discord.js"
 import { logger } from "../utils/logger"
 import { trackCommand } from "../utils/stats-manager"
+import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
+import { isDeveloper } from "../utils/permissions"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -13,6 +15,22 @@ export async function execute(interaction: Interaction) {
     if (!command) {
       logger.warn(`No command matching ${interaction.commandName} was found.`)
       return
+    }
+
+    // Check if user is blacklisted
+    if (isBlacklisted(interaction.user.id)) {
+      return interaction.reply({
+        content: "You have been blacklisted from using this bot.",
+        ephemeral: true,
+      })
+    }
+
+    // Check if maintenance mode is enabled (allow developers to bypass)
+    if (isMaintenanceMode() && !isDeveloper(interaction.user)) {
+      return interaction.reply({
+        content: "The bot is currently in maintenance mode. Please try again later.",
+        ephemeral: true,
+      })
     }
 
     try {
