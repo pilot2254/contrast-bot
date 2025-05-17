@@ -31,6 +31,7 @@ export const botInfo = {
     success: 0x57f287, // Green
     warning: 0xfee75c, // Yellow
     error: 0xed4245, // Red
+    // contrast: 0xe1e1e1, // Bright Gray, currently unused
   },
 
   // Emojis
