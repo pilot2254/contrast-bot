@@ -1,6 +1,6 @@
 # ContrastBot Files
-blacklist.json
-bot-stats.json
+data/*.json
+data/*.csv
 
 # Logs
 logs
