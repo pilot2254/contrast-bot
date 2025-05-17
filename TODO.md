@@ -17,6 +17,9 @@
 
 ## Code
 ### Commands
-- [ ] `get-invites.ts`
+- [x] `get-invites.ts`
   - [x] Get onetime use invites for all servers the bot is in
   - [x] Put the invites in separate lines, and not into "fields"
+
+- [x] `list-developers.ts`
+  - a command that can list bot's developers

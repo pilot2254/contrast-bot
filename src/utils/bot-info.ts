@@ -21,8 +21,9 @@ export const botInfo = {
 
   // Links
   links: {
-    github: "https://github.com/yourusername/contrast-bot",
-    support: "https://discord.gg/your-support-server",
+    github: "https://github.com/pilot2254/contrast-bot",
+    support: "https://discord.gg/JWVMk9pvPS",
+    inviteBot: "https://discord.com/oauth2/authorize?client_id=1339224975814688900",
   },
 
   // Colors
@@ -31,6 +32,7 @@ export const botInfo = {
     success: 0x57f287, // Green
     warning: 0xfee75c, // Yellow
     error: 0xed4245, // Red
+    // contrast: 0xe1e1e1, // Bright Gray, currently unused
   },
 
   // Emojis

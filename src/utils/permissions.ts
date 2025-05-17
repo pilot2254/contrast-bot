@@ -2,7 +2,7 @@ import type { GuildMember, User } from "discord.js"
 import { logger } from "./logger"
 
 // List of developer user IDs - ensure they are strings
-const DEVELOPER_IDS = ["171395713064894465"] // Add more IDs as needed
+export const DEVELOPER_IDS = ["171395713064894465"] // Add more IDs as needed
 
 /**
  * Checks if a user is a developer
