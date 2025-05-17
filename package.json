@@ -1,19 +1,25 @@
 {
   "name": "contrast-bot",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Contrast Discord Bot",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "deploy": "ts-node src/utils/deploy-commands.ts",
+    "watch": "tsc -w"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["discord", "bot", "typescript"],
+  "author": "pilot2254",
+  "license": "MIT",
   "dependencies": {
-    "@types/node": "^22.15.18",
-    "discord.js": "^14.19.3",
-    "dotenv": "^16.5.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.3"
   }
 }
