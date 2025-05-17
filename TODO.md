@@ -19,4 +19,4 @@
 ### Commands
 - [ ] `get-invites.ts`
   - [x] Get onetime use invites for all servers the bot is in
-  - [ ] Put the invites in separate lines, and not into "fields"
+  - [x] Put the invites in separate lines, and not into "fields"
