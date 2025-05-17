@@ -33,12 +33,14 @@ const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith
 
     let data
 
-    if (config.guildId) {
+    if (config.guildId && process.env.DEPLOY_GUILD_COMMANDS === "true") {
       // The put method is used to fully refresh all commands in the guild with the current set
+      logger.info(`Deploying commands to development guild: ${config.guildId}`)
       data = await rest.put(Routes.applicationGuildCommands(config.clientId, config.guildId), { body: commands })
       logger.info(`Successfully reloaded application commands for development guild.`)
     } else {
       // The put method is used to fully refresh all commands globally
+      logger.info("Deploying commands globally")
       data = await rest.put(Routes.applicationCommands(config.clientId), { body: commands })
       logger.info(`Successfully reloaded application commands globally.`)
     }

@@ -8,6 +8,7 @@
     "dev": "ts-node src/index.ts",
     "build": "tsc",
     "deploy": "ts-node src/utils/deploy-commands.ts",
+    "clear-guild-commands": "ts-node src/utils/clear-guild-commands.ts",
     "watch": "tsc -w"
   },
   "keywords": ["discord", "bot", "typescript"],
