@@ -29,7 +29,7 @@
   - [ ] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
   - [ ] Commands for Bank Functionality
 
-#### Economy COmmands
+#### Economy Commands
 
 - [ ] `balance.ts`
   - [ ] Check currency balance
