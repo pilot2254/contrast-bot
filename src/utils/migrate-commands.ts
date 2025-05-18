@@ -2,11 +2,6 @@ import fs from "fs"
 import path from "path"
 import { logger } from "./logger"
 
-// This file was used for the initial migration of commands to the folder structure
-// Now that the migration is complete, this file can be considered for deletion
-// However, I'll keep it for now as it might be useful for future migrations or as a reference
-// If you want to delete it completely, you can do so manually
-
 // Define the categories
 const CATEGORIES = ["Utility", "Moderation", "Developer", "Fun", "Miscellaneous"]
 

@@ -1,17 +1,17 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
-import { jokes } from "../../constants/jokes"
+import { facts } from "../../constants/facts"
 
 // Slash command definition
-export const data = new SlashCommandBuilder().setName("joke").setDescription("Tells a random joke")
+export const data = new SlashCommandBuilder().setName("fact").setDescription("Shares a random interesting fact")
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const randomJoke = jokes[Math.floor(Math.random() * jokes.length)]
+  const randomFact = facts[Math.floor(Math.random() * facts.length)]
 
   const embed = new EmbedBuilder()
-    .setTitle("Here's a joke for you")
-    .setDescription(randomJoke)
+    .setTitle("Did you know?")
+    .setDescription(randomFact)
     .setColor(botInfo.colors.primary)
     .setFooter({ text: `Requested by ${interaction.user.tag}` })
     .setTimestamp()
@@ -20,17 +20,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 }
 
 // Prefix command definition
-export const name = "joke"
-export const aliases = ["jokes", "funny"]
-export const description = "Tells a random joke"
+export const name = "fact"
+export const aliases = ["facts", "randomfact"]
+export const description = "Shares a random interesting fact"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  const randomJoke = jokes[Math.floor(Math.random() * jokes.length)]
+  const randomFact = facts[Math.floor(Math.random() * facts.length)]
 
   const embed = new EmbedBuilder()
-    .setTitle("Here's a joke for you")
-    .setDescription(randomJoke)
+    .setTitle("Did you know?")
+    .setDescription(randomFact)
     .setColor(botInfo.colors.primary)
     .setFooter({ text: `Requested by ${message.author.tag}` })
     .setTimestamp()
