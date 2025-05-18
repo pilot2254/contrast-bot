@@ -2,7 +2,7 @@
 
 This directory is for storing .json data. If you want to reset your data, simply stop the bot and delete .json files in this directory.
 
-This is how it should look like:
+This is how it should look like after using certain commands for the first time:
 ```
 data/
 ├── README.md           # This File

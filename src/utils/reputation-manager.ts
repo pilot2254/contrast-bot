@@ -202,5 +202,42 @@ export function getUserReputation(userId: string): UserReputation | undefined {
   return reputationData.find((rep) => rep.userId === userId)
 }
 
+// Add this new function after getUserReputation and before the initialization
+
+/**
+ * Gets the top users by specified reputation criteria
+ * @param sortBy The criteria to sort by
+ * @param limit The maximum number of users to return
+ * @returns Array of top users
+ */
+export function getTopUsers(sortBy = "receivedTotal", limit = 10): UserReputation[] {
+  // Filter out users with no reputation activity
+  const activeUsers = reputationData.filter(
+    (rep) => rep.receivedPositive > 0 || rep.receivedNegative > 0 || rep.givenPositive > 0 || rep.givenNegative > 0,
+  )
+
+  // Sort by the specified criteria
+  return activeUsers
+    .sort((a, b) => {
+      switch (sortBy.toLowerCase()) {
+        case "receivedpositive":
+          return b.receivedPositive - a.receivedPositive
+        case "receivednegative":
+          return b.receivedNegative - a.receivedNegative
+        case "receivedtotal":
+          return b.receivedPositive - b.receivedNegative - (a.receivedPositive - a.receivedNegative)
+        case "givenpositive":
+          return b.givenPositive - a.givenPositive
+        case "givennegative":
+          return b.givenNegative - a.givenNegative
+        case "giventotal":
+          return b.givenPositive - b.givenNegative - (a.givenPositive - a.givenNegative)
+        default:
+          return b.receivedPositive - b.receivedNegative - (a.receivedPositive - a.receivedNegative)
+      }
+    })
+    .slice(0, limit)
+}
+
 // Initialize reputation manager when the module is imported
 initReputationManager()
