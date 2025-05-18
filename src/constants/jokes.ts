@@ -1,0 +1,23 @@
+// Collection of clean jokes
+export const jokes = [
+  "Why don't scientists trust atoms? Because they make up everything!",
+  "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+  "What do you call a fake noodle? An impasta!",
+  "Why did the scarecrow win an award? Because he was outstanding in his field!",
+  "I'm reading a book about anti-gravity. It's impossible to put down!",
+  "Did you hear about the mathematician who's afraid of negative numbers? He'll stop at nothing to avoid them.",
+  "Why don't skeletons fight each other? They don't have the guts.",
+  "What's the best thing about Switzerland? I don't know, but the flag is a big plus.",
+  "I used to be a baker, but I couldn't make enough dough.",
+  "Parallel lines have so much in common. It's a shame they'll never meet.",
+  "Why did the bicycle fall over? Because it was two tired!",
+  "How do you organize a space party? You planet!",
+  "What do you call a parade of rabbits hopping backwards? A receding hare-line.",
+  "Why did the invisible man turn down the job offer? He couldn't see himself doing it.",
+  "What's orange and sounds like a parrot? A carrot.",
+  "How do you make a tissue dance? Put a little boogie in it!",
+  "What did one wall say to the other wall? I'll meet you at the corner!",
+  "Why don't eggs tell jokes? They'd crack each other up.",
+  "I'm on a seafood diet. Every time I see food, I eat it.",
+  "What do you call a bear with no teeth? A gummy bear!",
+]
