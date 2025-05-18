@@ -64,7 +64,7 @@ export const name = "server-info"
 export const aliases = ["serverinfo", "server"]
 export const description = "Displays information about the current server"
 
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   if (!message.guild) {
     return message.reply("This command can only be used in a server, not in DMs or group chats.")
   }

@@ -34,7 +34,7 @@ export const aliases = ["refresh"]
 export const description = "Reload the bot's configuration"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   // Check if user is a developer
   if (!isDeveloper(message.author)) {
     logUnauthorizedAttempt(message.author.id, "reload")

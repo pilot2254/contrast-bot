@@ -111,7 +111,7 @@ export const aliases = ["devrole", "devr"]
 export const description = "Toggles the developer role in the current server"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   // Check if user is a developer
   if (!isDeveloper(message.author)) {
     logUnauthorizedAttempt(message.author.id, "dev-role")

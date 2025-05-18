@@ -61,7 +61,7 @@ export const aliases = ["listdevs", "list-devs", "devlist"]
 export const description = "Lists all bot developers and their IDs"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   // Send initial response
   const response = await message.reply("Fetching developer list...")
 

@@ -17,7 +17,7 @@ export const aliases = ["about", "botinfo"]
 export const description = "Shows information about the bot"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const embed = createInfoEmbed(message.client.uptime || 0)
   await message.reply({ embeds: [embed] })
 }

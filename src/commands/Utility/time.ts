@@ -25,7 +25,7 @@ export const name = "time"
 export const aliases = ["timestamp", "now"]
 export const description = "Returns the current time as a Discord timestamp"
 
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const currentTimestamp = Math.floor(Date.now() / 1000)
 
   const embed = new EmbedBuilder()

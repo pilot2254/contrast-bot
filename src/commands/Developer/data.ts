@@ -77,7 +77,7 @@ export const aliases = ["datafiles", "files"]
 export const description = "Lists JSON data files in the data directory"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   // Direct ID check as a fallback
   const userId = String(message.author.id).trim()
   logger.info(`Data command attempted by user ID: "${userId}"`)

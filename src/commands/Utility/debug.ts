@@ -41,7 +41,7 @@ export const aliases = ["diag", "diagnostics"]
 export const description = "Shows debug information about the bot and user"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const userId = String(message.author.id).trim()
   logger.info(`Debug command executed by user ID: "${userId}"`)
 

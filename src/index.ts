@@ -46,7 +46,7 @@ loadCommands(commandsPath).then(({ commands, prefixCommands }) => {
 
 // Load events
 const eventsPath = path.join(__dirname, "events")
-const fs = require("fs")
+import fs from "fs"
 const eventFiles = fs.readdirSync(eventsPath).filter((file: string) => file.endsWith(".js") || file.endsWith(".ts"))
 
 for (const file of eventFiles) {

@@ -29,7 +29,7 @@ export const aliases = ["latency", "pong"]
 export const description = "Replies with bot latency"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const sent = await message.reply("Pinging...")
   const latency = sent.createdTimestamp - message.createdTimestamp
   const apiLatency = Math.round(message.client.ws.ping)

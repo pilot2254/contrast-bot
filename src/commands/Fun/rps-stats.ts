@@ -26,7 +26,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const winRate = ((stats.wins / stats.totalGames) * 100).toFixed(2)
   const lossRate = ((stats.losses / stats.totalGames) * 100).toFixed(2)
   const tieRate = ((stats.ties / stats.totalGames) * 100).toFixed(2)
-  const lastPlayed = new Date(stats.lastUpdated).toISOString()
 
   const embed = new EmbedBuilder()
     .setTitle(`${targetUser.username}'s RPS Statistics`)
@@ -72,7 +71,6 @@ export async function run(message: Message, args: string[]) {
   const winRate = ((stats.wins / stats.totalGames) * 100).toFixed(2)
   const lossRate = ((stats.losses / stats.totalGames) * 100).toFixed(2)
   const tieRate = ((stats.ties / stats.totalGames) * 100).toFixed(2)
-  const lastPlayed = new Date(stats.lastUpdated).toISOString()
 
   const embed = new EmbedBuilder()
     .setTitle(`${targetUser.username}'s RPS Statistics`)

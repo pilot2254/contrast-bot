@@ -19,7 +19,7 @@ export const aliases = ["stats", "botstats"]
 export const description = "Shows statistics about the bot"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const stats = getStats()
   const embed = createStatsEmbed(stats, message.client.guilds.cache.size)
   await message.reply({ embeds: [embed] })

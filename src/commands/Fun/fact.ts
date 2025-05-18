@@ -25,7 +25,7 @@ export const aliases = ["facts", "randomfact"]
 export const description = "Shares a random interesting fact"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const randomFact = facts[Math.floor(Math.random() * facts.length)]
 
   const embed = new EmbedBuilder()

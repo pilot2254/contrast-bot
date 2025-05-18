@@ -14,7 +14,7 @@ export const name = "uptime"
 export const description = "Shows how long the bot has been online"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const uptime = formatUptime(message.client.uptime || 0)
   await message.reply(`Bot has been online for: **${uptime}**`)
 }

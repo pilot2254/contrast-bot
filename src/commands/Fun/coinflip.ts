@@ -25,7 +25,7 @@ export const aliases = ["flip", "coin"]
 export const description = "Flips a coin"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   const result = Math.random() < 0.5 ? "Heads" : "Tails"
   const emoji = result === "Heads" ? "🪙" : "💿"
 
