@@ -36,7 +36,7 @@ function createInfoEmbed(uptime: number) {
       { name: "Uptime", value: uptimeFormatted, inline: true },
       { name: "Discord.js", value: botInfo.technical.discordJs, inline: true },
       { name: "Node.js", value: botInfo.technical.node, inline: true },
-      { name: "Links", value: `[GitHub](${botInfo.links.github}) | [Support](${botInfo.links.support})` },
+      { name: "Links", value: `[GitHub](${botInfo.links.github}) | [Support](${botInfo.links.support}) | [Invite Me](${botInfo.links.inviteMe})` },
     )
     .setFooter({ text: `${botInfo.name} • Made with ❤️` })
     .setTimestamp()
