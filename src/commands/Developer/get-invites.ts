@@ -9,8 +9,8 @@ import {
   type StageChannel,
   AttachmentBuilder,
 } from "discord.js"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -158,7 +158,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "get-invites"
 export const aliases = ["invites", "server-invites"]
 export const description = "Generates one-time use invites for all servers"
-export const category = "Developer"
 export const usage = "[as_file]"
 
 // Prefix command execution

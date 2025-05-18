@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, AttachmentBuilder } from "discord.js"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -95,7 +95,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "server-list"
 export const aliases = ["servers", "listservers"]
 export const description = "Lists all servers the bot is in (Developer only)"
-export const category = "Developer"
 export const usage = "[as_file]"
 
 // Prefix command execution

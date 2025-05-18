@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { DEVELOPER_IDS } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { DEVELOPER_IDS } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -59,7 +59,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "list-developers"
 export const aliases = ["listdevs", "list-devs", "devlist"]
 export const description = "Lists all bot developers and their IDs"
-export const category = "Utility"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

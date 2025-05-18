@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -77,7 +77,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "leave-server"
 export const aliases = ["leaveserver", "leave"]
 export const description = "Makes the bot leave a server (Developer only)"
-export const category = "Developer"
 export const usage = "<server_id> [reason]"
 
 // Prefix command execution

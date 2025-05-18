@@ -2,7 +2,6 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message } f
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("uptime").setDescription("Shows how long the bot has been online")
-export const category = "Utility"
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {

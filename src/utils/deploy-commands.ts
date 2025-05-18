@@ -4,26 +4,44 @@ import { logger } from "./logger"
 import fs from "fs"
 import path from "path"
 
-const commands = []
+const commands: any[] = []
 const commandsPath = path.join(__dirname, "..", "commands")
-const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
 
-// Dynamically import commands
-;(async () => {
-  for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file)
-    try {
-      const command = await import(filePath)
+// Function to recursively load commands from directories
+async function loadCommands(dir: string) {
+  // Check if directory exists
+  if (!fs.existsSync(dir)) {
+    logger.error(`Directory not found: ${dir}`)
+    return
+  }
 
-      // Push slash command data to array
-      if (command.data) {
-        commands.push(command.data.toJSON())
-        logger.info(`Added command: ${command.data.name}`)
+  const items = fs.readdirSync(dir, { withFileTypes: true })
+
+  for (const item of items) {
+    const itemPath = path.join(dir, item.name)
+
+    if (item.isDirectory()) {
+      // Recursively load commands from subdirectories
+      await loadCommands(itemPath)
+    } else if (item.isFile() && (item.name.endsWith(".js") || item.name.endsWith(".ts"))) {
+      try {
+        const command = await import(itemPath)
+
+        // Push slash command data to array
+        if (command.data) {
+          commands.push(command.data.toJSON())
+          logger.info(`Added command: ${command.data.name} from ${itemPath}`)
+        }
+      } catch (error) {
+        logger.error(`Error loading command from ${itemPath}:`, error)
       }
-    } catch (error) {
-      logger.error(`Error loading command from ${filePath}:`, error)
     }
   }
+}
+// Dynamically import commands
+;(async () => {
+  // Load commands from all directories
+  await loadCommands(commandsPath)
 
   // Construct and prepare an instance of the REST module
   const rest = new REST().setToken(config.token)

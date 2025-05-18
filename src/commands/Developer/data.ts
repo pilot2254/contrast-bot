@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 import fs from "fs"
 import path from "path"
 
@@ -75,7 +75,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "data"
 export const aliases = ["datafiles", "files"]
 export const description = "Lists JSON data files in the data directory"
-export const category = "Developer"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

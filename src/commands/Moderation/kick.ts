@@ -5,7 +5,7 @@ import {
   PermissionFlagsBits,
   EmbedBuilder,
 } from "discord.js"
-import { botInfo } from "../utils/bot-info"
+import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -87,7 +87,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 // Prefix command definition
 export const name = "kick"
 export const description = "Kicks a user from the server"
-export const category = "Moderation"
 export const usage = "<user> [reason]"
 
 // Prefix command execution

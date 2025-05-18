@@ -5,7 +5,7 @@ import {
   EmbedBuilder,
   type Role,
 } from "discord.js"
-import { botInfo } from "../utils/bot-info"
+import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -30,7 +30,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "whois"
 export const aliases = ["userinfo", "user", "ui"]
 export const description = "Displays detailed information about a user"
-export const category = "Utility"
 export const usage = "[user]"
 
 // Prefix command execution

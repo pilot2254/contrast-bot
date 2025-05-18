@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { blacklistUser, unblacklistUser, getBlacklistedUsers } from "../utils/blacklist-manager"
-import { logger } from "../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { blacklistUser, unblacklistUser, getBlacklistedUsers } from "../../utils/blacklist-manager"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -115,7 +115,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "blacklist"
 export const aliases = ["bl"]
 export const description = "Manages the bot's blacklist"
-export const category = "Developer"
 export const usage = "<add/remove/list> [user] [reason]"
 
 // Prefix command execution

@@ -6,8 +6,8 @@ import {
   PermissionFlagsBits,
   Colors,
 } from "discord.js"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { logger } from "../utils/logger"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { logger } from "../../utils/logger"
 
 // Role name and color
 const DEV_ROLE_NAME = "Contrast Dev"
@@ -109,7 +109,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "dev-role"
 export const aliases = ["devrole", "devr"]
 export const description = "Toggles the developer role in the current server"
-export const category = "Developer"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

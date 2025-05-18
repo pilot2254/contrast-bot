@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
-import { setMaintenanceMode, isMaintenanceMode } from "../utils/blacklist-manager"
-import { logger } from "../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import { setMaintenanceMode, isMaintenanceMode } from "../../utils/blacklist-manager"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -54,7 +54,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "maintenance"
 export const aliases = ["maint"]
 export const description = "Toggles maintenance mode"
-export const category = "Developer"
 export const usage = "[on/off]"
 
 // Prefix command execution

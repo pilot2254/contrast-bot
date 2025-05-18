@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
+import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -18,7 +18,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "avatar"
 export const aliases = ["av", "pfp"]
 export const description = "Shows a user's avatar"
-export const category = "Utility"
 export const usage = "[user]"
 
 // Prefix command execution

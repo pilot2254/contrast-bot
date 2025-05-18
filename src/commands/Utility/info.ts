@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { config } from "../utils/config"
+import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("info").setDescription("Shows information about the bot")
@@ -15,7 +15,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "info"
 export const aliases = ["about", "botinfo"]
 export const description = "Shows information about the bot"
-export const category = "Utility"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
@@ -37,7 +36,7 @@ function createInfoEmbed(uptime: number) {
       { name: "Uptime", value: uptimeFormatted, inline: true },
       { name: "Discord.js", value: botInfo.technical.discordJs, inline: true },
       { name: "Node.js", value: botInfo.technical.node, inline: true },
-      { name: "Links", value: `[GitHub](${botInfo.links.github}) | [Support](${botInfo.links.support}) | [Invite Me](${botInfo.links.inviteBot})` },
+      { name: "Links", value: `[GitHub](${botInfo.links.github}) | [Support](${botInfo.links.support})` },
     )
     .setFooter({ text: `${botInfo.name} • Made with ❤️` })
     .setTimestamp()

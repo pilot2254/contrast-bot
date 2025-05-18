@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { getStats } from "../utils/stats-manager"
-import { config } from "../utils/config"
+import { botInfo } from "../../utils/bot-info"
+import { getStats } from "../../utils/stats-manager"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("bot-stats").setDescription("Shows statistics about the bot")
@@ -17,7 +17,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "bot-stats"
 export const aliases = ["stats", "botstats"]
 export const description = "Shows statistics about the bot"
-export const category = "Utility"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

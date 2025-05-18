@@ -5,7 +5,7 @@ import {
   EmbedBuilder,
   ChannelType,
 } from "discord.js"
-import { botInfo } from "../utils/bot-info"
+import { botInfo } from "../../utils/bot-info"
 
 export const data = new SlashCommandBuilder()
   .setName("server-info")
@@ -63,7 +63,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "server-info"
 export const aliases = ["serverinfo", "server"]
 export const description = "Displays information about the current server"
-export const category = "Utility"
 
 export async function run(message: Message, args: string[]) {
   if (!message.guild) {

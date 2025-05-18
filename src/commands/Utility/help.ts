@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { config } from "../utils/config"
-import { botInfo } from "../utils/bot-info"
-import type { Command } from "../utils/types"
+import { config } from "../../utils/config"
+import { botInfo } from "../../utils/bot-info"
+import type { Command } from "../../utils/types"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -66,7 +66,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "help"
 export const aliases = ["commands", "cmds"]
 export const description = "Shows a list of available commands"
-export const category = "Utility"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../utils/bot-info"
+import { botInfo } from "../../utils/bot-info"
 
 // Collection of clean jokes
 const jokes = [
@@ -46,7 +46,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "joke"
 export const aliases = ["jokes", "funny"]
 export const description = "Tells a random joke"
-export const category = "Fun"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

@@ -5,10 +5,10 @@ import {
   PermissionFlagsBits,
   ActivityType,
 } from "discord.js"
-import { config } from "../utils/config"
+import { config } from "../../utils/config"
 import dotenv from "dotenv"
-import { logger } from "../utils/logger"
-import { isDeveloper, logUnauthorizedAttempt } from "../utils/permissions"
+import { logger } from "../../utils/logger"
+import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -32,7 +32,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "reload"
 export const aliases = ["refresh"]
 export const description = "Reload the bot's configuration"
-export const category = "Developer"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {

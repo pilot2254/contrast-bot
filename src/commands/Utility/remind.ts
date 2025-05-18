@@ -5,8 +5,8 @@ import {
   EmbedBuilder,
   type TextChannel,
 } from "discord.js"
-import { botInfo } from "../utils/bot-info"
-import { createReminder, getUserReminders, cancelReminder } from "../utils/reminder-manager"
+import { botInfo } from "../../utils/bot-info"
+import { createReminder, getUserReminders, cancelReminder } from "../../utils/reminder-manager"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -130,7 +130,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "remind"
 export const aliases = ["reminder", "remindme"]
 export const description = "Sets a reminder"
-export const category = "Utility"
 export const usage = "<me/list/cancel> [time] [message]"
 
 // Prefix command execution
