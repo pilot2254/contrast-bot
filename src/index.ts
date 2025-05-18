@@ -1,10 +1,10 @@
 import { Client, Collection, GatewayIntentBits, Partials } from "discord.js"
 import { config } from "./utils/config"
 import { logger } from "./utils/logger"
-import fs from "fs"
 import path from "path"
 import type { Command } from "./utils/types"
 import { ensureDataDirectory } from "./utils/data-directory"
+import { loadCommands } from "./utils/command-loader"
 
 // Ensure data directory exists
 ensureDataDirectory()
@@ -38,32 +38,16 @@ client.prefixCommands = new Collection()
 
 // Load commands
 const commandsPath = path.join(__dirname, "commands")
-const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
-
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file)
-  import(filePath)
-    .then((command) => {
-      // Set slash command in the collection
-      if (command.data) {
-        client.commands.set(command.data.name, command)
-        logger.info(`Loaded slash command: ${command.data.name}`)
-      }
-
-      // Set prefix command in the collection
-      if (command.name) {
-        client.prefixCommands.set(command.name, command)
-        logger.info(`Loaded prefix command: ${command.name}`)
-      }
-    })
-    .catch((error) => {
-      logger.error(`Error loading command from ${filePath}:`, error)
-    })
-}
+loadCommands(commandsPath).then(({ commands, prefixCommands }) => {
+  client.commands = commands
+  client.prefixCommands = prefixCommands
+  logger.info(`Loaded ${commands.size} slash commands and ${prefixCommands.size} prefix commands`)
+})
 
 // Load events
 const eventsPath = path.join(__dirname, "events")
-const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
+import fs from "fs"
+const eventFiles = fs.readdirSync(eventsPath).filter((file: string) => file.endsWith(".js") || file.endsWith(".ts"))
 
 for (const file of eventFiles) {
   const filePath = path.join(eventsPath, file)
