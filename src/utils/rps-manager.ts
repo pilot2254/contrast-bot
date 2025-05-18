@@ -202,21 +202,33 @@ export function getPlayerStats(userId: string): RPSPlayerStats | undefined {
   return rpsData.find((stats) => stats.userId === userId)
 }
 
+// Update the getTopPlayers function to accept a sort parameter
 /**
- * Gets the top players by win rate
+ * Gets the top players by specified criteria
+ * @param sortBy The criteria to sort by: "winrate", "wins", "losses", or "ties"
  * @param limit The maximum number of players to return
  * @returns Array of top players
  */
-export function getTopPlayers(limit = 10): RPSPlayerStats[] {
+export function getTopPlayers(sortBy = "winrate", limit = 10): RPSPlayerStats[] {
   // Filter out players with no games
   const activePlayers = rpsData.filter((stats) => stats.totalGames > 0)
 
-  // Sort by win rate (wins / totalGames)
+  // Sort by the specified criteria
   return activePlayers
     .sort((a, b) => {
-      const aWinRate = a.wins / a.totalGames
-      const bWinRate = b.wins / b.totalGames
-      return bWinRate - aWinRate
+      switch (sortBy.toLowerCase()) {
+        case "wins":
+          return b.wins - a.wins
+        case "losses":
+          return b.losses - a.losses
+        case "ties":
+          return b.ties - a.ties
+        case "winrate":
+        default:
+          const aWinRate = a.wins / a.totalGames
+          const bWinRate = b.wins / b.totalGames
+          return bWinRate - aWinRate
+      }
     })
     .slice(0, limit)
 }

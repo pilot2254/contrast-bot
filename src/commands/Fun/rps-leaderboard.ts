@@ -6,6 +6,18 @@ import { getTopPlayers, getPlayerStats } from "../../utils/rps-manager"
 export const data = new SlashCommandBuilder()
   .setName("rps-leaderboard")
   .setDescription("Shows the Rock Paper Scissors leaderboard")
+  .addStringOption((option) =>
+    option
+      .setName("sort")
+      .setDescription("Sort criteria")
+      .setRequired(false)
+      .addChoices(
+        { name: "Win Rate", value: "winrate" },
+        { name: "Wins", value: "wins" },
+        { name: "Losses", value: "losses" },
+        { name: "Ties", value: "ties" },
+      ),
+  )
   .addIntegerOption((option) =>
     option
       .setName("limit")
@@ -18,7 +30,8 @@ export const data = new SlashCommandBuilder()
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
-  const topPlayers = getTopPlayers(limit)
+  const sortBy = interaction.options.getString("sort") || "winrate"
+  const topPlayers = getTopPlayers(sortBy, limit)
   const userStats = getPlayerStats(interaction.user.id)
 
   if (topPlayers.length === 0) {
@@ -27,7 +40,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   const embed = new EmbedBuilder()
     .setTitle("Rock Paper Scissors Leaderboard")
-    .setDescription("Top players by win rate")
+    .setDescription(`Top players sorted by ${formatSortCriteria(sortBy)}`)
     .setColor(botInfo.colors.primary)
     .setFooter({ text: `Requested by ${interaction.user.tag}` })
     .setTimestamp()
@@ -58,12 +71,29 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 export const name = "rps-leaderboard"
 export const aliases = ["rpsleaderboard", "rpslb", "rps-lb"]
 export const description = "Shows the Rock Paper Scissors leaderboard"
-export const usage = "[limit]"
+export const usage = "[sort:winrate|wins|losses|ties] [limit]"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  const limit = args.length > 0 && !isNaN(Number(args[0])) ? Math.min(Math.max(Number(args[0]), 1), 25) : 10
-  const topPlayers = getTopPlayers(limit)
+  // Parse arguments
+  let sortBy = "winrate"
+  let limit = 10
+
+  if (args.length > 0) {
+    // Check if first arg is a sort option
+    const validSortOptions = ["winrate", "wins", "losses", "ties"]
+    if (validSortOptions.includes(args[0].toLowerCase())) {
+      sortBy = args[0].toLowerCase()
+      args.shift() // Remove the sort option from args
+    }
+
+    // Check if next arg is a limit
+    if (args.length > 0 && !isNaN(Number(args[0]))) {
+      limit = Math.min(Math.max(Number(args[0]), 1), 25)
+    }
+  }
+
+  const topPlayers = getTopPlayers(sortBy, limit)
   const userStats = getPlayerStats(message.author.id)
 
   if (topPlayers.length === 0) {
@@ -72,7 +102,7 @@ export async function run(message: Message, args: string[]) {
 
   const embed = new EmbedBuilder()
     .setTitle("Rock Paper Scissors Leaderboard")
-    .setDescription("Top players by win rate")
+    .setDescription(`Top players sorted by ${formatSortCriteria(sortBy)}`)
     .setColor(botInfo.colors.primary)
     .setFooter({ text: `Requested by ${message.author.tag}` })
     .setTimestamp()
@@ -97,4 +127,19 @@ export async function run(message: Message, args: string[]) {
   }
 
   await message.reply({ embeds: [embed] })
+}
+
+// Helper function to format sort criteria for display
+function formatSortCriteria(sortBy: string): string {
+  switch (sortBy.toLowerCase()) {
+    case "wins":
+      return "Most Wins"
+    case "losses":
+      return "Most Losses"
+    case "ties":
+      return "Most Ties"
+    case "winrate":
+    default:
+      return "Win Rate"
+  }
 }
