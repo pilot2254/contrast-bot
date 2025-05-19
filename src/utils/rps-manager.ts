@@ -1,6 +1,5 @@
 import { logger } from "./logger"
-import path from "path"
-import fs from "fs"
+import { getDb } from "./database"
 
 // Define the RPS player stats structure
 export interface RPSPlayerStats {
@@ -19,74 +18,14 @@ export type RPSChoice = "rock" | "paper" | "scissors"
 // Define the result of a game
 export type RPSResult = "win" | "loss" | "tie"
 
-// Path to the data directory
-const DATA_DIR = path.join(process.cwd(), "data")
-
-// Filename for RPS data
-const RPS_FILENAME = path.join(DATA_DIR, "rps-stats.json")
-
-// RPS data
-let rpsData: RPSPlayerStats[] = []
-
-/**
- * Ensures the data directory exists
- */
-function ensureDataDirectory(): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-      logger.info(`Created data directory at ${DATA_DIR}`)
-    }
-  } catch (error) {
-    logger.error("Failed to create data directory:", error)
-    throw error
-  }
-}
-
-/**
- * Loads RPS data from the JSON file
- */
-function loadRPSData(): RPSPlayerStats[] {
-  try {
-    if (fs.existsSync(RPS_FILENAME)) {
-      const data = fs.readFileSync(RPS_FILENAME, "utf8")
-      return JSON.parse(data) as RPSPlayerStats[]
-    } else {
-      return []
-    }
-  } catch (error) {
-    logger.error(`Failed to load RPS data from ${RPS_FILENAME}:`, error)
-    return []
-  }
-}
-
-/**
- * Saves RPS data to the JSON file
- */
-function saveRPSData(): void {
-  try {
-    const jsonData = JSON.stringify(rpsData, null, 2)
-    fs.writeFileSync(RPS_FILENAME, jsonData, "utf8")
-  } catch (error) {
-    logger.error(`Failed to save RPS data to ${RPS_FILENAME}:`, error)
-  }
-}
-
 /**
  * Initializes the RPS manager
  */
-export function initRPSManager(): void {
+export async function initRPSManager(): Promise<void> {
   try {
-    // Ensure the data directory exists
-    ensureDataDirectory()
-
-    // Load RPS data from file
-    rpsData = loadRPSData()
-    logger.info(`Loaded RPS data for ${rpsData.length} players`)
+    logger.info("RPS manager initialized")
   } catch (error) {
     logger.error("Failed to initialize RPS manager:", error)
-    rpsData = []
-    saveRPSData()
   }
 }
 
@@ -96,31 +35,57 @@ export function initRPSManager(): void {
  * @param username The player's username
  * @returns The player's stats
  */
-function getOrCreatePlayerStats(userId: string, username: string): RPSPlayerStats {
-  let playerStats = rpsData.find((stats) => stats.userId === userId)
+async function getOrCreatePlayerStats(userId: string, username: string): Promise<RPSPlayerStats> {
+  try {
+    const db = getDb()
+    const now = Date.now()
 
-  if (!playerStats) {
-    playerStats = {
+    // Try to get existing stats
+    let playerStats = await db.get(
+      "SELECT user_id, username, wins, losses, ties, total_games, last_updated FROM rps_stats WHERE user_id = ?",
       userId,
-      username,
-      wins: 0,
-      losses: 0,
-      ties: 0,
-      totalGames: 0,
-      lastUpdated: Date.now(),
+    )
+
+    if (!playerStats) {
+      // Create new stats
+      await db.run(
+        `INSERT INTO rps_stats (user_id, username, wins, losses, ties, total_games, last_updated)
+         VALUES (?, ?, 0, 0, 0, 0, ?)`,
+        userId,
+        username,
+        now,
+      )
+
+      playerStats = {
+        user_id: userId,
+        username,
+        wins: 0,
+        losses: 0,
+        ties: 0,
+        total_games: 0,
+        last_updated: now,
+      }
+    } else if (playerStats.username !== username) {
+      // Update username if changed
+      await db.run("UPDATE rps_stats SET username = ?, last_updated = ? WHERE user_id = ?", username, now, userId)
+
+      playerStats.username = username
+      playerStats.last_updated = now
     }
-    rpsData.push(playerStats)
-    saveRPSData()
-  }
 
-  // Update username in case it changed
-  if (playerStats.username !== username) {
-    playerStats.username = username
-    playerStats.lastUpdated = Date.now()
-    saveRPSData()
+    return {
+      userId: playerStats.user_id,
+      username: playerStats.username,
+      wins: playerStats.wins,
+      losses: playerStats.losses,
+      ties: playerStats.ties,
+      totalGames: playerStats.total_games,
+      lastUpdated: playerStats.last_updated,
+    }
+  } catch (error) {
+    logger.error(`Failed to get or create RPS stats for ${userId}:`, error)
+    throw error
   }
-
-  return playerStats
 }
 
 /**
@@ -162,35 +127,81 @@ export function determineResult(playerChoice: RPSChoice, botChoice: RPSChoice): 
  * @param botUsername The bot's username
  * @param result The result of the game
  */
-export function recordGame(
+export async function recordGame(
   userId: string,
   username: string,
   botId: string,
   botUsername: string,
   result: RPSResult,
-): void {
-  const playerStats = getOrCreatePlayerStats(userId, username)
-  const botStats = getOrCreatePlayerStats(botId, botUsername)
+): Promise<void> {
+  try {
+    const db = getDb()
+    const now = Date.now()
 
-  // Update player stats
-  playerStats.totalGames++
-  botStats.totalGames++
+    // Start a transaction
+    await db.exec("BEGIN TRANSACTION")
 
-  if (result === "win") {
-    playerStats.wins++
-    botStats.losses++
-  } else if (result === "loss") {
-    playerStats.losses++
-    botStats.wins++
-  } else {
-    playerStats.ties++
-    botStats.ties++
+    try {
+      // Update player stats
+      await db.run(
+        `INSERT INTO rps_stats (user_id, username, wins, losses, ties, total_games, last_updated)
+         VALUES (?, ?, ?, ?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+         username = ?,
+         wins = wins + ?,
+         losses = losses + ?,
+         ties = ties + ?,
+         total_games = total_games + 1,
+         last_updated = ?`,
+        userId,
+        username,
+        result === "win" ? 1 : 0,
+        result === "loss" ? 1 : 0,
+        result === "tie" ? 1 : 0,
+        now,
+        username,
+        result === "win" ? 1 : 0,
+        result === "loss" ? 1 : 0,
+        result === "tie" ? 1 : 0,
+        now,
+      )
+
+      // Update bot stats
+      await db.run(
+        `INSERT INTO rps_stats (user_id, username, wins, losses, ties, total_games, last_updated)
+         VALUES (?, ?, ?, ?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+         username = ?,
+         wins = wins + ?,
+         losses = losses + ?,
+         ties = ties + ?,
+         total_games = total_games + 1,
+         last_updated = ?`,
+        botId,
+        botUsername,
+        result === "loss" ? 1 : 0,
+        result === "win" ? 1 : 0,
+        result === "tie" ? 1 : 0,
+        now,
+        botUsername,
+        result === "loss" ? 1 : 0,
+        result === "win" ? 1 : 0,
+        result === "tie" ? 1 : 0,
+        now,
+      )
+
+      // Commit the transaction
+      await db.exec("COMMIT")
+
+      logger.debug(`Recorded RPS game: ${username} ${result} against ${botUsername}`)
+    } catch (error) {
+      // Rollback on error
+      await db.exec("ROLLBACK")
+      throw error
+    }
+  } catch (error) {
+    logger.error(`Failed to record RPS game for ${userId}:`, error)
   }
-
-  playerStats.lastUpdated = Date.now()
-  botStats.lastUpdated = Date.now()
-
-  saveRPSData()
 }
 
 /**
@@ -198,40 +209,79 @@ export function recordGame(
  * @param userId The player's ID
  * @returns The player's stats or undefined if not found
  */
-export function getPlayerStats(userId: string): RPSPlayerStats | undefined {
-  return rpsData.find((stats) => stats.userId === userId)
+export async function getPlayerStats(userId: string): Promise<RPSPlayerStats | undefined> {
+  try {
+    const db = getDb()
+    const stats = await db.get(
+      "SELECT user_id, username, wins, losses, ties, total_games, last_updated FROM rps_stats WHERE user_id = ?",
+      userId,
+    )
+
+    if (!stats) {
+      return undefined
+    }
+
+    return {
+      userId: stats.user_id,
+      username: stats.username,
+      wins: stats.wins,
+      losses: stats.losses,
+      ties: stats.ties,
+      totalGames: stats.total_games,
+      lastUpdated: stats.last_updated,
+    }
+  } catch (error) {
+    logger.error(`Failed to get RPS stats for ${userId}:`, error)
+    return undefined
+  }
 }
 
-// Update the getTopPlayers function to accept a sort parameter
 /**
  * Gets the top players by specified criteria
  * @param sortBy The criteria to sort by: "winrate", "wins", "losses", or "ties"
  * @param limit The maximum number of players to return
  * @returns Array of top players
  */
-export function getTopPlayers(sortBy = "winrate", limit = 10): RPSPlayerStats[] {
-  // Filter out players with no games
-  const activePlayers = rpsData.filter((stats) => stats.totalGames > 0)
+export async function getTopPlayers(sortBy = "winrate", limit = 10): Promise<RPSPlayerStats[]> {
+  try {
+    const db = getDb()
 
-  // Sort by the specified criteria
-  return activePlayers
-    .sort((a, b) => {
-      switch (sortBy.toLowerCase()) {
-        case "wins":
-          return b.wins - a.wins
-        case "losses":
-          return b.losses - a.losses
-        case "ties":
-          return b.ties - a.ties
-        case "winrate":
-        default:
-          const aWinRate = a.wins / a.totalGames
-          const bWinRate = b.wins / b.totalGames
-          return bWinRate - aWinRate
-      }
-    })
-    .slice(0, limit)
+    let orderBy: string
+    switch (sortBy.toLowerCase()) {
+      case "wins":
+        orderBy = "wins DESC"
+        break
+      case "losses":
+        orderBy = "losses DESC"
+        break
+      case "ties":
+        orderBy = "ties DESC"
+        break
+      case "winrate":
+      default:
+        orderBy = "CAST(wins AS FLOAT) / CASE WHEN total_games = 0 THEN 1 ELSE total_games END DESC"
+        break
+    }
+
+    const players = await db.all(
+      `SELECT user_id, username, wins, losses, ties, total_games, last_updated 
+       FROM rps_stats 
+       WHERE total_games > 0
+       ORDER BY ${orderBy} LIMIT ?`,
+      limit,
+    )
+
+    return players.map((player) => ({
+      userId: player.user_id,
+      username: player.username,
+      wins: player.wins,
+      losses: player.losses,
+      ties: player.ties,
+      totalGames: player.total_games,
+      lastUpdated: player.last_updated,
+    }))
+  } catch (error) {
+    logger.error(`Failed to get top RPS players by ${sortBy}:`, error)
+    return []
+  }
 }
-
-// Initialize RPS manager when the module is imported
-initRPSManager()

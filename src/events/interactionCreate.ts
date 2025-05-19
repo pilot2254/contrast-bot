@@ -18,7 +18,8 @@ export async function execute(interaction: Interaction) {
     }
 
     // Check if user is blacklisted
-    if (isBlacklisted(interaction.user.id)) {
+    const blacklisted = await isBlacklisted(interaction.user.id)
+    if (blacklisted) {
       return interaction.reply({
         content: "You have been blacklisted from using this bot.",
         ephemeral: true,
@@ -26,7 +27,8 @@ export async function execute(interaction: Interaction) {
     }
 
     // Check if maintenance mode is enabled (allow developers to bypass)
-    if (isMaintenanceMode() && !isDeveloper(interaction.user)) {
+    const maintenanceMode = await isMaintenanceMode()
+    if (maintenanceMode && !isDeveloper(interaction.user)) {
       return interaction.reply({
         content: "The bot is currently in maintenance mode. Please try again later.",
         ephemeral: true,
@@ -35,7 +37,7 @@ export async function execute(interaction: Interaction) {
 
     try {
       // Track command usage
-      trackCommand(interaction.commandName)
+      await trackCommand(interaction.commandName)
 
       await command.execute?.(interaction)
     } catch (error) {

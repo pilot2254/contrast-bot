@@ -36,19 +36,21 @@ export async function execute(message: Message) {
   if (!command || !command.run) return
 
   // Check if user is blacklisted
-  if (isBlacklisted(message.author.id)) {
+  const blacklisted = await isBlacklisted(message.author.id)
+  if (blacklisted) {
     return message.reply("You have been blacklisted from using this bot.")
   }
 
   // Check if maintenance mode is enabled (allow developers to bypass)
-  if (isMaintenanceMode() && !isDeveloper(message.author)) {
+  const maintenanceMode = await isMaintenanceMode()
+  if (maintenanceMode && !isDeveloper(message.author)) {
     return message.reply("The bot is currently in maintenance mode. Please try again later.")
   }
 
   // Execute command
   try {
     // Track command usage
-    trackCommand(command.name || commandName)
+    await trackCommand(command.name || commandName)
 
     await command.run(message, args)
   } catch (error) {

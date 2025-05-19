@@ -31,8 +31,8 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
   const sortBy = interaction.options.getString("sort") || "winrate"
-  const topPlayers = getTopPlayers(sortBy, limit)
-  const userStats = getPlayerStats(interaction.user.id)
+  const topPlayers = await getTopPlayers(sortBy, limit)
+  const userStats = await getPlayerStats(interaction.user.id)
 
   if (topPlayers.length === 0) {
     return interaction.reply("No one has played Rock Paper Scissors yet!")
@@ -93,8 +93,8 @@ export async function run(message: Message, args: string[]) {
     }
   }
 
-  const topPlayers = getTopPlayers(sortBy, limit)
-  const userStats = getPlayerStats(message.author.id)
+  const topPlayers = await getTopPlayers(sortBy, limit)
+  const userStats = await getPlayerStats(message.author.id)
 
   if (topPlayers.length === 0) {
     return message.reply("No one has played Rock Paper Scissors yet!")

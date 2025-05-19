@@ -13,7 +13,7 @@ export const data = new SlashCommandBuilder()
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const targetUser = interaction.options.getUser("user") || interaction.user
-  const stats = getPlayerStats(targetUser.id)
+  const stats = await getPlayerStats(targetUser.id)
 
   if (!stats || stats.totalGames === 0) {
     return interaction.reply({
@@ -59,7 +59,7 @@ export async function run(message: Message, args: string[]) {
     targetUser = message.mentions.users.first()!
   }
 
-  const stats = getPlayerStats(targetUser.id)
+  const stats = await getPlayerStats(targetUser.id)
 
   if (!stats || stats.totalGames === 0) {
     return message.reply(

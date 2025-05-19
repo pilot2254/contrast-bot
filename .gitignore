@@ -1,6 +1,8 @@
 # ContrastBot Files
 data/*.json
 data/*.csv
+data/*.tsv
+data/*.db
 
 # Logs
 logs

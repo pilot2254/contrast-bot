@@ -38,7 +38,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   if (subcommand === "give") {
     const targetUser = interaction.options.getUser("user", true)
 
-    const result = givePositiveRep(interaction.user.id, interaction.user.username, targetUser.id, targetUser.username)
+    const result = await givePositiveRep(
+      interaction.user.id,
+      interaction.user.username,
+      targetUser.id,
+      targetUser.username,
+    )
 
     if (result.success) {
       const embed = new EmbedBuilder()
@@ -58,7 +63,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } else if (subcommand === "take") {
     const targetUser = interaction.options.getUser("user", true)
 
-    const result = giveNegativeRep(interaction.user.id, interaction.user.username, targetUser.id, targetUser.username)
+    const result = await giveNegativeRep(
+      interaction.user.id,
+      interaction.user.username,
+      targetUser.id,
+      targetUser.username,
+    )
 
     if (result.success) {
       const embed = new EmbedBuilder()
@@ -77,7 +87,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   } else if (subcommand === "check") {
     const targetUser = interaction.options.getUser("user") || interaction.user
-    const repData = getUserReputation(targetUser.id)
+    const repData = await getUserReputation(targetUser.id)
 
     if (!repData) {
       return interaction.reply({
@@ -137,7 +147,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply("Please mention a user to give reputation to.")
     }
 
-    const result = givePositiveRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
+    const result = await givePositiveRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
 
     if (result.success) {
       const embed = new EmbedBuilder()
@@ -161,7 +171,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply("Please mention a user to give negative reputation to.")
     }
 
-    const result = giveNegativeRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
+    const result = await giveNegativeRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
 
     if (result.success) {
       const embed = new EmbedBuilder()
@@ -177,7 +187,7 @@ export async function run(message: Message, args: string[]) {
     }
   } else if (subcommand === "check") {
     const targetUser = message.mentions.users.first() || message.author
-    const repData = getUserReputation(targetUser.id)
+    const repData = await getUserReputation(targetUser.id)
 
     if (!repData) {
       return message.reply(

@@ -53,7 +53,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       return interaction.reply({ content: "You cannot blacklist a developer.", ephemeral: true })
     }
 
-    const success = blacklistUser(user.id)
+    const success = await blacklistUser(user.id)
 
     if (success) {
       const embed = new EmbedBuilder()
@@ -70,7 +70,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
   } else if (subcommand === "remove") {
     const user = interaction.options.getUser("user", true)
-    const success = unblacklistUser(user.id)
+    const success = await unblacklistUser(user.id)
 
     if (success) {
       const embed = new EmbedBuilder()
@@ -85,14 +85,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       await interaction.reply({ content: "That user is not blacklisted.", ephemeral: true })
     }
   } else if (subcommand === "list") {
-    const blacklistedUsers = getBlacklistedUsers()
+    const blacklistedUsers = await getBlacklistedUsers()
 
     if (blacklistedUsers.length === 0) {
       return interaction.reply({ content: "There are no blacklisted users.", ephemeral: true })
     }
 
     // Fetch user data for each blacklisted user
-    const userPromises = blacklistedUsers.map((id) => interaction.client.users.fetch(id).catch(() => null))
+    const userPromises = blacklistedUsers.map((id) => interaction.client.users.fetch(id.userId).catch(() => null))
     const users = await Promise.all(userPromises)
     const validUsers = users.filter((user) => user !== null)
 
@@ -158,7 +158,7 @@ export async function run(message: Message, args: string[]) {
     }
 
     const reason = args.slice(2).join(" ") || "No reason provided"
-    const success = blacklistUser(user.id)
+    const success = await blacklistUser(user.id)
 
     if (success) {
       const embed = new EmbedBuilder()
@@ -185,7 +185,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply("Could not find that user.")
     }
 
-    const success = unblacklistUser(user.id)
+    const success = await unblacklistUser(user.id)
 
     if (success) {
       const embed = new EmbedBuilder()
@@ -200,14 +200,14 @@ export async function run(message: Message, args: string[]) {
       await message.reply("That user is not blacklisted.")
     }
   } else if (subcommand === "list") {
-    const blacklistedUsers = getBlacklistedUsers()
+    const blacklistedUsers = await getBlacklistedUsers()
 
     if (blacklistedUsers.length === 0) {
       return message.reply("There are no blacklisted users.")
     }
 
     // Fetch user data for each blacklisted user
-    const userPromises = blacklistedUsers.map((id) => message.client.users.fetch(id).catch(() => null))
+    const userPromises = blacklistedUsers.map((id) => message.client.users.fetch(id.userId).catch(() => null))
     const users = await Promise.all(userPromises)
     const validUsers = users.filter((user) => user !== null)
 

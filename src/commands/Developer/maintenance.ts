@@ -30,11 +30,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   logger.info(`Maintenance command authorized for user ${userId}`)
 
   const enabled = interaction.options.getBoolean("enabled")
-  const currentMode = isMaintenanceMode()
+  const currentMode = await isMaintenanceMode()
 
   // If no option provided, toggle the current mode
   const newMode = enabled !== null ? enabled : !currentMode
-  setMaintenanceMode(newMode)
+  await setMaintenanceMode(newMode)
 
   const embed = new EmbedBuilder()
     .setTitle("Maintenance Mode")
@@ -73,7 +73,7 @@ export async function run(message: Message, args: string[]) {
 
   logger.info(`Maintenance command authorized for user ${userId}`)
 
-  const currentMode = isMaintenanceMode()
+  const currentMode = await isMaintenanceMode()
   let newMode = !currentMode
 
   if (args.length > 0) {
@@ -85,7 +85,7 @@ export async function run(message: Message, args: string[]) {
     }
   }
 
-  setMaintenanceMode(newMode)
+  await setMaintenanceMode(newMode)
 
   const embed = new EmbedBuilder()
     .setTitle("Maintenance Mode")

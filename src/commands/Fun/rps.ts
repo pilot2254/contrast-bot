@@ -28,10 +28,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const botUser = interaction.client.user
 
   // Record the game
-  recordGame(interaction.user.id, interaction.user.username, botUser?.id || "unknown", botUser?.tag || "Bot", result)
+  await recordGame(
+    interaction.user.id,
+    interaction.user.username,
+    botUser?.id || "unknown",
+    botUser?.tag || "Bot",
+    result,
+  )
 
   // Get player stats
-  const playerStats = getPlayerStats(interaction.user.id)
+  const playerStats = await getPlayerStats(interaction.user.id)
 
   // Create embed
   const embed = new EmbedBuilder()
@@ -81,10 +87,10 @@ export async function run(message: Message, args: string[]) {
   const botUser = message.client.user
 
   // Record the game
-  recordGame(message.author.id, message.author.username, botUser?.id || "unknown", botUser?.tag || "Bot", result)
+  await recordGame(message.author.id, message.author.username, botUser?.id || "unknown", botUser?.tag || "Bot", result)
 
   // Get player stats
-  const playerStats = getPlayerStats(message.author.id)
+  const playerStats = await getPlayerStats(message.author.id)
 
   // Create embed
   const embed = new EmbedBuilder()

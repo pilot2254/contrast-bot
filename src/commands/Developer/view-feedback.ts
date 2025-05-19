@@ -44,7 +44,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   if (subcommand === "list") {
     const limit = interaction.options.getInteger("limit") || 10
-    const feedback = getAllFeedback()
+    const feedback = await getAllFeedback()
 
     if (feedback.length === 0) {
       return interaction.reply({
@@ -76,7 +76,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply({ embeds: [embed], ephemeral: true })
   } else if (subcommand === "get") {
     const id = interaction.options.getInteger("id", true)
-    const feedback = getFeedbackById(id)
+    const feedback = await getFeedbackById(id)
 
     if (!feedback) {
       return interaction.reply({
@@ -128,7 +128,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply("Please provide a valid limit between 1 and 25.")
     }
 
-    const feedback = getAllFeedback()
+    const feedback = await getAllFeedback()
 
     if (feedback.length === 0) {
       return message.reply("No feedback has been submitted yet.")
@@ -166,7 +166,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply("Please provide a valid feedback ID.")
     }
 
-    const feedback = getFeedbackById(id)
+    const feedback = await getFeedbackById(id)
 
     if (!feedback) {
       return message.reply(`Feedback #${id} not found.`)

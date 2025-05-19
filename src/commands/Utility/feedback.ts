@@ -21,7 +21,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 
   // Add feedback
-  const feedback = addFeedback(interaction.user.id, interaction.user.username, content)
+  const feedback = await addFeedback(interaction.user.id, interaction.user.username, content)
 
   const embed = new EmbedBuilder()
     .setTitle("Feedback Submitted")
@@ -65,7 +65,7 @@ export async function run(message: Message, args: string[]) {
   }
 
   // Add feedback
-  const feedback = addFeedback(message.author.id, message.author.username, content)
+  const feedback = await addFeedback(message.author.id, message.author.username, content)
 
   const embed = new EmbedBuilder()
     .setTitle("Feedback Submitted")

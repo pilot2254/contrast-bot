@@ -31,7 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const author = interaction.user.username
     const authorId = interaction.user.id
 
-    const quote = addQuote(text, author, authorId)
+    const quote = await addQuote(text, author, authorId)
 
     const embed = new EmbedBuilder()
       .setTitle("Quote Added")
@@ -46,7 +46,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     await interaction.reply({ embeds: [embed] })
   } else if (subcommand === "random") {
-    const quote = getRandomQuote()
+    const quote = await getRandomQuote()
 
     if (!quote) {
       return interaction.reply({
@@ -66,7 +66,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await interaction.reply({ embeds: [embed] })
   } else if (subcommand === "get") {
     const id = interaction.options.getInteger("id", true)
-    const quote = getQuoteById(id)
+    const quote = await getQuoteById(id)
 
     if (!quote) {
       return interaction.reply({
@@ -110,7 +110,7 @@ export async function run(message: Message, args: string[]) {
     const author = message.author.username
     const authorId = message.author.id
 
-    const quote = addQuote(text, author, authorId)
+    const quote = await addQuote(text, author, authorId)
 
     const embed = new EmbedBuilder()
       .setTitle("Quote Added")
@@ -125,7 +125,7 @@ export async function run(message: Message, args: string[]) {
 
     await message.reply({ embeds: [embed] })
   } else if (subcommand === "random") {
-    const quote = getRandomQuote()
+    const quote = await getRandomQuote()
 
     if (!quote) {
       return message.reply("No quotes have been added yet. Add one with `?quote add`!")
@@ -148,7 +148,7 @@ export async function run(message: Message, args: string[]) {
       return message.reply(`Unknown subcommand. Usage: ${usage}`)
     }
 
-    const quote = getQuoteById(id)
+    const quote = await getQuoteById(id)
 
     if (!quote) {
       return message.reply(`Quote #${id} not found.`)

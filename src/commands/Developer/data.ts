@@ -2,13 +2,12 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, Em
 import { botInfo } from "../../utils/bot-info"
 import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
 import { logger } from "../../utils/logger"
+import { getDb } from "../../utils/database"
 import fs from "fs"
 import path from "path"
 
 // Slash command definition
-export const data = new SlashCommandBuilder()
-  .setName("data")
-  .setDescription("Lists JSON data files in the data directory")
+export const data = new SlashCommandBuilder().setName("data").setDescription("Shows database information")
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -27,54 +26,58 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   logger.info(`Data command authorized for user ${userId}`)
 
-  const dataDir = path.join(process.cwd(), "data")
-
   try {
-    if (!fs.existsSync(dataDir)) {
-      return interaction.reply({ content: "Data directory does not exist yet.", ephemeral: true })
-    }
+    const db = getDb()
 
-    // Get only JSON files
-    const files = fs.readdirSync(dataDir).filter((file) => file.endsWith(".json"))
+    // Get database file size
+    const dbPath = path.join(process.cwd(), "data", "bot.db")
+    const dbSize = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0
 
-    if (files.length === 0) {
-      return interaction.reply({ content: "No JSON data files found.", ephemeral: true })
-    }
+    // Get table information
+    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
 
-    const fileDetails = files.map((file) => {
-      const filePath = path.join(dataDir, file)
-      const stats = fs.statSync(filePath)
-      return {
-        name: file,
-        size: formatBytes(stats.size),
-      }
-    })
+    // Get row counts for each table
+    const tableInfo = await Promise.all(
+      tables.map(async (table) => {
+        const count = await db.get(`SELECT COUNT(*) as count FROM ${table.name}`)
+        return {
+          name: table.name,
+          count: count.count,
+        }
+      }),
+    )
 
     const embed = new EmbedBuilder()
-      .setTitle("JSON Data Files")
+      .setTitle("Database Information")
       .setColor(botInfo.colors.primary)
-      .setDescription("List of all JSON data files in the data directory")
+      .setDescription("Information about the SQLite database")
       .addFields(
-        fileDetails.map((file) => ({
-          name: file.name,
-          value: `Size: ${file.size}`,
-          inline: true,
-        })),
+        { name: "Database Size", value: formatBytes(dbSize), inline: true },
+        { name: "Tables", value: tables.length.toString(), inline: true },
       )
       .setFooter({ text: `Requested by ${interaction.user.tag}` })
       .setTimestamp()
 
+    // Add fields for each table
+    tableInfo.forEach((table) => {
+      embed.addFields({
+        name: table.name,
+        value: `${table.count} rows`,
+        inline: true,
+      })
+    })
+
     await interaction.reply({ embeds: [embed], ephemeral: true })
   } catch (error) {
-    logger.error("Error listing data files:", error)
-    await interaction.reply({ content: "An error occurred while listing data files.", ephemeral: true })
+    logger.error("Error getting database info:", error)
+    await interaction.reply({ content: "An error occurred while getting database information.", ephemeral: true })
   }
 }
 
 // Prefix command definition
 export const name = "data"
-export const aliases = ["datafiles", "files"]
-export const description = "Lists JSON data files in the data directory"
+export const aliases = ["datafiles", "files", "db", "database"]
+export const description = "Shows database information"
 
 // Prefix command execution
 export async function run(message: Message, _args: string[]) {
@@ -93,47 +96,51 @@ export async function run(message: Message, _args: string[]) {
 
   logger.info(`Data command authorized for user ${userId}`)
 
-  const dataDir = path.join(process.cwd(), "data")
-
   try {
-    if (!fs.existsSync(dataDir)) {
-      return message.reply("Data directory does not exist yet.")
-    }
+    const db = getDb()
 
-    // Get only JSON files
-    const files = fs.readdirSync(dataDir).filter((file) => file.endsWith(".json"))
+    // Get database file size
+    const dbPath = path.join(process.cwd(), "data", "bot.db")
+    const dbSize = fs.existsSync(dbPath) ? fs.statSync(dbPath).size : 0
 
-    if (files.length === 0) {
-      return message.reply("No JSON data files found.")
-    }
+    // Get table information
+    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
 
-    const fileDetails = files.map((file) => {
-      const filePath = path.join(dataDir, file)
-      const stats = fs.statSync(filePath)
-      return {
-        name: file,
-        size: formatBytes(stats.size),
-      }
-    })
+    // Get row counts for each table
+    const tableInfo = await Promise.all(
+      tables.map(async (table) => {
+        const count = await db.get(`SELECT COUNT(*) as count FROM ${table.name}`)
+        return {
+          name: table.name,
+          count: count.count,
+        }
+      }),
+    )
 
     const embed = new EmbedBuilder()
-      .setTitle("JSON Data Files")
+      .setTitle("Database Information")
       .setColor(botInfo.colors.primary)
-      .setDescription("List of all JSON data files in the data directory")
+      .setDescription("Information about the SQLite database")
       .addFields(
-        fileDetails.map((file) => ({
-          name: file.name,
-          value: `Size: ${file.size}`,
-          inline: true,
-        })),
+        { name: "Database Size", value: formatBytes(dbSize), inline: true },
+        { name: "Tables", value: tables.length.toString(), inline: true },
       )
       .setFooter({ text: `Requested by ${message.author.tag}` })
       .setTimestamp()
 
+    // Add fields for each table
+    tableInfo.forEach((table) => {
+      embed.addFields({
+        name: table.name,
+        value: `${table.count} rows`,
+        inline: true,
+      })
+    })
+
     await message.reply({ embeds: [embed] })
   } catch (error) {
-    logger.error("Error listing data files:", error)
-    await message.reply("An error occurred while listing data files.")
+    logger.error("Error getting database info:", error)
+    await message.reply("An error occurred while getting database information.")
   }
 }
 

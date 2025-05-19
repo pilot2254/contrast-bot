@@ -33,8 +33,8 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
   const sortBy = interaction.options.getString("sort") || "receivedTotal"
-  const topUsers = getTopUsers(sortBy, limit)
-  const userRep = getUserReputation(interaction.user.id)
+  const topUsers = await getTopUsers(sortBy, limit)
+  const userRep = await getUserReputation(interaction.user.id)
 
   if (topUsers.length === 0) {
     return interaction.reply("No one has received or given any reputation yet!")
@@ -111,8 +111,8 @@ export async function run(message: Message, args: string[]) {
     }
   }
 
-  const topUsers = getTopUsers(sortBy, limit)
-  const userRep = getUserReputation(message.author.id)
+  const topUsers = await getTopUsers(sortBy, limit)
+  const userRep = await getUserReputation(message.author.id)
 
   if (topUsers.length === 0) {
     return message.reply("No one has received or given any reputation yet!")
