@@ -66,7 +66,7 @@ export async function getStats(): Promise<{
     // Get all command usage
     const commandRows = await db.all("SELECT command_name, count FROM command_usage")
     const commandsUsed: Record<string, number> = {}
-    commandRows.forEach((row) => {
+    commandRows.forEach((row: any) => {
       commandsUsed[row.command_name] = row.count
     })
 
@@ -90,6 +90,7 @@ export async function getStats(): Promise<{
     }
   } catch (error) {
     logger.error("Failed to get stats:", error)
+    // Return default values in case of error
     return {
       commandsUsed: {},
       totalCommands: 0,

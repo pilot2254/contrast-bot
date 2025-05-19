@@ -8,7 +8,7 @@ import { isDeveloper } from "../utils/permissions"
 export const name = Events.MessageCreate
 export const once = false
 
-export async function execute(message: Message) {
+export async function execute(message: Message): Promise<void> {
   // Handle bot mention (in servers, DMs, and group chats)
   try {
     // Import the mention handler dynamically to avoid circular dependencies
@@ -33,18 +33,20 @@ export async function execute(message: Message) {
     message.client.prefixCommands.get(commandName) ||
     [...message.client.prefixCommands.values()].find((cmd) => cmd.aliases?.includes(commandName))
 
-  if (!command || !command.run) return
+  if (!command) return
 
   // Check if user is blacklisted
   const blacklisted = await isBlacklisted(message.author.id)
   if (blacklisted) {
-    return message.reply("You have been blacklisted from using this bot.")
+    await message.reply("You have been blacklisted from using this bot.")
+    return
   }
 
   // Check if maintenance mode is enabled (allow developers to bypass)
   const maintenanceMode = await isMaintenanceMode()
   if (maintenanceMode && !isDeveloper(message.author)) {
-    return message.reply("The bot is currently in maintenance mode. Please try again later.")
+    await message.reply("The bot is currently in maintenance mode. Please try again later.")
+    return
   }
 
   // Execute command
@@ -52,9 +54,17 @@ export async function execute(message: Message) {
     // Track command usage
     await trackCommand(command.name || commandName)
 
-    await command.run(message, args)
+    // Execute the command
+    if (command.run) {
+      await command.run(message, args)
+    } else {
+      logger.warn(`Command ${commandName} has no run method.`)
+      await message.reply("This command is not properly implemented.")
+    }
   } catch (error) {
     logger.error(`Error executing prefix command ${commandName}:`, error)
-    await message.reply("There was an error while executing this command!")
+    await message.reply("There was an error while executing this command!").catch((e) => {
+      logger.error("Failed to send error reply:", e)
+    })
   }
 }

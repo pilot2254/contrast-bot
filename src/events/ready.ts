@@ -1,44 +1,20 @@
 import { type Client, Events, ActivityType } from "discord.js"
 import { logger } from "../utils/logger"
-import { config } from "../utils/config"
 import { updateGuildCount } from "../utils/stats-manager"
 
 export const name = Events.ClientReady
 export const once = true
 
-export async function execute(client: Client) {
-  logger.info(`Ready! Logged in as ${client.user?.tag}`)
+export async function execute(client: Client): Promise<void> {
+  if (!client.user) return
+
+  logger.info(`Ready! Logged in as ${client.user.tag}`)
 
   // Update guild count
-  updateGuildCount(client.guilds.cache.size)
+  await updateGuildCount(client.guilds.cache.size)
 
-  try {
-    // First, set the status
-    await client.user?.setStatus(config.presence.status)
-    logger.info(`Status set to: ${config.presence.status}`)
-
-    // Wait a moment before setting activity (helps with Discord API)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Get activity details
-    const activityType = parseActivityType(config.presence.activity.type)
-    const activityName = config.presence.activity.name || `with Discord.js`
-
-    // Set activity using the direct method that works in activity-test
-    await client.user?.setActivity(activityName, { type: activityType })
-
-    logger.info(`Activity set to: ${getActivityTypeName(activityType)} ${activityName}`)
-    logger.info(`Using direct setActivity() method that works in activity-test`)
-
-    // Note about invisible status
-    if (config.presence.status === "invisible") {
-      logger.info(
-        "Note: Discord may show the bot as DND briefly before changing to invisible. This is normal behavior.",
-      )
-    }
-  } catch (error) {
-    logger.error("Failed to set presence:", error)
-  }
+  // Set bot status
+  client.user.setActivity(`/help | Serving ${client.guilds.cache.size} servers`)
 }
 
 // Helper function to parse activity type

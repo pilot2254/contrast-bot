@@ -1,102 +1,115 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type Message,
+  EmbedBuilder,
+  PermissionFlagsBits,
+} from "discord.js"
 import { botInfo } from "../../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
 import { setMaintenanceMode, isMaintenanceMode } from "../../utils/blacklist-manager"
 import { logger } from "../../utils/logger"
+import { isDeveloper } from "../../utils/permissions"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("maintenance")
-  .setDescription("Toggles maintenance mode")
+  .setDescription("Toggle maintenance mode")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addBooleanOption((option) =>
-    option.setName("enabled").setDescription("Whether maintenance mode should be enabled").setRequired(false),
+    option.setName("enabled").setDescription("Whether to enable or disable maintenance mode").setRequired(false),
   )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  // Direct ID check as a fallback
-  const userId = String(interaction.user.id).trim()
-  logger.info(`Maintenance command attempted by user ID: "${userId}"`)
+  try {
+    // Check if user is a developer
+    if (!isDeveloper(interaction.user)) {
+      return interaction.reply({
+        content: "You don't have permission to use this command!",
+        ephemeral: true,
+      })
+    }
 
-  // Check if user is a developer using both methods
-  const isDev = isDeveloper(interaction.user) || userId === "171395713064894465"
+    const enabled = interaction.options.getBoolean("enabled")
+    const currentMode = await isMaintenanceMode()
 
-  if (!isDev) {
-    logUnauthorizedAttempt(userId, "maintenance")
-    logger.warn(`Permission denied for maintenance command. User ID: ${userId}`)
-    return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
-  }
+    // If no option provided, toggle the current mode
+    const newMode = enabled !== null ? enabled : !currentMode
 
-  logger.info(`Maintenance command authorized for user ${userId}`)
+    const success = await setMaintenanceMode(newMode)
 
-  const enabled = interaction.options.getBoolean("enabled")
-  const currentMode = await isMaintenanceMode()
+    if (success) {
+      const embed = new EmbedBuilder()
+        .setTitle("Maintenance Mode")
+        .setDescription(`Maintenance mode is now ${newMode ? "enabled" : "disabled"}.`)
+        .setColor(newMode ? botInfo.colors.warning : botInfo.colors.success)
+        .addFields({
+          name: "Status",
+          value: newMode ? "Only developers can use commands" : "All users can use commands",
+        })
+        .setTimestamp()
 
-  // If no option provided, toggle the current mode
-  const newMode = enabled !== null ? enabled : !currentMode
-  await setMaintenanceMode(newMode)
-
-  const embed = new EmbedBuilder()
-    .setTitle("Maintenance Mode")
-    .setDescription(`Maintenance mode has been ${newMode ? "enabled" : "disabled"}.`)
-    .setColor(newMode ? botInfo.colors.warning : botInfo.colors.success)
-    .addFields({
-      name: "Status",
-      value: newMode ? "Only developers can use commands" : "All users can use commands",
+      await interaction.reply({ embeds: [embed] })
+    } else {
+      await interaction.reply({
+        content: "Failed to toggle maintenance mode!",
+        ephemeral: true,
+      })
+    }
+  } catch (error) {
+    logger.error("Error executing maintenance command:", error)
+    await interaction.reply({
+      content: "There was an error while executing this command!",
+      ephemeral: true,
     })
-    .setFooter({ text: `Requested by ${interaction.user.tag}` })
-    .setTimestamp()
-
-  await interaction.reply({ embeds: [embed], ephemeral: true })
+  }
 }
 
 // Prefix command definition
 export const name = "maintenance"
 export const aliases = ["maint"]
-export const description = "Toggles maintenance mode"
+export const description = "Toggle maintenance mode"
 export const usage = "[on/off]"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  // Direct ID check as a fallback
-  const userId = String(message.author.id).trim()
-  logger.info(`Maintenance command attempted by user ID: "${userId}"`)
-
-  // Check if user is a developer using both methods
-  const isDev = isDeveloper(message.author) || userId === "171395713064894465"
-
-  if (!isDev) {
-    logUnauthorizedAttempt(userId, "maintenance")
-    logger.warn(`Permission denied for maintenance command. User ID: ${userId}`)
-    return message.reply("You don't have permission to use this command.")
-  }
-
-  logger.info(`Maintenance command authorized for user ${userId}`)
-
-  const currentMode = await isMaintenanceMode()
-  let newMode = !currentMode
-
-  if (args.length > 0) {
-    const arg = args[0].toLowerCase()
-    if (arg === "on" || arg === "enable" || arg === "true" || arg === "1") {
-      newMode = true
-    } else if (arg === "off" || arg === "disable" || arg === "false" || arg === "0") {
-      newMode = false
+  try {
+    // Check if user is a developer
+    if (!isDeveloper(message.author)) {
+      return message.reply("You don't have permission to use this command!")
     }
+
+    const currentMode = await isMaintenanceMode()
+    let newMode = !currentMode
+
+    if (args.length > 0) {
+      const arg = args[0].toLowerCase()
+      if (arg === "on" || arg === "enable" || arg === "true" || arg === "1") {
+        newMode = true
+      } else if (arg === "off" || arg === "disable" || arg === "false" || arg === "0") {
+        newMode = false
+      }
+    }
+
+    const success = await setMaintenanceMode(newMode)
+
+    if (success) {
+      const embed = new EmbedBuilder()
+        .setTitle("Maintenance Mode")
+        .setDescription(`Maintenance mode is now ${newMode ? "enabled" : "disabled"}.`)
+        .setColor(newMode ? botInfo.colors.warning : botInfo.colors.success)
+        .addFields({
+          name: "Status",
+          value: newMode ? "Only developers can use commands" : "All users can use commands",
+        })
+        .setTimestamp()
+
+      await message.reply({ embeds: [embed] })
+    } else {
+      await message.reply("Failed to toggle maintenance mode!")
+    }
+  } catch (error) {
+    logger.error("Error executing maintenance command:", error)
+    await message.reply("There was an error while executing this command!")
   }
-
-  await setMaintenanceMode(newMode)
-
-  const embed = new EmbedBuilder()
-    .setTitle("Maintenance Mode")
-    .setDescription(`Maintenance mode has been ${newMode ? "enabled" : "disabled"}.`)
-    .setColor(newMode ? botInfo.colors.warning : botInfo.colors.success)
-    .addFields({
-      name: "Status",
-      value: newMode ? "Only developers can use commands" : "All users can use commands",
-    })
-    .setFooter({ text: `Requested by ${message.author.tag}` })
-    .setTimestamp()
-
-  await message.reply({ embeds: [embed] })
 }

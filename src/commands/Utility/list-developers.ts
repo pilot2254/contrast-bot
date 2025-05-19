@@ -22,7 +22,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTimestamp()
 
     // Fetch user data for each developer ID
-    const developerPromises = DEVELOPER_IDS.map((id) =>
+    const developerPromises = DEVELOPER_IDS.map((id: string) =>
       interaction.client.users
         .fetch(id)
         .then((user) => ({ id, tag: user.tag, username: user.username, found: true }))
@@ -32,7 +32,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const developers = await Promise.all(developerPromises)
 
     // Add fields for each developer
-    developers.forEach((dev) => {
+    developers.forEach((dev: any) => {
       embed.addFields({
         name: dev.found ? dev.username : `Unknown User (${dev.id})`,
         value: `ID: ${dev.id}${dev.found ? `\nTag: ${dev.tag}` : "\nCould not fetch user data"}`,
@@ -75,7 +75,7 @@ export async function run(message: Message, _args: string[]) {
       .setTimestamp()
 
     // Fetch user data for each developer ID
-    const developerPromises = DEVELOPER_IDS.map((id) =>
+    const developerPromises = DEVELOPER_IDS.map((id: string) =>
       message.client.users
         .fetch(id)
         .then((user) => ({ id, tag: user.tag, username: user.username, found: true }))
@@ -85,7 +85,7 @@ export async function run(message: Message, _args: string[]) {
     const developers = await Promise.all(developerPromises)
 
     // Add fields for each developer
-    developers.forEach((dev) => {
+    developers.forEach((dev: any) => {
       embed.addFields({
         name: dev.found ? dev.username : `Unknown User (${dev.id})`,
         value: `ID: ${dev.id}${dev.found ? `\nTag: ${dev.tag}` : "\nCould not fetch user data"}`,

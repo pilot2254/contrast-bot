@@ -166,9 +166,7 @@ async function initTables(): Promise<void> {
     const startTimeExists = await db?.get("SELECT 1 FROM stats WHERE key = 'start_time'")
     if (!startTimeExists) {
       await db?.run("INSERT INTO stats (key, value) VALUES ('start_time', ?)", Date.now().toString())
-
       await db?.run("INSERT INTO stats (key, value) VALUES ('total_commands', '0')")
-
       await db?.run("INSERT INTO stats (key, value) VALUES ('guild_count', '0')")
     }
   } catch (error) {

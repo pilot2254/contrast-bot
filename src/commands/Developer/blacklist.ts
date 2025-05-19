@@ -1,229 +1,280 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../../utils/bot-info"
-import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
-import { blacklistUser, unblacklistUser, getBlacklistedUsers } from "../../utils/blacklist-manager"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type Message,
+  EmbedBuilder,
+  PermissionFlagsBits,
+} from "discord.js"
+import { config } from "../../utils/config"
+import { blacklistUser, unblacklistUser, getBlacklistedUsers, isBlacklisted } from "../../utils/blacklist-manager"
 import { logger } from "../../utils/logger"
+import { botInfo } from "../../utils/bot-info"
+import { isDeveloper } from "../../utils/permissions"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("blacklist")
-  .setDescription("Manages the bot's blacklist")
+  .setDescription("Manage blacklisted users")
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .addSubcommand((subcommand) =>
     subcommand
       .setName("add")
-      .setDescription("Adds a user to the blacklist")
+      .setDescription("Add a user to the blacklist")
       .addUserOption((option) => option.setName("user").setDescription("The user to blacklist").setRequired(true))
       .addStringOption((option) =>
-        option.setName("reason").setDescription("The reason for blacklisting").setRequired(false),
+        option.setName("reason").setDescription("The reason for blacklisting").setRequired(true),
       ),
   )
   .addSubcommand((subcommand) =>
     subcommand
       .setName("remove")
-      .setDescription("Removes a user from the blacklist")
+      .setDescription("Remove a user from the blacklist")
       .addUserOption((option) => option.setName("user").setDescription("The user to unblacklist").setRequired(true)),
   )
-  .addSubcommand((subcommand) => subcommand.setName("list").setDescription("Lists all blacklisted users"))
+  .addSubcommand((subcommand) => subcommand.setName("list").setDescription("List all blacklisted users"))
+  .addSubcommand((subcommand) =>
+    subcommand
+      .setName("check")
+      .setDescription("Check if a user is blacklisted")
+      .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(true)),
+  )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  // Direct ID check as a fallback
-  const userId = String(interaction.user.id).trim()
-  logger.info(`Blacklist command attempted by user ID: "${userId}"`)
-
-  // Check if user is a developer using both methods
-  const isDev = isDeveloper(interaction.user) || userId === "171395713064894465"
-
-  if (!isDev) {
-    logUnauthorizedAttempt(userId, "blacklist")
-    logger.warn(`Permission denied for blacklist command. User ID: ${userId}`)
-    return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
-  }
-
-  logger.info(`Blacklist command authorized for user ${userId}`)
-
-  const subcommand = interaction.options.getSubcommand()
-
-  if (subcommand === "add") {
-    const user = interaction.options.getUser("user", true)
-    const reason = interaction.options.getString("reason") || "No reason provided"
-
-    // Don't allow blacklisting developers
-    if (isDeveloper(user) || String(user.id).trim() === "171395713064894465") {
-      return interaction.reply({ content: "You cannot blacklist a developer.", ephemeral: true })
+  try {
+    // Check if user is a developer
+    if (!isDeveloper(interaction.user)) {
+      return interaction.reply({
+        content: "You don't have permission to use this command!",
+        ephemeral: true,
+      })
     }
 
-    const success = await blacklistUser(user.id)
+    const subcommand = interaction.options.getSubcommand()
 
-    if (success) {
+    if (subcommand === "add") {
+      const user = interaction.options.getUser("user")!
+      const reason = interaction.options.getString("reason")!
+
+      // Don't allow blacklisting developers
+      if (isDeveloper(user)) {
+        return interaction.reply({
+          content: "You cannot blacklist a developer!",
+          ephemeral: true,
+        })
+      }
+
+      const success = await blacklistUser(user.id, reason, interaction.user.id)
+
+      if (success) {
+        const embed = new EmbedBuilder()
+          .setTitle("User Blacklisted")
+          .setDescription(`${user.tag} has been blacklisted.`)
+          .addFields({ name: "Reason", value: reason })
+          .setColor(botInfo.colors.error)
+          .setTimestamp()
+
+        await interaction.reply({ embeds: [embed] })
+      } else {
+        await interaction.reply({
+          content: "Failed to blacklist user!",
+          ephemeral: true,
+        })
+      }
+    } else if (subcommand === "remove") {
+      const user = interaction.options.getUser("user")!
+
+      const success = await unblacklistUser(user.id)
+
+      if (success) {
+        const embed = new EmbedBuilder()
+          .setTitle("User Unblacklisted")
+          .setDescription(`${user.tag} has been removed from the blacklist.`)
+          .setColor(botInfo.colors.success)
+          .setTimestamp()
+
+        await interaction.reply({ embeds: [embed] })
+      } else {
+        await interaction.reply({
+          content: "Failed to unblacklist user! They may not be blacklisted.",
+          ephemeral: true,
+        })
+      }
+    } else if (subcommand === "list") {
+      const blacklistedUsers = await getBlacklistedUsers()
+
+      if (blacklistedUsers.length === 0) {
+        return interaction.reply("There are no blacklisted users.")
+      }
+
+      // Fetch user objects for all blacklisted users
+      const userPromises = blacklistedUsers.map((user) => interaction.client.users.fetch(user.userId).catch(() => null))
+      const users = await Promise.all(userPromises)
+      const validUsers = users.filter((user): user is NonNullable<typeof user> => user !== null)
+
       const embed = new EmbedBuilder()
-        .setTitle("User Blacklisted")
-        .setDescription(`${user.tag} has been blacklisted from using the bot.`)
-        .setColor(botInfo.colors.error)
-        .addFields({ name: "Reason", value: reason })
-        .setFooter({ text: `Blacklisted by ${interaction.user.tag}` })
+        .setTitle("Blacklisted Users")
+        .setDescription(
+          validUsers.length > 0
+            ? validUsers.map((user) => `${user.tag} (${user.id})`).join("\n")
+            : "No valid users found in blacklist.",
+        )
+        .setColor(botInfo.colors.primary)
         .setTimestamp()
 
-      await interaction.reply({ embeds: [embed], ephemeral: true })
-    } else {
-      await interaction.reply({ content: "That user is already blacklisted.", ephemeral: true })
-    }
-  } else if (subcommand === "remove") {
-    const user = interaction.options.getUser("user", true)
-    const success = await unblacklistUser(user.id)
+      await interaction.reply({ embeds: [embed] })
+    } else if (subcommand === "check") {
+      const user = interaction.options.getUser("user")!
 
-    if (success) {
+      const isUserBlacklisted = await isBlacklisted(user.id)
+
       const embed = new EmbedBuilder()
-        .setTitle("User Unblacklisted")
-        .setDescription(`${user.tag} has been removed from the blacklist.`)
-        .setColor(botInfo.colors.success)
-        .setFooter({ text: `Unblacklisted by ${interaction.user.tag}` })
+        .setTitle("Blacklist Check")
+        .setDescription(isUserBlacklisted ? `${user.tag} is blacklisted.` : `${user.tag} is not blacklisted.`)
+        .setColor(isUserBlacklisted ? botInfo.colors.error : botInfo.colors.success)
         .setTimestamp()
 
-      await interaction.reply({ embeds: [embed], ephemeral: true })
-    } else {
-      await interaction.reply({ content: "That user is not blacklisted.", ephemeral: true })
+      await interaction.reply({ embeds: [embed] })
     }
-  } else if (subcommand === "list") {
-    const blacklistedUsers = await getBlacklistedUsers()
-
-    if (blacklistedUsers.length === 0) {
-      return interaction.reply({ content: "There are no blacklisted users.", ephemeral: true })
-    }
-
-    // Fetch user data for each blacklisted user
-    const userPromises = blacklistedUsers.map((id) => interaction.client.users.fetch(id.userId).catch(() => null))
-    const users = await Promise.all(userPromises)
-    const validUsers = users.filter((user) => user !== null)
-
-    const embed = new EmbedBuilder()
-      .setTitle("Blacklisted Users")
-      .setColor(botInfo.colors.error)
-      .setDescription(
-        validUsers.length > 0
-          ? validUsers.map((user) => `${user?.tag} (${user?.id})`).join("\n")
-          : "Could not fetch user data for blacklisted IDs.",
-      )
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp()
-
-    await interaction.reply({ embeds: [embed], ephemeral: true })
+  } catch (error) {
+    logger.error("Error executing blacklist command:", error)
+    await interaction.reply({
+      content: "There was an error while executing this command!",
+      ephemeral: true,
+    })
   }
 }
 
 // Prefix command definition
 export const name = "blacklist"
 export const aliases = ["bl"]
-export const description = "Manages the bot's blacklist"
-export const usage = "<add/remove/list> [user] [reason]"
+export const description = "Manage blacklisted users"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  // Direct ID check as a fallback
-  const userId = String(message.author.id).trim()
-  logger.info(`Blacklist command attempted by user ID: "${userId}"`)
-
-  // Check if user is a developer using both methods
-  const isDev = isDeveloper(message.author) || userId === "171395713064894465"
-
-  if (!isDev) {
-    logUnauthorizedAttempt(userId, "blacklist")
-    logger.warn(`Permission denied for blacklist command. User ID: ${userId}`)
-    return message.reply("You don't have permission to use this command.")
-  }
-
-  logger.info(`Blacklist command authorized for user ${userId}`)
-
-  if (!args.length) {
-    return message.reply(`Usage: ${usage}`)
-  }
-
-  const subcommand = args[0].toLowerCase()
-
-  if (subcommand === "add") {
-    if (args.length < 2) {
-      return message.reply("Please provide a user to blacklist.")
+  try {
+    // Check if user is a developer
+    if (!isDeveloper(message.author)) {
+      return message.reply("You don't have permission to use this command!")
     }
 
-    let user
-    try {
-      user = message.mentions.users.first() || (await message.client.users.fetch(args[1]))
-    } catch {
-      return message.reply("Could not find that user.")
-    }
-
-    // Don't allow blacklisting developers
-    if (isDeveloper(user) || String(user.id).trim() === "171395713064894465") {
-      return message.reply("You cannot blacklist a developer.")
-    }
-
-    const reason = args.slice(2).join(" ") || "No reason provided"
-    const success = await blacklistUser(user.id)
-
-    if (success) {
-      const embed = new EmbedBuilder()
-        .setTitle("User Blacklisted")
-        .setDescription(`${user.tag} has been blacklisted from using the bot.`)
-        .setColor(botInfo.colors.error)
-        .addFields({ name: "Reason", value: reason })
-        .setFooter({ text: `Blacklisted by ${message.author.tag}` })
-        .setTimestamp()
-
-      await message.reply({ embeds: [embed] })
-    } else {
-      await message.reply("That user is already blacklisted.")
-    }
-  } else if (subcommand === "remove") {
-    if (args.length < 2) {
-      return message.reply("Please provide a user to unblacklist.")
-    }
-
-    let user
-    try {
-      user = message.mentions.users.first() || (await message.client.users.fetch(args[1]))
-    } catch {
-      return message.reply("Could not find that user.")
-    }
-
-    const success = await unblacklistUser(user.id)
-
-    if (success) {
-      const embed = new EmbedBuilder()
-        .setTitle("User Unblacklisted")
-        .setDescription(`${user.tag} has been removed from the blacklist.`)
-        .setColor(botInfo.colors.success)
-        .setFooter({ text: `Unblacklisted by ${message.author.tag}` })
-        .setTimestamp()
-
-      await message.reply({ embeds: [embed] })
-    } else {
-      await message.reply("That user is not blacklisted.")
-    }
-  } else if (subcommand === "list") {
-    const blacklistedUsers = await getBlacklistedUsers()
-
-    if (blacklistedUsers.length === 0) {
-      return message.reply("There are no blacklisted users.")
-    }
-
-    // Fetch user data for each blacklisted user
-    const userPromises = blacklistedUsers.map((id) => message.client.users.fetch(id.userId).catch(() => null))
-    const users = await Promise.all(userPromises)
-    const validUsers = users.filter((user) => user !== null)
-
-    const embed = new EmbedBuilder()
-      .setTitle("Blacklisted Users")
-      .setColor(botInfo.colors.error)
-      .setDescription(
-        validUsers.length > 0
-          ? validUsers.map((user) => `${user?.tag} (${user?.id})`).join("\n")
-          : "Could not fetch user data for blacklisted IDs.",
+    if (args.length === 0) {
+      return message.reply(
+        `Usage:\n${config.prefix}blacklist add <user> <reason>\n${config.prefix}blacklist remove <user>\n${config.prefix}blacklist list\n${config.prefix}blacklist check <user>`,
       )
-      .setFooter({ text: `Requested by ${message.author.tag}` })
-      .setTimestamp()
+    }
 
-    await message.reply({ embeds: [embed] })
-  } else {
-    await message.reply(`Unknown subcommand. Use 'add', 'remove', or 'list'.`)
+    const subcommand = args[0].toLowerCase()
+
+    if (subcommand === "add") {
+      if (args.length < 3) {
+        return message.reply(`Usage: ${config.prefix}blacklist add <user> <reason>`)
+      }
+
+      const userId = args[1].replace(/[<@!>]/g, "")
+      const reason = args.slice(2).join(" ")
+
+      try {
+        const user = await message.client.users.fetch(userId)
+
+        // Don't allow blacklisting developers
+        if (isDeveloper(user)) {
+          return message.reply("You cannot blacklist a developer!")
+        }
+
+        const success = await blacklistUser(user.id, reason, message.author.id)
+
+        if (success) {
+          const embed = new EmbedBuilder()
+            .setTitle("User Blacklisted")
+            .setDescription(`${user.tag} has been blacklisted.`)
+            .addFields({ name: "Reason", value: reason })
+            .setColor(botInfo.colors.error)
+            .setTimestamp()
+
+          await message.reply({ embeds: [embed] })
+        } else {
+          await message.reply("Failed to blacklist user!")
+        }
+      } catch (error) {
+        await message.reply("Invalid user ID!")
+      }
+    } else if (subcommand === "remove") {
+      if (args.length < 2) {
+        return message.reply(`Usage: ${config.prefix}blacklist remove <user>`)
+      }
+
+      const userId = args[1].replace(/[<@!>]/g, "")
+
+      try {
+        const user = await message.client.users.fetch(userId)
+        const success = await unblacklistUser(user.id)
+
+        if (success) {
+          const embed = new EmbedBuilder()
+            .setTitle("User Unblacklisted")
+            .setDescription(`${user.tag} has been removed from the blacklist.`)
+            .setColor(botInfo.colors.success)
+            .setTimestamp()
+
+          await message.reply({ embeds: [embed] })
+        } else {
+          await message.reply("Failed to unblacklist user! They may not be blacklisted.")
+        }
+      } catch (error) {
+        await message.reply("Invalid user ID!")
+      }
+    } else if (subcommand === "list") {
+      const blacklistedUsers = await getBlacklistedUsers()
+
+      if (blacklistedUsers.length === 0) {
+        return message.reply("There are no blacklisted users.")
+      }
+
+      // Fetch user objects for all blacklisted users
+      const userPromises = blacklistedUsers.map((user) => message.client.users.fetch(user.userId).catch(() => null))
+      const users = await Promise.all(userPromises)
+      const validUsers = users.filter((user): user is NonNullable<typeof user> => user !== null)
+
+      const embed = new EmbedBuilder()
+        .setTitle("Blacklisted Users")
+        .setDescription(
+          validUsers.length > 0
+            ? validUsers.map((user) => `${user.tag} (${user.id})`).join("\n")
+            : "No valid users found in blacklist.",
+        )
+        .setColor(botInfo.colors.primary)
+        .setTimestamp()
+
+      await message.reply({ embeds: [embed] })
+    } else if (subcommand === "check") {
+      if (args.length < 2) {
+        return message.reply(`Usage: ${config.prefix}blacklist check <user>`)
+      }
+
+      const userId = args[1].replace(/[<@!>]/g, "")
+
+      try {
+        const user = await message.client.users.fetch(userId)
+        const isUserBlacklisted = await isBlacklisted(user.id)
+
+        const embed = new EmbedBuilder()
+          .setTitle("Blacklist Check")
+          .setDescription(isUserBlacklisted ? `${user.tag} is blacklisted.` : `${user.tag} is not blacklisted.`)
+          .setColor(isUserBlacklisted ? botInfo.colors.error : botInfo.colors.success)
+          .setTimestamp()
+
+        await message.reply({ embeds: [embed] })
+      } catch (error) {
+        await message.reply("Invalid user ID!")
+      }
+    } else {
+      await message.reply(
+        `Unknown subcommand! Usage:\n${config.prefix}blacklist add <user> <reason>\n${config.prefix}blacklist remove <user>\n${config.prefix}blacklist list\n${config.prefix}blacklist check <user>`,
+      )
+    }
+  } catch (error) {
+    logger.error("Error executing blacklist command:", error)
+    await message.reply("There was an error while executing this command!")
   }
 }

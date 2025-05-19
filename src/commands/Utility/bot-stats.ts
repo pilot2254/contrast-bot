@@ -2,15 +2,21 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, Em
 import { botInfo } from "../../utils/bot-info"
 import { getStats } from "../../utils/stats-manager"
 import { config } from "../../utils/config"
+import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("bot-stats").setDescription("Shows statistics about the bot")
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const stats = getStats()
-  const embed = createStatsEmbed(stats, interaction.client.guilds.cache.size)
-  await interaction.reply({ embeds: [embed] })
+  try {
+    const stats = await getStats()
+    const embed = createStatsEmbed(stats, interaction.client.guilds.cache.size)
+    await interaction.reply({ embeds: [embed] })
+  } catch (error) {
+    logger.error("Error executing bot-stats command:", error)
+    await interaction.reply({ content: "There was an error while executing this command!", ephemeral: true })
+  }
 }
 
 // Prefix command definition
@@ -20,16 +26,21 @@ export const description = "Shows statistics about the bot"
 
 // Prefix command execution
 export async function run(message: Message, _args: string[]) {
-  const stats = getStats()
-  const embed = createStatsEmbed(stats, message.client.guilds.cache.size)
-  await message.reply({ embeds: [embed] })
+  try {
+    const stats = await getStats()
+    const embed = createStatsEmbed(stats, message.client.guilds.cache.size)
+    await message.reply({ embeds: [embed] })
+  } catch (error) {
+    logger.error("Error executing bot-stats command:", error)
+    await message.reply("There was an error while executing this command!")
+  }
 }
 
 // Helper function to create the stats embed
 function createStatsEmbed(stats: any, currentGuildCount: number) {
   // Get top 5 commands
   const topCommands =
-    Object.entries(stats.commandsUsed)
+    Object.entries(stats.commandsUsed || {})
       .sort(([, a]: any, [, b]: any) => b - a)
       .slice(0, 5)
       .map(([cmd, count]: any) => `${cmd}: ${count} uses`)

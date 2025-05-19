@@ -2,6 +2,18 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, Em
 import { botInfo } from "../../utils/bot-info"
 import { getPlayerStats } from "../../utils/rps-manager"
 
+// Define the PlayerStats interface to include lastPlayed
+interface PlayerStats {
+  userId: string
+  username: string
+  wins: number
+  losses: number
+  ties: number
+  totalGames: number
+  winRate: number
+  lastPlayed: number // Timestamp when the player last played
+}
+
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("rps-stats")
@@ -37,7 +49,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       { name: "Losses", value: `${stats.losses} (${lossRate}%)`, inline: true },
       { name: "Ties", value: `${stats.ties} (${tieRate}%)`, inline: true },
       { name: "Win/Loss Ratio", value: stats.losses > 0 ? (stats.wins / stats.losses).toFixed(2) : "∞", inline: true },
-      { name: "Last Played", value: `<t:${Math.floor(stats.lastUpdated / 1000)}:R>`, inline: true },
+      { name: "Last Played", value: `<t:${Math.floor(stats.lastPlayed / 1000)}:R>`, inline: true },
     )
     .setFooter({ text: `Requested by ${interaction.user.tag}` })
     .setTimestamp()
@@ -82,7 +94,7 @@ export async function run(message: Message, args: string[]) {
       { name: "Losses", value: `${stats.losses} (${lossRate}%)`, inline: true },
       { name: "Ties", value: `${stats.ties} (${tieRate}%)`, inline: true },
       { name: "Win/Loss Ratio", value: stats.losses > 0 ? (stats.wins / stats.losses).toFixed(2) : "∞", inline: true },
-      { name: "Last Played", value: `<t:${Math.floor(stats.lastUpdated / 1000)}:R>`, inline: true },
+      { name: "Last Played", value: `<t:${Math.floor(stats.lastPlayed / 1000)}:R>`, inline: true },
     )
     .setFooter({ text: `Requested by ${message.author.tag}` })
     .setTimestamp()

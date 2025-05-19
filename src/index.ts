@@ -5,7 +5,8 @@ import path from "path"
 import type { Command } from "./utils/types"
 import { initDatabase } from "./utils/database"
 import { loadCommands } from "./utils/command-loader"
-import fs from "fs" // Moved import statement to the top level
+import fs from "fs"
+import { initStats, updateGuildCount } from "./utils/stats-manager"
 
 // Create a new client instance with ALL required intents
 const client = new Client({
@@ -14,7 +15,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildPresences, // Add this for presence support
+    GatewayIntentBits.GuildPresences,
   ],
   partials: [Partials.Channel, Partials.Message, Partials.User, Partials.GuildMember],
 })
@@ -40,6 +41,10 @@ async function startBot() {
     // Initialize database
     await initDatabase()
     logger.info("Database initialized")
+
+    // Initialize stats
+    await initStats()
+    logger.info("Stats initialized")
 
     // Load commands
     const commandsPath = path.join(__dirname, "commands")
@@ -67,6 +72,9 @@ async function startBot() {
     // Login to Discord with your client's token
     await client.login(config.token)
     logger.info("Bot is now online!")
+
+    // Update guild count
+    await updateGuildCount(client.guilds.cache.size)
   } catch (error) {
     logger.error("Failed to start bot:", error)
     process.exit(1)
