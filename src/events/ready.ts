@@ -1,4 +1,4 @@
-import { type Client, Events, ActivityType } from "discord.js"
+import { type Client, Events, ActivityType, type PresenceStatusData } from "discord.js"
 import { logger } from "../utils/logger"
 import { updateGuildCount } from "../utils/stats-manager"
 
@@ -13,8 +13,51 @@ export async function execute(client: Client): Promise<void> {
   // Update guild count
   await updateGuildCount(client.guilds.cache.size)
 
-  // Set bot status
-  client.user.setActivity(`/help | Serving ${client.guilds.cache.size} servers`)
+  // Set bot status from environment variables
+  try {
+    // Get presence settings from environment
+    const status = (process.env.STATUS?.toLowerCase() || "online") as PresenceStatusData
+    const activityTypeStr = process.env.ACTIVITY_TYPE?.toUpperCase() || "PLAYING"
+    const activityName = process.env.ACTIVITY_NAME || `with Discord.js`
+    const activityUrl = process.env.ACTIVITY_URL
+
+    // Parse activity type
+    let activityType: ActivityType = ActivityType.Playing
+    switch (activityTypeStr) {
+      case "PLAYING":
+        activityType = ActivityType.Playing
+        break
+      case "STREAMING":
+        activityType = ActivityType.Streaming
+        break
+      case "LISTENING":
+        activityType = ActivityType.Listening
+        break
+      case "WATCHING":
+        activityType = ActivityType.Watching
+        break
+      case "COMPETING":
+        activityType = ActivityType.Competing
+        break
+    }
+
+    // Set status first
+    await client.user.setStatus(status)
+    logger.info(`Status set to: ${status}`)
+
+    // Set activity with proper options
+    const activityOptions: any = { type: activityType }
+    if (activityType === ActivityType.Streaming && activityUrl) {
+      activityOptions.url = activityUrl
+    }
+
+    await client.user.setActivity(activityName, activityOptions)
+    logger.info(`Activity set to: ${getActivityTypeName(activityType)} ${activityName}`)
+  } catch (error) {
+    logger.error("Failed to set presence:", error)
+    // Fallback to default presence
+    client.user.setActivity(`/help | Serving ${client.guilds.cache.size} servers`)
+  }
 }
 
 // Helper function to parse activity type

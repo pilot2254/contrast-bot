@@ -73,22 +73,21 @@ async function initTables(): Promise<void> {
 
     // Create blacklist table
     await db?.exec(`
-      CREATE TABLE IF NOT EXISTS blacklist (
-        user_id TEXT PRIMARY KEY,
-        reason TEXT,
-        added_at INTEGER NOT NULL,
-        added_by TEXT
-      )
-    `)
+  CREATE TABLE IF NOT EXISTS blacklisted_users (
+    userId TEXT PRIMARY KEY,
+    reason TEXT,
+    blacklistedBy TEXT,
+    timestamp INTEGER NOT NULL
+  )
+`)
 
     // Create maintenance_mode table
     await db?.exec(`
-      CREATE TABLE IF NOT EXISTS maintenance_mode (
-        id INTEGER PRIMARY KEY CHECK (id = 1),
-        enabled INTEGER NOT NULL DEFAULT 0,
-        updated_at INTEGER NOT NULL
-      )
-    `)
+  CREATE TABLE IF NOT EXISTS bot_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )
+`)
 
     // Create quotes table
     await db?.exec(`
@@ -137,16 +136,27 @@ async function initTables(): Promise<void> {
 
     // Create RPS tables
     await db?.exec(`
-      CREATE TABLE IF NOT EXISTS rps_stats (
-        user_id TEXT PRIMARY KEY,
-        username TEXT NOT NULL,
-        wins INTEGER NOT NULL DEFAULT 0,
-        losses INTEGER NOT NULL DEFAULT 0,
-        ties INTEGER NOT NULL DEFAULT 0,
-        total_games INTEGER NOT NULL DEFAULT 0,
-        last_updated INTEGER NOT NULL
-      )
-    `)
+  CREATE TABLE IF NOT EXISTS rps_players (
+    userId TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    ties INTEGER NOT NULL DEFAULT 0,
+    totalGames INTEGER NOT NULL DEFAULT 0,
+    winRate REAL NOT NULL DEFAULT 0,
+    lastPlayed INTEGER NOT NULL DEFAULT 0
+  )
+`)
+
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS rps_games (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId TEXT NOT NULL,
+    username TEXT NOT NULL,
+    result TEXT NOT NULL,
+    timestamp INTEGER NOT NULL
+  )
+`)
 
     // Create command_usage table
     await db?.exec(`
@@ -157,9 +167,10 @@ async function initTables(): Promise<void> {
     `)
 
     // Initialize maintenance mode if not exists
-    const maintenanceExists = await db?.get("SELECT 1 FROM maintenance_mode WHERE id = 1")
+    const maintenanceExists = await db?.get("SELECT 1 FROM bot_settings WHERE key = 'maintenance_mode'")
     if (!maintenanceExists) {
-      await db?.run("INSERT INTO maintenance_mode (id, enabled, updated_at) VALUES (1, 0, ?)", Date.now())
+      await db?.run("INSERT INTO bot_settings (key, value) VALUES ('maintenance_mode', '0')")
+      await db?.run("INSERT INTO bot_settings (key, value) VALUES ('maintenance_updated_at', ?)", Date.now())
     }
 
     // Initialize stats if not exists
