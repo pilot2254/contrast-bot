@@ -1,3 +1,5 @@
+# NOTE: CONTRAST BOT IS SWITCHING FROM .json TO better-sqlite3 SOON !
+
 ## Data Directory
 
 This directory is for storing .json data. If you want to reset your data, simply stop the bot and delete .json files in this directory.
