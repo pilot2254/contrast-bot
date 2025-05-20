@@ -38,7 +38,7 @@ function createInfoEmbed(uptime: number) {
       { name: "Node.js", value: botInfo.technical.node, inline: true },
       {
         name: "Links",
-        value: `[GitHub](${botInfo.links.github}) | [Support](${botInfo.links.support}) | [Invite Me](${botInfo.links.inviteMe})`,
+        value: `[Website](${botInfo.links.website}) | [Invite Me](${botInfo.links.inviteMe}) | [Support](${botInfo.links.supportServer}) | [GitHub](${botInfo.links.github})`,
       },
     )
     .setFooter({ text: `${botInfo.name} • Made with ❤️` })
