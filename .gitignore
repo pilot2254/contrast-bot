@@ -1,16 +1,8 @@
-# ContrastBot Files
-data/*.json
-data/*.csv
-data/*.tsv
-data/*.db
-data/*.db-shm
-data/*.db-wal
-data/*.sqlite
-data/*.sqlite-shm
-data/*.sqlite-wal
-data/*.sqlite3
-data/*.sqlite3-shm
-data/*.sqlite3-wal
+# Ignore everything in the data directory
+data/*
+
+# But don't ignore .md files in the data directory
+!data/*.md
 
 # Logs
 logs
