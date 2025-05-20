@@ -17,10 +17,16 @@
 ## Future Features
 
 ### Core Improvements
-- [ ] Database Integration
-  - [ ] Switch from JSON to a proper database
-  - [ ] Add migration scripts
-  - [ ] Implement data backup
+- [x] Database Integration
+  - [x] Switch from JSON to a proper database
+  - [x] Add migration scripts
+  - [x] Implement data backup
+
+- [x] Github Workflows
+  - [x] Enhance `ci.yml`
+  - [x] Add dependabot and dependency review
+  - [x] Add auto Release on Tag creation
+  - [x] Reject stale PR's
 
 ### Economy
 
@@ -124,19 +130,3 @@
   - [ ] Track relationships
   - [ ] Divorce system using `divorce.ts`
   - [ ] Categorize this shit into `E-Dating/` folder in `commands/` dir
-
-## Infrastructure
-- [ ] CI/CD Pipeline
-  - [ ] Automated testing
-  - [ ] Automated deployment
-  - [ ] Version management
-
-- [ ] Monitoring
-  - [ ] Error tracking
-  - [ ] Performance monitoring
-  - [ ] Usage statistics
-
-- [ ] Scalability
-  - [ ] Sharding support
-  - [ ] Load balancing
-  - [ ] Resource optimization
