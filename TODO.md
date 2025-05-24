@@ -55,10 +55,10 @@
     - [x] Total Spent
     - [x] Current Balance
 
-- [ ] `daily.ts`
-  - [ ] Claim daily currency
-  - [ ] Streak bonuses
-  - [ ] Cooldown system
+- [x] `daily.ts`
+  - [x] Claim daily currency
+  - [x] Streak bonuses
+  - [x] Cooldown system
 
 - [ ] `shop.ts`
   - [ ] Buy items with currency
