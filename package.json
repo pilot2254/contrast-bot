@@ -25,7 +25,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "@types/node": "^20.10.4",
+    "@types/node": "^22.15.21",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.3",
     "eslint": "^8.56.0",
