@@ -1,6 +1,5 @@
 import { logger } from "./logger"
-import path from "path"
-import fs from "fs"
+import { getDb } from "./database"
 
 // Define the feedback structure
 export interface Feedback {
@@ -11,74 +10,14 @@ export interface Feedback {
   timestamp: number
 }
 
-// Path to the data directory
-const DATA_DIR = path.join(process.cwd(), "data")
-
-// Filename for feedback data
-const FEEDBACK_FILENAME = path.join(DATA_DIR, "feedback.json")
-
-// Feedback data
-let feedbackData: Feedback[] = []
-
-/**
- * Ensures the data directory exists
- */
-function ensureDataDirectory(): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-      logger.info(`Created data directory at ${DATA_DIR}`)
-    }
-  } catch (error) {
-    logger.error("Failed to create data directory:", error)
-    throw error
-  }
-}
-
-/**
- * Loads feedback data from the JSON file
- */
-function loadFeedbackData(): Feedback[] {
-  try {
-    if (fs.existsSync(FEEDBACK_FILENAME)) {
-      const data = fs.readFileSync(FEEDBACK_FILENAME, "utf8")
-      return JSON.parse(data) as Feedback[]
-    } else {
-      return []
-    }
-  } catch (error) {
-    logger.error(`Failed to load feedback data from ${FEEDBACK_FILENAME}:`, error)
-    return []
-  }
-}
-
-/**
- * Saves feedback data to the JSON file
- */
-function saveFeedbackData(): void {
-  try {
-    const jsonData = JSON.stringify(feedbackData, null, 2)
-    fs.writeFileSync(FEEDBACK_FILENAME, jsonData, "utf8")
-  } catch (error) {
-    logger.error(`Failed to save feedback data to ${FEEDBACK_FILENAME}:`, error)
-  }
-}
-
 /**
  * Initializes the feedback manager
  */
-export function initFeedbackManager(): void {
+export async function initFeedbackManager(): Promise<void> {
   try {
-    // Ensure the data directory exists
-    ensureDataDirectory()
-
-    // Load feedback data from file
-    feedbackData = loadFeedbackData()
-    logger.info(`Loaded ${feedbackData.length} feedback entries`)
+    logger.info("Feedback manager initialized")
   } catch (error) {
     logger.error("Failed to initialize feedback manager:", error)
-    feedbackData = []
-    saveFeedbackData()
   }
 }
 
@@ -89,31 +28,58 @@ export function initFeedbackManager(): void {
  * @param content The feedback content
  * @returns The added feedback entry
  */
-export function addFeedback(userId: string, username: string, content: string): Feedback {
-  // Generate a new ID (max ID + 1, or 1 if no feedback exists)
-  const newId = feedbackData.length > 0 ? Math.max(...feedbackData.map((f) => f.id)) + 1 : 1
+export async function addFeedback(userId: string, username: string, content: string): Promise<Feedback> {
+  try {
+    const db = getDb()
+    const timestamp = Date.now()
 
-  const feedback: Feedback = {
-    id: newId,
-    userId,
-    username,
-    content,
-    timestamp: Date.now(),
+    const result = await db.run(
+      "INSERT INTO feedback (user_id, username, content, timestamp) VALUES (?, ?, ?, ?)",
+      userId,
+      username,
+      content,
+      timestamp,
+    )
+
+    const id = result.lastID || 0
+
+    logger.info(`Added feedback #${id} from ${username}`)
+
+    return {
+      id,
+      userId,
+      username,
+      content,
+      timestamp,
+    }
+  } catch (error) {
+    logger.error("Failed to add feedback:", error)
+    throw error
   }
-
-  feedbackData.push(feedback)
-  saveFeedbackData()
-  logger.info(`Added feedback #${newId} from ${username}`)
-
-  return feedback
 }
 
 /**
  * Gets all feedback entries
  * @returns Array of all feedback entries
  */
-export function getAllFeedback(): Feedback[] {
-  return [...feedbackData]
+export async function getAllFeedback(): Promise<Feedback[]> {
+  try {
+    const db = getDb()
+    const feedback = await db.all(
+      "SELECT id, user_id, username, content, timestamp FROM feedback ORDER BY timestamp DESC",
+    )
+
+    return feedback.map((entry) => ({
+      id: entry.id,
+      userId: entry.user_id,
+      username: entry.username,
+      content: entry.content,
+      timestamp: entry.timestamp,
+    }))
+  } catch (error) {
+    logger.error("Failed to get all feedback:", error)
+    return []
+  }
 }
 
 /**
@@ -121,9 +87,24 @@ export function getAllFeedback(): Feedback[] {
  * @param id The ID of the feedback to get
  * @returns The feedback entry, or undefined if not found
  */
-export function getFeedbackById(id: number): Feedback | undefined {
-  return feedbackData.find((f) => f.id === id)
-}
+export async function getFeedbackById(id: number): Promise<Feedback | undefined> {
+  try {
+    const db = getDb()
+    const feedback = await db.get("SELECT id, user_id, username, content, timestamp FROM feedback WHERE id = ?", id)
 
-// Initialize feedback manager when the module is imported
-initFeedbackManager()
+    if (!feedback) {
+      return undefined
+    }
+
+    return {
+      id: feedback.id,
+      userId: feedback.user_id,
+      username: feedback.username,
+      content: feedback.content,
+      timestamp: feedback.timestamp,
+    }
+  } catch (error) {
+    logger.error(`Failed to get feedback #${id}:`, error)
+    return undefined
+  }
+}

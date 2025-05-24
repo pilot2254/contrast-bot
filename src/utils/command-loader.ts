@@ -68,19 +68,28 @@ async function loadCommandFile(
     const commandModule = await import(filePath)
 
     // Set the category based on the folder structure
-    // This will override any category defined in the file
     commandModule.category = category
 
-    // Register slash command
-    if (commandModule.data) {
-      commands.set(commandModule.data.name, commandModule)
-      logger.info(`Loaded slash command: ${commandModule.data.name} (Category: ${category})`)
-    }
+    // Determine if this is a developer command based on category
+    const isDeveloperCommand = category === "Developer"
+    commandModule.isDeveloperCommand = isDeveloperCommand
 
-    // Register prefix command
-    if (commandModule.name) {
-      prefixCommands.set(commandModule.name, commandModule)
-      logger.info(`Loaded prefix command: ${commandModule.name} (Category: ${category})`)
+    if (isDeveloperCommand) {
+      // Developer commands: only register prefix commands
+      if (commandModule.name) {
+        prefixCommands.set(commandModule.name, commandModule)
+        logger.info(`Loaded developer prefix command: ${commandModule.name} (Category: ${category})`)
+      } else {
+        logger.warn(`Developer command file ${filePath} missing name property`)
+      }
+    } else {
+      // Regular commands: only register slash commands
+      if (commandModule.data) {
+        commands.set(commandModule.data.name, commandModule)
+        logger.info(`Loaded slash command: ${commandModule.data.name} (Category: ${category})`)
+      } else {
+        logger.warn(`Regular command file ${filePath} missing data property`)
+      }
     }
   } catch (error) {
     logger.error(`Error loading command from ${filePath}:`, error)

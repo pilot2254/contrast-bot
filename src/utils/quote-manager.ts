@@ -1,6 +1,5 @@
 import { logger } from "./logger"
-import path from "path"
-import fs from "fs"
+import { getDb } from "./database"
 
 // Define the quote structure
 export interface Quote {
@@ -11,77 +10,14 @@ export interface Quote {
   timestamp: number
 }
 
-// Path to the data directory (outside of src)
-const DATA_DIR = path.join(process.cwd(), "data")
-
-// Filename for quotes
-const QUOTES_FILENAME = path.join(DATA_DIR, "quotes.json")
-
-// Default quotes data
-const defaultQuotes: Quote[] = []
-
-// Quotes instance
-let quotes: Quote[] = []
-
-/**
- * Ensures the data directory exists
- */
-function ensureDataDirectory(): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-      logger.info(`Created data directory at ${DATA_DIR}`)
-    }
-  } catch (error) {
-    logger.error("Failed to create data directory:", error)
-    throw error
-  }
-}
-
-/**
- * Loads quotes from the JSON file
- */
-function loadQuotes(): Quote[] {
-  try {
-    if (fs.existsSync(QUOTES_FILENAME)) {
-      const data = fs.readFileSync(QUOTES_FILENAME, "utf8")
-      return JSON.parse(data) as Quote[]
-    } else {
-      return [...defaultQuotes]
-    }
-  } catch (error) {
-    logger.error(`Failed to load quotes from ${QUOTES_FILENAME}:`, error)
-    return [...defaultQuotes]
-  }
-}
-
-/**
- * Saves quotes to the JSON file
- */
-function saveQuotesToFile(): void {
-  try {
-    const jsonData = JSON.stringify(quotes, null, 2)
-    fs.writeFileSync(QUOTES_FILENAME, jsonData, "utf8")
-  } catch (error) {
-    logger.error(`Failed to save quotes to ${QUOTES_FILENAME}:`, error)
-  }
-}
-
 /**
  * Initializes the quotes manager
  */
-export function initQuotes(): void {
+export async function initQuotes(): Promise<void> {
   try {
-    // Ensure the data directory exists
-    ensureDataDirectory()
-
-    // Load quotes from file
-    quotes = loadQuotes()
-    logger.info(`Loaded ${quotes.length} quotes from file`)
+    logger.info("Quote manager initialized")
   } catch (error) {
     logger.error("Failed to initialize quotes:", error)
-    quotes = [...defaultQuotes]
-    saveQuotesToFile()
   }
 }
 
@@ -92,23 +28,34 @@ export function initQuotes(): void {
  * @param authorId The author's Discord ID
  * @returns The added quote
  */
-export function addQuote(text: string, author: string, authorId: string): Quote {
-  // Generate a new ID (max ID + 1, or 1 if no quotes exist)
-  const newId = quotes.length > 0 ? Math.max(...quotes.map((q) => q.id)) + 1 : 1
+export async function addQuote(text: string, author: string, authorId: string): Promise<Quote> {
+  try {
+    const db = getDb()
+    const timestamp = Date.now()
 
-  const quote: Quote = {
-    id: newId,
-    text,
-    author,
-    authorId,
-    timestamp: Date.now(),
+    const result = await db.run(
+      "INSERT INTO quotes (text, author, author_id, timestamp) VALUES (?, ?, ?, ?)",
+      text,
+      author,
+      authorId,
+      timestamp,
+    )
+
+    const id = result.lastID || 0
+
+    logger.info(`Added quote #${id} by ${author}`)
+
+    return {
+      id,
+      text,
+      author,
+      authorId,
+      timestamp,
+    }
+  } catch (error) {
+    logger.error("Failed to add quote:", error)
+    throw error
   }
-
-  quotes.push(quote)
-  saveQuotesToFile()
-  logger.info(`Added quote #${newId} by ${author}`)
-
-  return quote
 }
 
 /**
@@ -116,26 +63,72 @@ export function addQuote(text: string, author: string, authorId: string): Quote 
  * @param id The ID of the quote to get
  * @returns The quote, or undefined if not found
  */
-export function getQuoteById(id: number): Quote | undefined {
-  return quotes.find((q) => q.id === id)
+export async function getQuoteById(id: number): Promise<Quote | undefined> {
+  try {
+    const db = getDb()
+    const quote = await db.get("SELECT id, text, author, author_id, timestamp FROM quotes WHERE id = ?", id)
+
+    if (!quote) {
+      return undefined
+    }
+
+    return {
+      id: quote.id,
+      text: quote.text,
+      author: quote.author,
+      authorId: quote.author_id,
+      timestamp: quote.timestamp,
+    }
+  } catch (error) {
+    logger.error(`Failed to get quote #${id}:`, error)
+    return undefined
+  }
 }
 
 /**
  * Gets a random quote
  * @returns A random quote, or undefined if no quotes exist
  */
-export function getRandomQuote(): Quote | undefined {
-  if (quotes.length === 0) return undefined
-  return quotes[Math.floor(Math.random() * quotes.length)]
+export async function getRandomQuote(): Promise<Quote | undefined> {
+  try {
+    const db = getDb()
+    const quote = await db.get("SELECT id, text, author, author_id, timestamp FROM quotes ORDER BY RANDOM() LIMIT 1")
+
+    if (!quote) {
+      return undefined
+    }
+
+    return {
+      id: quote.id,
+      text: quote.text,
+      author: quote.author,
+      authorId: quote.author_id,
+      timestamp: quote.timestamp,
+    }
+  } catch (error) {
+    logger.error("Failed to get random quote:", error)
+    return undefined
+  }
 }
 
 /**
  * Gets all quotes
  * @returns Array of all quotes
  */
-export function getAllQuotes(): Quote[] {
-  return [...quotes]
-}
+export async function getAllQuotes(): Promise<Quote[]> {
+  try {
+    const db = getDb()
+    const quotes = await db.all("SELECT id, text, author, author_id, timestamp FROM quotes ORDER BY id")
 
-// Initialize quotes when the module is imported
-initQuotes()
+    return quotes.map((quote) => ({
+      id: quote.id,
+      text: quote.text,
+      author: quote.author,
+      authorId: quote.author_id,
+      timestamp: quote.timestamp,
+    }))
+  } catch (error) {
+    logger.error("Failed to get all quotes:", error)
+    return []
+  }
+}

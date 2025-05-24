@@ -1,191 +1,43 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
-import { botInfo } from "../../utils/bot-info"
-import { getAllFeedback, getFeedbackById } from "../../utils/feedback-manager"
-import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
-
-// Slash command definition
-export const data = new SlashCommandBuilder()
-  .setName("view-feedback")
-  .setDescription("View user feedback (Developer only)")
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName("list")
-      .setDescription("Lists recent feedback")
-      .addIntegerOption((option) =>
-        option
-          .setName("limit")
-          .setDescription("Number of feedback entries to show (default: 10)")
-          .setRequired(false)
-          .setMinValue(1)
-          .setMaxValue(25),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName("get")
-      .setDescription("Gets a specific feedback entry")
-      .addIntegerOption((option) =>
-        option.setName("id").setDescription("The ID of the feedback to view").setRequired(true).setMinValue(1),
-      ),
-  )
-
-// Slash command execution
-export async function execute(interaction: ChatInputCommandInteraction) {
-  // Check if user is a developer
-  if (!isDeveloper(interaction.user)) {
-    logUnauthorizedAttempt(interaction.user.id, "view-feedback")
-    return interaction.reply({
-      content: "You don't have permission to use this command.",
-      ephemeral: true,
-    })
-  }
-
-  const subcommand = interaction.options.getSubcommand()
-
-  if (subcommand === "list") {
-    const limit = interaction.options.getInteger("limit") || 10
-    const feedback = getAllFeedback()
-
-    if (feedback.length === 0) {
-      return interaction.reply({
-        content: "No feedback has been submitted yet.",
-        ephemeral: true,
-      })
-    }
-
-    // Sort by newest first
-    feedback.sort((a, b) => b.timestamp - a.timestamp)
-
-    // Take only the requested number of entries
-    const recentFeedback = feedback.slice(0, limit)
-
-    const embed = new EmbedBuilder()
-      .setTitle("Recent Feedback")
-      .setColor(botInfo.colors.primary)
-      .setDescription(
-        recentFeedback
-          .map(
-            (f) =>
-              `**#${f.id}** - From ${f.username} - <t:${Math.floor(f.timestamp / 1000)}:R>\n${f.content.substring(0, 100)}${f.content.length > 100 ? "..." : ""}`,
-          )
-          .join("\n\n"),
-      )
-      .setFooter({ text: `Showing ${recentFeedback.length} of ${feedback.length} feedback entries` })
-      .setTimestamp()
-
-    await interaction.reply({ embeds: [embed], ephemeral: true })
-  } else if (subcommand === "get") {
-    const id = interaction.options.getInteger("id", true)
-    const feedback = getFeedbackById(id)
-
-    if (!feedback) {
-      return interaction.reply({
-        content: `Feedback #${id} not found.`,
-        ephemeral: true,
-      })
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`Feedback #${feedback.id}`)
-      .setColor(botInfo.colors.primary)
-      .addFields(
-        { name: "From", value: feedback.username, inline: true },
-        { name: "User ID", value: feedback.userId, inline: true },
-        { name: "Submitted", value: `<t:${Math.floor(feedback.timestamp / 1000)}:F>`, inline: true },
-        { name: "Content", value: feedback.content },
-      )
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp()
-
-    await interaction.reply({ embeds: [embed], ephemeral: true })
-  }
-}
+import type { Message } from "discord.js"
+import { getAllFeedback } from "../../utils/feedback-manager"
 
 // Prefix command definition
 export const name = "view-feedback"
-export const aliases = ["viewfeedback", "feedback-list"]
-export const description = "View user feedback (Developer only)"
-export const usage = "list [limit] | get <id>"
+export const aliases = ["feedback-list", "vf"]
+export const description = "View all user feedback"
+export const usage = "[limit]"
+export const category = "Developer"
 
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
-  // Check if user is a developer
-  if (!isDeveloper(message.author)) {
-    logUnauthorizedAttempt(message.author.id, "view-feedback")
-    return message.reply("You don't have permission to use this command.")
-  }
-
-  if (!args.length) {
-    return message.reply(`Usage: ${usage}`)
-  }
-
-  const subcommand = args[0].toLowerCase()
-
-  if (subcommand === "list") {
-    const limit = args[1] ? Number.parseInt(args[1]) : 10
-
-    if (isNaN(limit) || limit < 1 || limit > 25) {
-      return message.reply("Please provide a valid limit between 1 and 25.")
-    }
-
-    const feedback = getAllFeedback()
+  try {
+    const feedback = await getAllFeedback()
 
     if (feedback.length === 0) {
-      return message.reply("No feedback has been submitted yet.")
+      return message.reply("No feedback found.")
     }
 
-    // Sort by newest first
-    feedback.sort((a, b) => b.timestamp - a.timestamp)
+    const limit = Number.parseInt(args[0]) || Math.min(feedback.length, 10)
+    const limitedFeedback = feedback.slice(0, limit)
 
-    // Take only the requested number of entries
-    const recentFeedback = feedback.slice(0, limit)
+    let response = `📝 **Recent Feedback (${limitedFeedback.length} entries):**\n\n`
 
-    const embed = new EmbedBuilder()
-      .setTitle("Recent Feedback")
-      .setColor(botInfo.colors.primary)
-      .setDescription(
-        recentFeedback
-          .map(
-            (f) =>
-              `**#${f.id}** - From ${f.username} - <t:${Math.floor(f.timestamp / 1000)}:R>\n${f.content.substring(0, 100)}${f.content.length > 100 ? "..." : ""}`,
-          )
-          .join("\n\n"),
-      )
-      .setFooter({ text: `Showing ${recentFeedback.length} of ${feedback.length} feedback entries` })
-      .setTimestamp()
+    limitedFeedback.forEach((entry, index) => {
+      const date = new Date(entry.timestamp).toLocaleDateString()
+      response += `**${index + 1}.** by ${entry.username} (${date})\n`
+      response += `${entry.content}\n\n`
+    })
 
-    await message.reply({ embeds: [embed] })
-  } else if (subcommand === "get") {
-    if (args.length < 2) {
-      return message.reply("Please provide a feedback ID.")
+    // Split message if too long
+    if (response.length > 2000) {
+      const chunks = response.match(/[\s\S]{1,2000}/g) || []
+      for (const chunk of chunks) {
+        await message.reply(chunk)
+      }
+    } else {
+      await message.reply(response)
     }
-
-    const id = Number.parseInt(args[1])
-
-    if (isNaN(id) || id < 1) {
-      return message.reply("Please provide a valid feedback ID.")
-    }
-
-    const feedback = getFeedbackById(id)
-
-    if (!feedback) {
-      return message.reply(`Feedback #${id} not found.`)
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`Feedback #${feedback.id}`)
-      .setColor(botInfo.colors.primary)
-      .addFields(
-        { name: "From", value: feedback.username, inline: true },
-        { name: "User ID", value: feedback.userId, inline: true },
-        { name: "Submitted", value: `<t:${Math.floor(feedback.timestamp / 1000)}:F>`, inline: true },
-        { name: "Content", value: feedback.content },
-      )
-      .setFooter({ text: `Requested by ${message.author.tag}` })
-      .setTimestamp()
-
-    await message.reply({ embeds: [embed] })
-  } else {
-    await message.reply(`Unknown subcommand. Usage: ${usage}`)
+  } catch (error) {
+    await message.reply("❌ An error occurred while fetching feedback.")
   }
 }

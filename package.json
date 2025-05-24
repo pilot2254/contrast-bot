@@ -10,14 +10,19 @@
     "deploy": "ts-node src/utils/deploy-commands.ts",
     "clear-guild-commands": "ts-node src/utils/clear-guild-commands.ts",
     "watch": "tsc -w",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "migrate": "ts-node src/utils/migrate-json-to-sqlite.ts",
+    "init-db": "ts-node src/utils/init-database.ts"
   },
   "keywords": ["discord", "bot", "typescript"],
   "author": "pilot2254",
   "license": "MIT",
   "dependencies": {
     "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1"
+    "dotenv": "^16.3.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",

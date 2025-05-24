@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("uptime").setDescription("Shows how long the bot has been online")
@@ -7,16 +7,6 @@ export const data = new SlashCommandBuilder().setName("uptime").setDescription("
 export async function execute(interaction: ChatInputCommandInteraction) {
   const uptime = formatUptime(interaction.client.uptime || 0)
   await interaction.reply(`Bot has been online for: **${uptime}**`)
-}
-
-// Prefix command definition
-export const name = "uptime"
-export const description = "Shows how long the bot has been online"
-
-// Prefix command execution
-export async function run(message: Message, _args: string[]) {
-  const uptime = formatUptime(message.client.uptime || 0)
-  await message.reply(`Bot has been online for: **${uptime}**`)
 }
 
 // Helper function to format uptime

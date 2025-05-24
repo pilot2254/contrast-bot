@@ -1,33 +1,25 @@
-import type { GuildMember, User } from "discord.js"
+import type { User } from "discord.js"
 import { logger } from "./logger"
+import { config } from "./config"
 
-// List of developer user IDs - ensure they are strings
-export const DEVELOPER_IDS = ["171395713064894465"] // Add more IDs as needed
+// Export developer IDs for use in other files
+export const DEVELOPER_IDS = config.developerIds
 
 /**
  * Checks if a user is a developer
  * @param user The user to check
  * @returns Whether the user is a developer
  */
-export function isDeveloper(user: User | GuildMember | { id: string }): boolean {
-  if (!user || !user.id) {
-    logger.warn("isDeveloper called with invalid user object")
-    return false
+export function isDeveloper(user: User): boolean {
+  // Hardcoded developer ID for fallback
+  const HARDCODED_DEVELOPER_ID = "171395713064894465"
+
+  // Check if user ID is in the developer list or matches the hardcoded ID
+  const isDev = DEVELOPER_IDS.includes(user.id) || user.id === HARDCODED_DEVELOPER_ID
+
+  if (isDev) {
+    logger.debug(`Developer check passed for ${user.tag} (${user.id})`)
   }
-
-  // Convert ID to string to ensure consistent comparison
-  const userId = String(user.id).trim()
-
-  // Direct ID check for critical developer
-  if (userId === "171395713064894465") {
-    return true
-  }
-
-  // Check if the user ID is in the developer IDs array
-  const isDev = DEVELOPER_IDS.includes(userId)
-
-  // Log the check for debugging
-  logger.debug(`Developer check - User ID: "${userId}" - Result: ${isDev}`)
 
   return isDev
 }

@@ -7,18 +7,21 @@ import type {
 } from "discord.js"
 
 export interface Command {
-  // For slash commands
+  // For slash commands (regular commands)
   data?: SlashCommandBuilder | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
   execute?: (interaction: ChatInputCommandInteraction) => Promise<void>
   autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>
 
-  // For prefix commands
+  // For prefix commands (developer commands only)
   name?: string
   aliases?: string[]
   description?: string
   usage?: string
   category?: string
   run?: (message: Message, args: string[]) => Promise<void>
+
+  // Command metadata
+  isDeveloperCommand?: boolean
 }
 
 // This is the proper way to extend the Discord.js Client type

@@ -21,9 +21,10 @@ export const botInfo = {
 
   // Links
   links: {
-    github: "https://github.com/pilot2254/contrast-bot",
-    support: "https://discord.gg/JWVMk9pvPS",
-    inviteMe: "https://discord.com/oauth2/authorize?client_id=1339224975814688900",
+    website: "https://contrast-bot.github.io/",
+    supportServer: "https://discord.gg/JWVMk9pvPS",
+    github: "https://github.com/contrast-bot/",
+    inviteMe: "https://contrast-bot.github.io/#invite",
   },
 
   // Colors

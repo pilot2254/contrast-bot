@@ -1,8 +1,7 @@
 import { logger } from "./logger"
-import path from "path"
-import fs from "fs"
+import { getDb } from "./database"
 
-// Update the UserReputation interface to store who the user has given reputation to
+// Update the UserReputation interface
 export interface UserReputation {
   userId: string
   username: string
@@ -10,186 +9,229 @@ export interface UserReputation {
   receivedNegative: number
   givenPositive: number
   givenNegative: number
-  givenTo: Record<string, boolean> // userId -> true (permanent record of who received rep)
-}
-
-// Path to the data directory
-const DATA_DIR = path.join(process.cwd(), "data")
-
-// Filename for reputation data
-const REPUTATION_FILENAME = path.join(DATA_DIR, "reputation.json")
-
-// Reputation data
-let reputationData: UserReputation[] = []
-
-// Remove the REP_COOLDOWN constant since we're not using a time-based cooldown anymore
-
-/**
- * Ensures the data directory exists
- */
-function ensureDataDirectory(): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true })
-      logger.info(`Created data directory at ${DATA_DIR}`)
-    }
-  } catch (error) {
-    logger.error("Failed to create data directory:", error)
-    throw error
-  }
-}
-
-/**
- * Loads reputation data from the JSON file
- */
-function loadReputationData(): UserReputation[] {
-  try {
-    if (fs.existsSync(REPUTATION_FILENAME)) {
-      const data = fs.readFileSync(REPUTATION_FILENAME, "utf8")
-      return JSON.parse(data) as UserReputation[]
-    } else {
-      return []
-    }
-  } catch (error) {
-    logger.error(`Failed to load reputation data from ${REPUTATION_FILENAME}:`, error)
-    return []
-  }
-}
-
-/**
- * Saves reputation data to the JSON file
- */
-function saveReputationData(): void {
-  try {
-    const jsonData = JSON.stringify(reputationData, null, 2)
-    fs.writeFileSync(REPUTATION_FILENAME, jsonData, "utf8")
-  } catch (error) {
-    logger.error(`Failed to save reputation data to ${REPUTATION_FILENAME}:`, error)
-  }
 }
 
 /**
  * Initializes the reputation manager
  */
-export function initReputationManager(): void {
+export async function initReputationManager(): Promise<void> {
   try {
-    // Ensure the data directory exists
-    ensureDataDirectory()
-
-    // Load reputation data from file
-    reputationData = loadReputationData()
-    logger.info(`Loaded reputation data for ${reputationData.length} users`)
+    logger.info("Reputation manager initialized")
   } catch (error) {
     logger.error("Failed to initialize reputation manager:", error)
-    reputationData = []
-    saveReputationData()
   }
 }
 
-// Update the getOrCreateUserRep function to initialize givenTo
-function getOrCreateUserRep(userId: string, username: string): UserReputation {
-  let userRep = reputationData.find((rep) => rep.userId === userId)
-
-  if (!userRep) {
-    userRep = {
-      userId,
-      username,
-      receivedPositive: 0,
-      receivedNegative: 0,
-      givenPositive: 0,
-      givenNegative: 0,
-      givenTo: {},
+/**
+ * Checks if a user can give reputation to another user
+ * @param giverId The ID of the user giving reputation
+ * @param receiverId The ID of the user receiving reputation
+ * @returns Object indicating if reputation can be given and a message
+ */
+export async function canGiveReputation(
+  giverId: string,
+  receiverId: string,
+): Promise<{ canGive: boolean; message: string }> {
+  try {
+    // Users can't give reputation to themselves
+    if (giverId === receiverId) {
+      return { canGive: false, message: "You can't give reputation to yourself." }
     }
-    reputationData.push(userRep)
-  }
 
-  // Update username in case it changed
-  userRep.username = username
+    const db = getDb()
 
-  return userRep
-}
+    // Check if the giver has already given reputation to the receiver
+    const existingRep = await db.get(
+      "SELECT 1 FROM reputation_given WHERE giver_id = ? AND receiver_id = ?",
+      giverId,
+      receiverId,
+    )
 
-// Update the canGiveReputation function to check if the user has already given reputation
-export function canGiveReputation(giverId: string, receiverId: string): { canGive: boolean; message: string } {
-  // Users can't give reputation to themselves
-  if (giverId === receiverId) {
-    return { canGive: false, message: "You can't give reputation to yourself." }
-  }
-
-  // Check if the giver has already given reputation to the receiver
-  const giver = reputationData.find((rep) => rep.userId === giverId)
-
-  if (giver && giver.givenTo[receiverId]) {
-    return {
-      canGive: false,
-      message: "You have already given reputation to this user. You can only give reputation to a user once.",
+    if (existingRep) {
+      return {
+        canGive: false,
+        message: "You have already given reputation to this user. You can only give reputation to a user once.",
+      }
     }
-  }
 
-  return { canGive: true, message: "" }
+    return { canGive: true, message: "" }
+  } catch (error) {
+    logger.error(`Failed to check if ${giverId} can give reputation to ${receiverId}:`, error)
+    return { canGive: false, message: "An error occurred while checking reputation permissions." }
+  }
 }
 
-// Update the givePositiveRep function to record that the user has given reputation
-export function givePositiveRep(
+/**
+ * Gives positive reputation to a user
+ * @param giverId The ID of the user giving reputation
+ * @param giverName The username of the user giving reputation
+ * @param receiverId The ID of the user receiving reputation
+ * @param receiverName The username of the user receiving reputation
+ * @returns Object indicating success and a message
+ */
+export async function givePositiveRep(
   giverId: string,
   giverName: string,
   receiverId: string,
   receiverName: string,
-): { success: boolean; message: string } {
-  const canGive = canGiveReputation(giverId, receiverId)
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const canGive = await canGiveReputation(giverId, receiverId)
 
-  if (!canGive.canGive) {
-    return { success: false, message: canGive.message }
-  }
+    if (!canGive.canGive) {
+      return { success: false, message: canGive.message }
+    }
 
-  const giver = getOrCreateUserRep(giverId, giverName)
-  const receiver = getOrCreateUserRep(receiverId, receiverName)
+    const db = getDb()
+    const now = Date.now()
 
-  // Update reputation counts
-  giver.givenPositive++
-  receiver.receivedPositive++
+    // Start a transaction
+    await db.exec("BEGIN TRANSACTION")
 
-  // Record that the giver has given reputation to this receiver
-  giver.givenTo[receiverId] = true
+    try {
+      // Update or insert giver's record
+      await db.run(
+        `INSERT INTO reputation (user_id, username, given_positive, updated_at) 
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         username = ?,
+         given_positive = given_positive + 1,
+         updated_at = ?`,
+        giverId,
+        giverName,
+        now,
+        giverName,
+        now,
+      )
 
-  // Save changes
-  saveReputationData()
+      // Update or insert receiver's record
+      await db.run(
+        `INSERT INTO reputation (user_id, username, received_positive, updated_at) 
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         username = ?,
+         received_positive = received_positive + 1,
+         updated_at = ?`,
+        receiverId,
+        receiverName,
+        now,
+        receiverName,
+        now,
+      )
 
-  return {
-    success: true,
-    message: `You gave positive reputation to ${receiverName}. They now have ${receiver.receivedPositive} positive reputation.`,
+      // Record that the giver has given reputation to this receiver
+      await db.run(
+        "INSERT INTO reputation_given (giver_id, receiver_id, is_positive, timestamp) VALUES (?, ?, 1, ?)",
+        giverId,
+        receiverId,
+        now,
+      )
+
+      // Commit the transaction
+      await db.exec("COMMIT")
+
+      // Get the updated receiver's reputation for the message
+      const receiver = await db.get("SELECT received_positive FROM reputation WHERE user_id = ?", receiverId)
+
+      return {
+        success: true,
+        message: `You gave positive reputation to ${receiverName}. They now have ${receiver?.received_positive || 1} positive reputation.`,
+      }
+    } catch (error) {
+      // Rollback on error
+      await db.exec("ROLLBACK")
+      throw error
+    }
+  } catch (error) {
+    logger.error(`Failed to give positive reputation from ${giverId} to ${receiverId}:`, error)
+    return { success: false, message: "An error occurred while giving reputation." }
   }
 }
 
-// Update the giveNegativeRep function to record that the user has given reputation
-export function giveNegativeRep(
+/**
+ * Gives negative reputation to a user
+ * @param giverId The ID of the user giving reputation
+ * @param giverName The username of the user giving reputation
+ * @param receiverId The ID of the user receiving reputation
+ * @param receiverName The username of the user receiving reputation
+ * @returns Object indicating success and a message
+ */
+export async function giveNegativeRep(
   giverId: string,
   giverName: string,
   receiverId: string,
   receiverName: string,
-): { success: boolean; message: string } {
-  const canGive = canGiveReputation(giverId, receiverId)
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const canGive = await canGiveReputation(giverId, receiverId)
 
-  if (!canGive.canGive) {
-    return { success: false, message: canGive.message }
-  }
+    if (!canGive.canGive) {
+      return { success: false, message: canGive.message }
+    }
 
-  const giver = getOrCreateUserRep(giverId, giverName)
-  const receiver = getOrCreateUserRep(receiverId, receiverName)
+    const db = getDb()
+    const now = Date.now()
 
-  // Update reputation counts
-  giver.givenNegative++
-  receiver.receivedNegative++
+    // Start a transaction
+    await db.exec("BEGIN TRANSACTION")
 
-  // Record that the giver has given reputation to this receiver
-  giver.givenTo[receiverId] = true
+    try {
+      // Update or insert giver's record
+      await db.run(
+        `INSERT INTO reputation (user_id, username, given_negative, updated_at) 
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         username = ?,
+         given_negative = given_negative + 1,
+         updated_at = ?`,
+        giverId,
+        giverName,
+        now,
+        giverName,
+        now,
+      )
 
-  // Save changes
-  saveReputationData()
+      // Update or insert receiver's record
+      await db.run(
+        `INSERT INTO reputation (user_id, username, received_negative, updated_at) 
+         VALUES (?, ?, 1, ?)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         username = ?,
+         received_negative = received_negative + 1,
+         updated_at = ?`,
+        receiverId,
+        receiverName,
+        now,
+        receiverName,
+        now,
+      )
 
-  return {
-    success: true,
-    message: `You gave negative reputation to ${receiverName}. They now have ${receiver.receivedNegative} negative reputation.`,
+      // Record that the giver has given reputation to this receiver
+      await db.run(
+        "INSERT INTO reputation_given (giver_id, receiver_id, is_positive, timestamp) VALUES (?, ?, 0, ?)",
+        giverId,
+        receiverId,
+        now,
+      )
+
+      // Commit the transaction
+      await db.exec("COMMIT")
+
+      // Get the updated receiver's reputation for the message
+      const receiver = await db.get("SELECT received_negative FROM reputation WHERE user_id = ?", receiverId)
+
+      return {
+        success: true,
+        message: `You gave negative reputation to ${receiverName}. They now have ${receiver?.received_negative || 1} negative reputation.`,
+      }
+    } catch (error) {
+      // Rollback on error
+      await db.exec("ROLLBACK")
+      throw error
+    }
+  } catch (error) {
+    logger.error(`Failed to give negative reputation from ${giverId} to ${receiverId}:`, error)
+    return { success: false, message: "An error occurred while giving reputation." }
   }
 }
 
@@ -198,11 +240,32 @@ export function giveNegativeRep(
  * @param userId The user's ID
  * @returns The user's reputation data or undefined if not found
  */
-export function getUserReputation(userId: string): UserReputation | undefined {
-  return reputationData.find((rep) => rep.userId === userId)
-}
+export async function getUserReputation(userId: string): Promise<UserReputation | undefined> {
+  try {
+    const db = getDb()
+    const user = await db.get(
+      `SELECT user_id, username, received_positive, received_negative, 
+       given_positive, given_negative FROM reputation WHERE user_id = ?`,
+      userId,
+    )
 
-// Add this new function after getUserReputation and before the initialization
+    if (!user) {
+      return undefined
+    }
+
+    return {
+      userId: user.user_id,
+      username: user.username,
+      receivedPositive: user.received_positive,
+      receivedNegative: user.received_negative,
+      givenPositive: user.given_positive,
+      givenNegative: user.given_negative,
+    }
+  } catch (error) {
+    logger.error(`Failed to get reputation for user ${userId}:`, error)
+    return undefined
+  }
+}
 
 /**
  * Gets the top users by specified reputation criteria
@@ -210,34 +273,51 @@ export function getUserReputation(userId: string): UserReputation | undefined {
  * @param limit The maximum number of users to return
  * @returns Array of top users
  */
-export function getTopUsers(sortBy = "receivedTotal", limit = 10): UserReputation[] {
-  // Filter out users with no reputation activity
-  const activeUsers = reputationData.filter(
-    (rep) => rep.receivedPositive > 0 || rep.receivedNegative > 0 || rep.givenPositive > 0 || rep.givenNegative > 0,
-  )
+export async function getTopUsers(sortBy = "receivedTotal", limit = 10): Promise<UserReputation[]> {
+  try {
+    const db = getDb()
 
-  // Sort by the specified criteria
-  return activeUsers
-    .sort((a, b) => {
-      switch (sortBy.toLowerCase()) {
-        case "receivedpositive":
-          return b.receivedPositive - a.receivedPositive
-        case "receivednegative":
-          return b.receivedNegative - a.receivedNegative
-        case "receivedtotal":
-          return b.receivedPositive - b.receivedNegative - (a.receivedPositive - a.receivedNegative)
-        case "givenpositive":
-          return b.givenPositive - a.givenPositive
-        case "givennegative":
-          return b.givenNegative - a.givenNegative
-        case "giventotal":
-          return b.givenPositive - b.givenNegative - (a.givenPositive - a.givenNegative)
-        default:
-          return b.receivedPositive - b.receivedNegative - (a.receivedPositive - a.receivedNegative)
-      }
-    })
-    .slice(0, limit)
+    let orderBy: string
+    switch (sortBy.toLowerCase()) {
+      case "receivedpositive":
+        orderBy = "received_positive DESC"
+        break
+      case "receivednegative":
+        orderBy = "received_negative DESC"
+        break
+      case "givenpositive":
+        orderBy = "given_positive DESC"
+        break
+      case "givennegative":
+        orderBy = "given_negative DESC"
+        break
+      case "giventotal":
+        orderBy = "(given_positive - given_negative) DESC"
+        break
+      case "receivedtotal":
+      default:
+        orderBy = "(received_positive - received_negative) DESC"
+        break
+    }
+
+    const users = await db.all(
+      `SELECT user_id, username, received_positive, received_negative, 
+       given_positive, given_negative FROM reputation 
+       WHERE (received_positive > 0 OR received_negative > 0 OR given_positive > 0 OR given_negative > 0)
+       ORDER BY ${orderBy} LIMIT ?`,
+      limit,
+    )
+
+    return users.map((user) => ({
+      userId: user.user_id,
+      username: user.username,
+      receivedPositive: user.received_positive,
+      receivedNegative: user.received_negative,
+      givenPositive: user.given_positive,
+      givenNegative: user.given_negative,
+    }))
+  } catch (error) {
+    logger.error(`Failed to get top users by ${sortBy}:`, error)
+    return []
+  }
 }
-
-// Initialize reputation manager when the module is imported
-initReputationManager()

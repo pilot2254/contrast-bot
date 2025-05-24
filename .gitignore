@@ -1,6 +1,8 @@
-# ContrastBot Files
-data/*.json
-data/*.csv
+# Ignore everything in the data directory
+data/*
+
+# But don't ignore .md files in the data directory
+!data/*.md
 
 # Logs
 logs

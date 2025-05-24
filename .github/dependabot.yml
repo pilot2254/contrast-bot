@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # Enable version updates for npm
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Specify labels for npm pull requests
+    labels:
+      - "npm"
+      - "dependencies"
+    # Allow up to 10 open pull requests for npm dependencies
+    
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Specify labels for GitHub Actions pull requests
+    labels:
+      - "github-actions"
+      - "dependencies"

@@ -1,6 +1,11 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
+import { logger } from "../../utils/logger"
+import { recordGame, getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
-import { type RPSChoice, getBotChoice, determineResult, recordGame, getPlayerStats } from "../../utils/rps-manager"
+
+// Define types
+type RPSChoice = "rock" | "paper" | "scissors"
+type RPSResult = "win" | "loss" | "tie"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -12,97 +17,84 @@ export const data = new SlashCommandBuilder()
       .setDescription("Your choice")
       .setRequired(true)
       .addChoices(
-        { name: "Rock", value: "rock" },
-        { name: "Paper", value: "paper" },
-        { name: "Scissors", value: "scissors" },
+        { name: "🪨 Rock", value: "rock" },
+        { name: "📄 Paper", value: "paper" },
+        { name: "✂️ Scissors", value: "scissors" },
       ),
   )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const playerChoice = interaction.options.getString("choice") as RPSChoice
-  const botChoice = getBotChoice()
-  const result = determineResult(playerChoice, botChoice)
+  try {
+    const userChoice = interaction.options.getString("choice") as RPSChoice
+    const botChoice = getRandomChoice()
+    const result = determineWinner(userChoice, botChoice)
 
-  // Get bot user
-  const botUser = interaction.client.user
+    // Record the game
+    await recordGame(interaction.user.id, interaction.user.username, result)
 
-  // Record the game
-  recordGame(interaction.user.id, interaction.user.username, botUser?.id || "unknown", botUser?.tag || "Bot", result)
+    // Get updated stats
+    const stats = await getPlayerStats(interaction.user.id)
 
-  // Get player stats
-  const playerStats = getPlayerStats(interaction.user.id)
+    // Create and send embed
+    const embed = createResultEmbed(interaction.user.username, userChoice, botChoice, result, stats)
 
-  // Create embed
-  const embed = new EmbedBuilder()
-    .setTitle("Rock Paper Scissors")
-    .setColor(getResultColor(result))
-    .addFields(
-      { name: "Your Choice", value: formatChoice(playerChoice), inline: true },
-      { name: "Bot's Choice", value: formatChoice(botChoice), inline: true },
-      { name: "Result", value: formatResult(result), inline: true },
-    )
-    .setFooter({ text: `Your Stats: ${playerStats?.wins}W ${playerStats?.losses}L ${playerStats?.ties}T` })
-    .setTimestamp()
-
-  await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] })
+  } catch (error) {
+    logger.error("Error executing rps command:", error)
+    await interaction.reply({ content: "There was an error while playing Rock Paper Scissors!", ephemeral: true })
+  }
 }
 
-// Prefix command definition
-export const name = "rps"
-export const aliases = ["rockpaperscissors"]
-export const description = "Play Rock Paper Scissors against the bot"
-export const usage = "<rock|paper|scissors>"
-
-// Prefix command execution
-export async function run(message: Message, args: string[]) {
-  if (!args.length) {
-    return message.reply(`Usage: ${usage}`)
-  }
-
-  const input = args[0].toLowerCase()
-  let playerChoice: RPSChoice
-
-  // Validate input
-  if (input === "rock" || input === "r") {
-    playerChoice = "rock"
-  } else if (input === "paper" || input === "p") {
-    playerChoice = "paper"
-  } else if (input === "scissors" || input === "s") {
-    playerChoice = "scissors"
-  } else {
-    return message.reply("Invalid choice. Please choose rock, paper, or scissors.")
-  }
-
-  const botChoice = getBotChoice()
-  const result = determineResult(playerChoice, botChoice)
-
-  // Get bot user
-  const botUser = message.client.user
-
-  // Record the game
-  recordGame(message.author.id, message.author.username, botUser?.id || "unknown", botUser?.tag || "Bot", result)
-
-  // Get player stats
-  const playerStats = getPlayerStats(message.author.id)
-
-  // Create embed
-  const embed = new EmbedBuilder()
-    .setTitle("Rock Paper Scissors")
-    .setColor(getResultColor(result))
-    .addFields(
-      { name: "Your Choice", value: formatChoice(playerChoice), inline: true },
-      { name: "Bot's Choice", value: formatChoice(botChoice), inline: true },
-      { name: "Result", value: formatResult(result), inline: true },
-    )
-    .setFooter({ text: `Your Stats: ${playerStats?.wins}W ${playerStats?.losses}L ${playerStats?.ties}T` })
-    .setTimestamp()
-
-  await message.reply({ embeds: [embed] })
+// Helper function to get a random choice
+function getRandomChoice(): RPSChoice {
+  const choices: RPSChoice[] = ["rock", "paper", "scissors"]
+  return choices[Math.floor(Math.random() * choices.length)]
 }
 
-// Helper function to get color based on result
-function getResultColor(result: string): number {
+// Helper function to determine the winner
+function determineWinner(userChoice: RPSChoice, botChoice: RPSChoice): RPSResult {
+  if (userChoice === botChoice) {
+    return "tie"
+  }
+
+  if (
+    (userChoice === "rock" && botChoice === "scissors") ||
+    (userChoice === "paper" && botChoice === "rock") ||
+    (userChoice === "scissors" && botChoice === "paper")
+  ) {
+    return "win"
+  }
+
+  return "loss"
+}
+
+// Helper function to get emoji for choice
+function getChoiceEmoji(choice: RPSChoice): string {
+  switch (choice) {
+    case "rock":
+      return "🪨"
+    case "paper":
+      return "📄"
+    case "scissors":
+      return "✂️"
+  }
+}
+
+// Helper function to get result text
+function getResultText(result: RPSResult): string {
+  switch (result) {
+    case "win":
+      return "🏆 You Win!"
+    case "loss":
+      return "❌ You Lose!"
+    default:
+      return "🤝 It's a Tie!"
+  }
+}
+
+// Helper function to get result color
+function getResultColor(result: RPSResult): number {
   switch (result) {
     case "win":
       return botInfo.colors.success
@@ -113,26 +105,28 @@ function getResultColor(result: string): number {
   }
 }
 
-// Helper function to format choice with emoji
-function formatChoice(choice: RPSChoice): string {
-  switch (choice) {
-    case "rock":
-      return "🪨 Rock"
-    case "paper":
-      return "📄 Paper"
-    case "scissors":
-      return "✂️ Scissors"
-  }
-}
-
-// Helper function to format result
-function formatResult(result: string): string {
-  switch (result) {
-    case "win":
-      return "🏆 You Win!"
-    case "loss":
-      return "❌ You Lose!"
-    default:
-      return "🤝 It's a Tie!"
-  }
+// Helper function to create the result embed
+function createResultEmbed(
+  username: string,
+  userChoice: RPSChoice,
+  botChoice: RPSChoice,
+  result: RPSResult,
+  stats: any,
+) {
+  return new EmbedBuilder()
+    .setTitle("Rock Paper Scissors")
+    .setDescription(`${username} chose ${getChoiceEmoji(userChoice)} vs Bot's ${getChoiceEmoji(botChoice)}`)
+    .setColor(getResultColor(result))
+    .addFields(
+      { name: "Result", value: getResultText(result), inline: false },
+      {
+        name: "Your Stats",
+        value: stats
+          ? `Wins: ${stats.wins} | Losses: ${stats.losses} | Ties: ${stats.ties} | Win Rate: ${((stats.wins / stats.totalGames) * 100).toFixed(1)}%`
+          : "No stats available",
+        inline: false,
+      },
+    )
+    .setFooter({ text: `Played by ${username}` })
+    .setTimestamp()
 }

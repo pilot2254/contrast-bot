@@ -7,7 +7,7 @@ import { isDeveloper } from "../utils/permissions"
 export const name = Events.InteractionCreate
 export const once = false
 
-export async function execute(interaction: Interaction) {
+export async function execute(interaction: Interaction): Promise<void> {
   // Handle slash commands
   if (interaction.isChatInputCommand()) {
     const command = interaction.client.commands.get(interaction.commandName)
@@ -18,26 +18,39 @@ export async function execute(interaction: Interaction) {
     }
 
     // Check if user is blacklisted
-    if (isBlacklisted(interaction.user.id)) {
-      return interaction.reply({
+    const blacklisted = await isBlacklisted(interaction.user.id)
+    if (blacklisted) {
+      await interaction.reply({
         content: "You have been blacklisted from using this bot.",
         ephemeral: true,
       })
+      return
     }
 
     // Check if maintenance mode is enabled (allow developers to bypass)
-    if (isMaintenanceMode() && !isDeveloper(interaction.user)) {
-      return interaction.reply({
+    const maintenanceMode = await isMaintenanceMode()
+    if (maintenanceMode && !isDeveloper(interaction.user)) {
+      await interaction.reply({
         content: "The bot is currently in maintenance mode. Please try again later.",
         ephemeral: true,
       })
+      return
     }
 
     try {
       // Track command usage
-      trackCommand(interaction.commandName)
+      await trackCommand(interaction.commandName)
 
-      await command.execute?.(interaction)
+      // Execute the command
+      if (command.execute) {
+        await command.execute(interaction)
+      } else {
+        logger.warn(`Command ${interaction.commandName} has no execute method.`)
+        await interaction.reply({
+          content: "This command is not properly implemented.",
+          ephemeral: true,
+        })
+      }
     } catch (error) {
       logger.error(`Error executing command ${interaction.commandName}:`, error)
 
@@ -47,9 +60,13 @@ export async function execute(interaction: Interaction) {
       }
 
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(replyOptions)
+        await interaction.followUp(replyOptions).catch((e) => {
+          logger.error("Failed to send error followUp:", e)
+        })
       } else {
-        await interaction.reply(replyOptions)
+        await interaction.reply(replyOptions).catch((e) => {
+          logger.error("Failed to send error reply:", e)
+        })
       }
     }
   }

@@ -1,117 +1,133 @@
+import { getDb } from "./database"
 import { logger } from "./logger"
-import { loadJsonData, saveJsonData, ensureDataDirectory } from "./data-directory"
-
-// Filename for blacklist
-const BLACKLIST_FILENAME = "blacklist.json"
-
-// Blacklist data structure
-interface BlacklistData {
-  users: string[]
-  maintenanceMode: boolean
-}
-
-// Default blacklist data
-const defaultBlacklist: BlacklistData = {
-  users: [],
-  maintenanceMode: false,
-}
-
-// Blacklist instance
-let blacklist: BlacklistData
-
-/**
- * Initializes the blacklist
- */
-export function initBlacklist(): void {
-  try {
-    // Ensure the data directory exists
-    ensureDataDirectory()
-
-    // Load blacklist from file
-    blacklist = loadJsonData<BlacklistData>(BLACKLIST_FILENAME, defaultBlacklist)
-    logger.info("Blacklist loaded from file")
-  } catch (error) {
-    logger.error("Failed to initialize blacklist:", error)
-    blacklist = { ...defaultBlacklist }
-    saveBlacklist()
-  }
-}
-
-/**
- * Saves the blacklist to file
- */
-function saveBlacklist(): void {
-  try {
-    saveJsonData(BLACKLIST_FILENAME, blacklist)
-  } catch (error) {
-    logger.error("Failed to save blacklist:", error)
-  }
-}
-
-/**
- * Adds a user to the blacklist
- * @param userId The ID of the user to blacklist
- * @returns True if the user was added, false if they were already blacklisted
- */
-export function blacklistUser(userId: string): boolean {
-  if (blacklist.users.includes(userId)) {
-    return false
-  }
-
-  blacklist.users.push(userId)
-  saveBlacklist()
-  return true
-}
-
-/**
- * Removes a user from the blacklist
- * @param userId The ID of the user to unblacklist
- * @returns True if the user was removed, false if they weren't blacklisted
- */
-export function unblacklistUser(userId: string): boolean {
-  const index = blacklist.users.indexOf(userId)
-  if (index === -1) {
-    return false
-  }
-
-  blacklist.users.splice(index, 1)
-  saveBlacklist()
-  return true
-}
 
 /**
  * Checks if a user is blacklisted
  * @param userId The ID of the user to check
  * @returns Whether the user is blacklisted
  */
-export function isBlacklisted(userId: string): boolean {
-  return blacklist.users.includes(userId)
+export async function isBlacklisted(userId: string): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const result = await db.get("SELECT * FROM blacklisted_users WHERE userId = ?", [userId])
+    return !!result
+  } catch (error) {
+    logger.error("Error checking if user is blacklisted:", error)
+    return false
+  }
 }
 
 /**
- * Gets the list of blacklisted users
- * @returns Array of blacklisted user IDs
+ * Adds a user to the blacklist
+ * @param userId The ID of the user to blacklist
+ * @param reason The reason for blacklisting
+ * @param blacklistedBy The ID of the user who blacklisted
+ * @returns Whether the operation was successful
  */
-export function getBlacklistedUsers(): string[] {
-  return [...blacklist.users]
+export async function blacklistUser(
+  userId: string,
+  reason = "No reason provided",
+  blacklistedBy = "Unknown",
+): Promise<boolean> {
+  try {
+    const db = await getDb()
+
+    // Check if user is already blacklisted
+    const existing = await db.get("SELECT * FROM blacklisted_users WHERE userId = ?", [userId])
+    if (existing) {
+      return false
+    }
+
+    // Add user to blacklist
+    await db.run("INSERT INTO blacklisted_users (userId, reason, blacklistedBy, timestamp) VALUES (?, ?, ?, ?)", [
+      userId,
+      reason,
+      blacklistedBy,
+      Date.now(),
+    ])
+
+    logger.info(`User ${userId} blacklisted by ${blacklistedBy} for reason: ${reason}`)
+    return true
+  } catch (error) {
+    logger.error("Error blacklisting user:", error)
+    return false
+  }
+}
+
+/**
+ * Removes a user from the blacklist
+ * @param userId The ID of the user to unblacklist
+ * @returns Whether the operation was successful
+ */
+export async function unblacklistUser(userId: string): Promise<boolean> {
+  try {
+    const db = await getDb()
+
+    // Check if user is blacklisted
+    const existing = await db.get("SELECT * FROM blacklisted_users WHERE userId = ?", [userId])
+    if (!existing) {
+      return false
+    }
+
+    // Remove user from blacklist
+    await db.run("DELETE FROM blacklisted_users WHERE userId = ?", [userId])
+
+    logger.info(`User ${userId} removed from blacklist`)
+    return true
+  } catch (error) {
+    logger.error("Error unblacklisting user:", error)
+    return false
+  }
+}
+
+/**
+ * Gets all blacklisted users
+ * @returns An array of blacklisted users
+ */
+export async function getBlacklistedUsers(): Promise<
+  { userId: string; reason: string; blacklistedBy: string; timestamp: number }[]
+> {
+  try {
+    const db = await getDb()
+    const users = await db.all("SELECT * FROM blacklisted_users")
+    return users
+  } catch (error) {
+    logger.error("Error getting blacklisted users:", error)
+    return []
+  }
 }
 
 /**
  * Sets the maintenance mode
  * @param enabled Whether maintenance mode should be enabled
+ * @returns Whether the operation was successful
  */
-export function setMaintenanceMode(enabled: boolean): void {
-  blacklist.maintenanceMode = enabled
-  saveBlacklist()
+export async function setMaintenanceMode(enabled: boolean): Promise<boolean> {
+  try {
+    const db = await getDb()
+    await db.run(
+      "INSERT INTO bot_settings (key, value) VALUES ('maintenance_mode', ?) ON CONFLICT(key) DO UPDATE SET value = ?",
+      [enabled.toString(), enabled.toString()],
+    )
+    logger.info(`Maintenance mode ${enabled ? "enabled" : "disabled"}`)
+    return true
+  } catch (error) {
+    logger.error("Error setting maintenance mode:", error)
+    return false
+  }
 }
 
 /**
  * Checks if maintenance mode is enabled
  * @returns Whether maintenance mode is enabled
  */
-export function isMaintenanceMode(): boolean {
-  return blacklist.maintenanceMode
+export async function isMaintenanceMode(): Promise<boolean> {
+  try {
+    const db = await getDb()
+    const result = await db.get("SELECT value FROM bot_settings WHERE key = 'maintenance_mode'")
+    return result?.value === "true"
+  } catch (error) {
+    logger.error("Error checking maintenance mode:", error)
+    return false
+  }
 }
-
-// Initialize blacklist when the module is imported
-initBlacklist()
