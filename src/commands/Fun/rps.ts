@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { logger } from "../../utils/logger"
-import { recordRPSGame, recordGame, getPlayerStats } from "../../utils/rps-manager"
+import { recordGame, getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Define types
@@ -31,7 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const result = determineWinner(userChoice, botChoice)
 
     // Record the game
-    await recordRPSGame(interaction.user.id, interaction.user.username, userChoice, botChoice, result)
+    await recordGame(interaction.user.id, interaction.user.username, result)
 
     // Get updated stats
     const stats = await getPlayerStats(interaction.user.id)
@@ -43,47 +43,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error) {
     logger.error("Error executing rps command:", error)
     await interaction.reply({ content: "There was an error while playing Rock Paper Scissors!", ephemeral: true })
-  }
-}
-
-// Prefix command definition
-export const name = "rps"
-export const aliases = ["rockpaperscissors"]
-export const description = "Play Rock Paper Scissors against the bot"
-export const usage = "<rock|paper|scissors>"
-
-// Prefix command execution
-export async function run(message: Message, args: string[]) {
-  try {
-    const userInput = args[0]?.toLowerCase()
-
-    if (!userInput || !["rock", "paper", "scissors", "r", "p", "s"].includes(userInput)) {
-      return message.reply(`Usage: ${usage}`)
-    }
-
-    // Convert shorthand to full choice
-    let userChoice: RPSChoice
-    if (userInput === "r") userChoice = "rock"
-    else if (userInput === "p") userChoice = "paper"
-    else if (userInput === "s") userChoice = "scissors"
-    else userChoice = userInput as RPSChoice
-
-    const botChoice = getRandomChoice()
-    const result = determineWinner(userChoice, botChoice)
-
-    // Record the game
-    await recordGame(message.author.id, message.author.username, result)
-
-    // Get updated stats
-    const stats = await getPlayerStats(message.author.id)
-
-    // Create and send embed
-    const embed = createResultEmbed(message.author.username, userChoice, botChoice, result, stats)
-
-    await message.reply({ embeds: [embed] })
-  } catch (error) {
-    logger.error("Error executing rps command:", error)
-    await message.reply("There was an error while playing Rock Paper Scissors!")
   }
 }
 

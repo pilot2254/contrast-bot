@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { giveReputation, getReputation } from "../../utils/reputation-manager"
+import { givePositiveRep, getUserReputation } from "../../utils/reputation-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -42,12 +42,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           return interaction.reply({ content: "You cannot give reputation to bots!", ephemeral: true })
         }
 
-        const result = await giveReputation(
+        const result = await givePositiveRep(
           interaction.user.id,
+          interaction.user.username,
           targetUser.id,
-          targetUser.tag,
-          reason,
-          interaction.guild?.id || null,
+          targetUser.username,
         )
 
         if (!result.success) {
@@ -56,8 +55,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         const embed = new EmbedBuilder()
           .setTitle("Reputation Given!")
-          .setDescription(`${targetUser.tag} now has **${result.newReputation}** reputation points`)
-          .addFields({ name: "Reason", value: reason })
+          .setDescription(result.message)
           .setColor(botInfo.colors.success)
           .setTimestamp()
 
@@ -67,14 +65,24 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
       case "check": {
         const targetUser = interaction.options.getUser("user") || interaction.user
-        const reputation = await getReputation(targetUser.id, interaction.guild?.id || null)
+        const reputation = await getUserReputation(targetUser.id)
+
+        if (!reputation) {
+          return interaction.reply({
+            content: `${targetUser.id === interaction.user.id ? "You don't" : `${targetUser.username} doesn't`} have any reputation yet.`,
+            ephemeral: true,
+          })
+        }
+
+        const total = reputation.receivedPositive - reputation.receivedNegative
 
         const embed = new EmbedBuilder()
           .setTitle(`${targetUser.tag}'s Reputation`)
-          .setDescription(`**${reputation.points}** reputation points`)
+          .setDescription(`**${total}** total reputation`)
           .addFields(
-            { name: "Reputation Given", value: reputation.given.toString(), inline: true },
-            { name: "Reputation Received", value: reputation.received.toString(), inline: true },
+            { name: "Positive", value: reputation.receivedPositive.toString(), inline: true },
+            { name: "Negative", value: reputation.receivedNegative.toString(), inline: true },
+            { name: "Given", value: reputation.givenPositive.toString(), inline: true },
           )
           .setColor(botInfo.colors.primary)
           .setThumbnail(targetUser.displayAvatarURL())

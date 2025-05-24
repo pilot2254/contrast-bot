@@ -18,7 +18,7 @@ export async function run(message: Message, args: string[]) {
       try {
         // Try to get an existing invite first
         const invites = await guild.invites.fetch().catch(() => null)
-        let invite = invites?.first()
+        let invite = invites?.first() || null
 
         // If no existing invite, try to create one
         if (!invite) {

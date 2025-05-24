@@ -11,19 +11,21 @@ export const category = "Developer"
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
   try {
-    const limit = Number.parseInt(args[0]) || 10
-    const feedback = await getAllFeedback(limit)
+    const feedback = await getAllFeedback()
 
     if (feedback.length === 0) {
       return message.reply("No feedback found.")
     }
 
-    let response = `📝 **Recent Feedback (${feedback.length} entries):**\n\n`
+    const limit = Number.parseInt(args[0]) || Math.min(feedback.length, 10)
+    const limitedFeedback = feedback.slice(0, limit)
 
-    feedback.forEach((entry, index) => {
-      const date = new Date(entry.createdAt).toLocaleDateString()
-      response += `**${index + 1}.** [${entry.type.toUpperCase()}] by ${entry.userTag} (${date})\n`
-      response += `${entry.message}\n\n`
+    let response = `📝 **Recent Feedback (${limitedFeedback.length} entries):**\n\n`
+
+    limitedFeedback.forEach((entry, index) => {
+      const date = new Date(entry.timestamp).toLocaleDateString()
+      response += `**${index + 1}.** by ${entry.username} (${date})\n`
+      response += `${entry.content}\n\n`
     })
 
     // Split message if too long

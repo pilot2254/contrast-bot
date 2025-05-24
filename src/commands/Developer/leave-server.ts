@@ -1,4 +1,4 @@
-import type { Message } from "discord.js"
+import type { Message, TextChannel } from "discord.js"
 
 // Prefix command definition
 export const name = "leave-server"
@@ -31,7 +31,13 @@ export async function run(message: Message, args: string[]) {
     )
 
     const filter = (m: Message) => m.author.id === message.author.id && ["yes", "no"].includes(m.content.toLowerCase())
-    const collected = await message.channel.awaitMessages({ filter, max: 1, time: 30000 })
+
+    // Type guard to ensure we have a text-based channel
+    if (!message.channel || !("awaitMessages" in message.channel)) {
+      return message.reply("❌ This command cannot be used in this type of channel.")
+    }
+
+    const collected = await (message.channel as TextChannel).awaitMessages({ filter, max: 1, time: 30000 })
 
     if (!collected.size) {
       return message.reply("❌ Confirmation timed out. Server leave cancelled.")

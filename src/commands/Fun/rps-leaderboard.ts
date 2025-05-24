@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { getRPSLeaderboard } from "../../utils/rps-manager"
+import { getTopPlayers } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -32,7 +32,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
 
   try {
-    const leaderboard = await getRPSLeaderboard(sortBy as "wins" | "winrate" | "total", limit)
+    const leaderboard = await getTopPlayers(limit)
 
     if (leaderboard.length === 0) {
       return interaction.reply({ content: "No RPS data found!", ephemeral: true })
@@ -44,16 +44,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTimestamp()
 
     const description = leaderboard
-      .map((user, index) => {
+      .map((user: any, index: number) => {
         const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
-        const winRate = user.total > 0 ? ((user.wins / user.total) * 100).toFixed(1) : "0.0"
+        const winRate = user.totalGames > 0 ? ((user.wins / user.totalGames) * 100).toFixed(1) : "0.0"
 
         if (sortBy === "winrate") {
-          return `${medal} **${user.userTag}** - ${winRate}% (${user.wins}W/${user.losses}L/${user.ties}T)`
+          return `${medal} **${user.username}** - ${winRate}% (${user.wins}W/${user.losses}L/${user.ties}T)`
         } else if (sortBy === "total") {
-          return `${medal} **${user.userTag}** - ${user.total} games (${user.wins}W/${user.losses}L/${user.ties}T)`
+          return `${medal} **${user.username}** - ${user.totalGames} games (${user.wins}W/${user.losses}L/${user.ties}T)`
         } else {
-          return `${medal} **${user.userTag}** - ${user.wins} wins (${winRate}% WR)`
+          return `${medal} **${user.username}** - ${user.wins} wins (${winRate}% WR)`
         }
       })
       .join("\n")

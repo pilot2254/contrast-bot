@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { getRPSStats } from "../../utils/rps-manager"
+import { getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -13,9 +13,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const targetUser = interaction.options.getUser("user") || interaction.user
 
   try {
-    const stats = await getRPSStats(targetUser.id)
+    const stats = await getPlayerStats(targetUser.id)
 
-    const winRate = stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : "0.0"
+    if (!stats || stats.totalGames === 0) {
+      return interaction.reply({
+        content: `${targetUser.id === interaction.user.id ? "You haven't" : `${targetUser.username} hasn't`} played any Rock Paper Scissors games yet!`,
+        ephemeral: true,
+      })
+    }
+
+    const winRate = ((stats.wins / stats.totalGames) * 100).toFixed(1)
 
     const embed = new EmbedBuilder()
       .setTitle(`🎮 ${targetUser.tag}'s RPS Statistics`)
@@ -25,15 +32,11 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         { name: "🏆 Wins", value: stats.wins.toString(), inline: true },
         { name: "💀 Losses", value: stats.losses.toString(), inline: true },
         { name: "🤝 Ties", value: stats.ties.toString(), inline: true },
-        { name: "📊 Total Games", value: stats.total.toString(), inline: true },
+        { name: "📊 Total Games", value: stats.totalGames.toString(), inline: true },
         { name: "📈 Win Rate", value: `${winRate}%`, inline: true },
         { name: "🎯 Score", value: `${stats.wins - stats.losses}`, inline: true },
       )
       .setTimestamp()
-
-    if (stats.total === 0) {
-      embed.setDescription("No games played yet! Use `/rps` to start playing.")
-    }
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {

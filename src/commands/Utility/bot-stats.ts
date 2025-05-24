@@ -10,12 +10,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   try {
     const stats = await getStats()
 
+    // Get most used command
+    const commandEntries = Object.entries(stats.commandsUsed)
+    const mostUsedCommand =
+      commandEntries.length > 0 ? commandEntries.reduce((a, b) => (a[1] > b[1] ? a : b))[0] : "None"
+
     const embed = new EmbedBuilder()
       .setTitle("Bot Statistics")
       .setColor(botInfo.colors.primary)
       .addFields(
         { name: "Total Commands Used", value: stats.totalCommands.toString(), inline: true },
-        { name: "Most Used Command", value: stats.mostUsedCommand || "None", inline: true },
+        { name: "Most Used Command", value: mostUsedCommand, inline: true },
         { name: "Servers", value: interaction.client.guilds.cache.size.toString(), inline: true },
         { name: "Users", value: interaction.client.users.cache.size.toString(), inline: true },
         { name: "Channels", value: interaction.client.channels.cache.size.toString(), inline: true },

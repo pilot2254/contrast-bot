@@ -1,5 +1,5 @@
 import type { Message } from "discord.js"
-import { addToBlacklist, removeFromBlacklist, isBlacklisted } from "../../utils/blacklist-manager"
+import { blacklistUser, unblacklistUser, isBlacklisted } from "../../utils/blacklist-manager"
 
 // Prefix command definition
 export const name = "blacklist"
@@ -21,21 +21,21 @@ export async function run(message: Message, args: string[]) {
   try {
     switch (action) {
       case "add": {
-        const result = await addToBlacklist(userId, reason, message.author.id)
-        if (result.success) {
+        const success = await blacklistUser(userId, reason, message.author.id)
+        if (success) {
           await message.reply(`✅ User ${userId} has been blacklisted. Reason: ${reason}`)
         } else {
-          await message.reply(`❌ ${result.message}`)
+          await message.reply(`❌ Failed to blacklist user or user already blacklisted.`)
         }
         break
       }
 
       case "remove": {
-        const result = await removeFromBlacklist(userId)
-        if (result.success) {
+        const success = await unblacklistUser(userId)
+        if (success) {
           await message.reply(`✅ User ${userId} has been removed from the blacklist.`)
         } else {
-          await message.reply(`❌ ${result.message}`)
+          await message.reply(`❌ Failed to remove user from blacklist or user not blacklisted.`)
         }
         break
       }

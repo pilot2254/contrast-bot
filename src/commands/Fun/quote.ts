@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { addQuote, getRandomQuote, getQuotesByUser } from "../../utils/quote-manager"
+import { addQuote, getRandomQuote, getAllQuotes } from "../../utils/quote-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -16,9 +16,9 @@ export const data = new SlashCommandBuilder()
   .addSubcommand((subcommand) => subcommand.setName("random").setDescription("Get a random quote"))
   .addSubcommand((subcommand) =>
     subcommand
-      .setName("user")
-      .setDescription("Get quotes from a specific user")
-      .addUserOption((option) => option.setName("user").setDescription("User to get quotes from").setRequired(true)),
+      .setName("list")
+      .setDescription("Get all quotes")
+      .addUserOption((option) => option.setName("user").setDescription("Filter by user").setRequired(false)),
   )
 
 // Slash command execution
@@ -31,7 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const text = interaction.options.getString("text", true)
         const author = interaction.options.getUser("author") || interaction.user
 
-        await addQuote(text, author.id, author.tag, interaction.guild?.id || null)
+        await addQuote(text, author.username, author.id)
 
         await interaction.reply({
           content: `Quote added successfully! Attributed to ${author.tag}`,
@@ -41,7 +41,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
 
       case "random": {
-        const quote = await getRandomQuote(interaction.guild?.id || null)
+        const quote = await getRandomQuote()
 
         if (!quote) {
           return interaction.reply({ content: "No quotes found!", ephemeral: true })
@@ -49,29 +49,35 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         const embed = new EmbedBuilder()
           .setDescription(`"${quote.text}"`)
-          .setFooter({ text: `— ${quote.authorTag}` })
+          .setFooter({ text: `— ${quote.author}` })
           .setColor(botInfo.colors.primary)
-          .setTimestamp(new Date(quote.createdAt))
+          .setTimestamp(quote.timestamp)
 
         await interaction.reply({ embeds: [embed] })
         break
       }
 
-      case "user": {
-        const user = interaction.options.getUser("user", true)
-        const quotes = await getQuotesByUser(user.id, interaction.guild?.id || null)
+      case "list": {
+        const user = interaction.options.getUser("user")
+        const quotes = await getAllQuotes()
 
-        if (quotes.length === 0) {
-          return interaction.reply({ content: `No quotes found for ${user.tag}`, ephemeral: true })
+        let filteredQuotes = quotes
+        if (user) {
+          filteredQuotes = quotes.filter((q) => q.authorId === user.id)
         }
 
-        const randomQuote = quotes[Math.floor(Math.random() * quotes.length)]
+        if (filteredQuotes.length === 0) {
+          const message = user ? `No quotes found for ${user.tag}` : "No quotes found!"
+          return interaction.reply({ content: message, ephemeral: true })
+        }
+
+        const randomQuote = filteredQuotes[Math.floor(Math.random() * filteredQuotes.length)]
 
         const embed = new EmbedBuilder()
           .setDescription(`"${randomQuote.text}"`)
-          .setFooter({ text: `— ${randomQuote.authorTag} (${quotes.length} total quotes)` })
+          .setFooter({ text: `— ${randomQuote.author} (${filteredQuotes.length} total quotes)` })
           .setColor(botInfo.colors.primary)
-          .setTimestamp(new Date(randomQuote.createdAt))
+          .setTimestamp(randomQuote.timestamp)
 
         await interaction.reply({ embeds: [embed] })
         break

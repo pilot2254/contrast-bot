@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { getTopReputation } from "../../utils/reputation-manager"
+import { getTopUsers } from "../../utils/reputation-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -20,7 +20,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
 
   try {
-    const topUsers = await getTopReputation(limit, interaction.guild?.id || null)
+    const topUsers = await getTopUsers("receivedTotal", limit)
 
     if (topUsers.length === 0) {
       return interaction.reply({ content: "No reputation data found!", ephemeral: true })
@@ -32,17 +32,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTimestamp()
 
     const description = topUsers
-      .map((user, index) => {
+      .map((user: any, index: number) => {
         const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
-        return `${medal} **${user.userTag}** - ${user.points} points`
+        const total = user.receivedPositive - user.receivedNegative
+        return `${medal} **${user.username}** - ${total} points`
       })
       .join("\n")
 
     embed.setDescription(description)
-
-    if (interaction.guild) {
-      embed.setFooter({ text: `Server: ${interaction.guild.name}` })
-    }
+    embed.setFooter({ text: `Showing top ${topUsers.length} users` })
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {

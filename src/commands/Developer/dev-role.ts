@@ -1,5 +1,5 @@
 import type { Message } from "discord.js"
-import { config } from "../../utils/config"
+import { botInfo } from "../../utils/bot-info"
 
 // Prefix command definition
 export const name = "dev-role"
@@ -39,7 +39,7 @@ export async function run(message: Message, args: string[]) {
         if (!role) {
           role = await message.guild.roles.create({
             name: roleName,
-            color: config.botInfo?.colors?.primary || "Blue",
+            color: botInfo.colors.primary,
             permissions: [],
             reason: "Developer role created by bot",
           })

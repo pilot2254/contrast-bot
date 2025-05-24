@@ -13,7 +13,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setThumbnail(interaction.client.user?.displayAvatarURL({ size: 256 }))
     .addFields(
       { name: "Version", value: botInfo.version, inline: true },
-      { name: "Developer", value: botInfo.developer, inline: true },
       { name: "Library", value: `Discord.js ${botInfo.technical.discordJs}`, inline: true },
       { name: "Node.js", value: botInfo.technical.node, inline: true },
       { name: "Servers", value: interaction.client.guilds.cache.size.toString(), inline: true },
@@ -21,7 +20,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )
     .addFields({
       name: "Links",
-      value: `[GitHub](${botInfo.links.github}) • [Support](${botInfo.links.support}) • [Invite](${botInfo.links.invite})`,
+      value: `[GitHub](${botInfo.links.github}) • [Support](${botInfo.links.supportServer}) • [Invite](${botInfo.links.inviteMe})`,
     })
     .setFooter({ text: `Requested by ${interaction.user.tag}` })
     .setTimestamp()

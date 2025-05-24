@@ -1,5 +1,5 @@
 import type { Message } from "discord.js"
-import { getDatabase } from "../../utils/database"
+import { getDb } from "../../utils/database"
 
 // Prefix command definition
 export const name = "data"
@@ -11,23 +11,23 @@ export const category = "Developer"
 // Prefix command execution
 export async function run(message: Message, args: string[]) {
   try {
-    const db = getDatabase()
+    const db = getDb()
 
     // Get table information
-    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[]
+    const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'")
 
     let info = "📊 **Database Information**\n\n"
     info += `**Tables:** ${tables.length}\n`
 
     for (const table of tables) {
-      const count = db.prepare(`SELECT COUNT(*) as count FROM ${table.name}`).get() as { count: number }
+      const count = await db.get(`SELECT COUNT(*) as count FROM ${table.name}`)
       info += `• ${table.name}: ${count.count} records\n`
     }
 
     // Get database file size
     const fs = require("fs")
     const path = require("path")
-    const dbPath = path.join(process.cwd(), "data", "database.db")
+    const dbPath = path.join(process.cwd(), "data", "bot.db")
 
     if (fs.existsSync(dbPath)) {
       const stats = fs.statSync(dbPath)
