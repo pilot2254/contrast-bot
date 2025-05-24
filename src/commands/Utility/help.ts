@@ -24,9 +24,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(`Command: ${commandName}`)
+      .setTitle(`Command: /${commandName}`)
       .setDescription(command.data?.description || "No description available")
       .setColor(botInfo.colors.primary)
+      .addFields({
+        name: "Type",
+        value: "Slash Command",
+        inline: true,
+      })
 
     return interaction.reply({ embeds: [embed], ephemeral: true })
   }
@@ -35,10 +40,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const embed = new EmbedBuilder()
     .setTitle("Available Commands")
     .setDescription(
-      `Use \`/help [command]\` or \`${config.prefix}help [command]\` for more info on a specific command.`,
+      `**Slash Commands (/)**: Use \`/help [command]\` for more info on a specific command.\n**Developer Commands**: Developers can use prefix commands with \`${config.prefix}\` for administrative functions.`,
     )
     .setColor(botInfo.colors.primary)
-    .setFooter({ text: `${config.botName} • Prefix: ${config.prefix}` })
+    .setFooter({ text: `${config.botName} • Slash Commands: / • Developer Prefix: ${config.prefix}` })
 
   // Group commands by category
   const categories = new Map<string, string[]>()
@@ -54,9 +59,15 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // Add fields for each category
   categories.forEach((commands, category) => {
     embed.addFields({
-      name: category,
-      value: commands.map((cmd) => `\`${cmd}\``).join(", ") || "No commands",
+      name: `${category} (Slash Commands)`,
+      value: commands.map((cmd) => `\`/${cmd}\``).join(", ") || "No commands",
     })
+  })
+
+  // Add note about developer commands
+  embed.addFields({
+    name: "Developer Commands",
+    value: `Developers have access to additional prefix commands using \`${config.prefix}\`. These include server management, blacklist control, and maintenance tools.`,
   })
 
   return interaction.reply({ embeds: [embed], ephemeral: true })
@@ -118,7 +129,7 @@ export async function run(message: Message, args: string[]) {
   // Add fields for each category
   categories.forEach((commands, category) => {
     embed.addFields({
-      name: category,
+      name: `${category} (Prefix Commands)`,
       value: commands.map((cmd) => `\`${cmd}\``).join(", ") || "No commands",
     })
   })

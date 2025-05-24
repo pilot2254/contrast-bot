@@ -21,16 +21,24 @@ async function loadCommands(dir: string) {
     const itemPath = path.join(dir, item.name)
 
     if (item.isDirectory()) {
+      // Skip Developer directory since those are prefix-only commands
+      if (item.name === "Developer") {
+        logger.info(`Skipping Developer directory (prefix commands only)`)
+        continue
+      }
+
       // Recursively load commands from subdirectories
       await loadCommands(itemPath)
     } else if (item.isFile() && (item.name.endsWith(".js") || item.name.endsWith(".ts"))) {
       try {
         const command = await import(itemPath)
 
-        // Push slash command data to array
+        // Only push slash command data to array (skip developer commands)
         if (command.data) {
           commands.push(command.data.toJSON())
-          logger.info(`Added command: ${command.data.name} from ${itemPath}`)
+          logger.info(`Added slash command: ${command.data.name} from ${itemPath}`)
+        } else {
+          logger.info(`Skipped ${itemPath} (no slash command data - likely a developer command)`)
         }
       } catch (error) {
         logger.error(`Error loading command from ${itemPath}:`, error)
@@ -63,7 +71,8 @@ async function loadCommands(dir: string) {
       logger.info(`Successfully reloaded application commands globally.`)
     }
 
-    logger.info(`Registered ${(data as any[]).length} commands.`)
+    logger.info(`Registered ${(data as any[]).length} slash commands.`)
+    logger.info(`Note: Developer commands use prefix (${config.prefix}) and are not deployed as slash commands.`)
   } catch (error) {
     logger.error("Error refreshing commands:", error)
   }

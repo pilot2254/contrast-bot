@@ -1,37 +1,14 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  PermissionFlagsBits,
-  ActivityType,
-} from "discord.js"
+import { type Message, ActivityType } from "discord.js"
 import { config } from "../../utils/config"
 import dotenv from "dotenv"
 import { logger } from "../../utils/logger"
 import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
 
-// Slash command definition
-export const data = new SlashCommandBuilder()
-  .setName("reload")
-  .setDescription("Reload the bot's configuration")
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-
-// Slash command execution
-export async function execute(interaction: ChatInputCommandInteraction) {
-  // Check if user is a developer
-  if (!isDeveloper(interaction.user)) {
-    logUnauthorizedAttempt(interaction.user.id, "reload")
-    return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
-  }
-
-  await reloadConfig(interaction.client)
-  await interaction.reply({ content: "Configuration reloaded successfully!", ephemeral: true })
-}
-
 // Prefix command definition
 export const name = "reload"
 export const aliases = ["refresh"]
 export const description = "Reload the bot's configuration"
+export const usage = ""
 
 // Prefix command execution
 export async function run(message: Message, _args: string[]) {

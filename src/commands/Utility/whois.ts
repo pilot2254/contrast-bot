@@ -1,10 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  EmbedBuilder,
-  type Role,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder, type Role } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -24,59 +18,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   embed.setFooter({ text: `Requested by ${interaction.user.tag}` }).setTimestamp()
 
   await interaction.reply({ embeds: [embed] })
-}
-
-// Prefix command definition
-export const name = "whois"
-export const aliases = ["userinfo", "user", "ui"]
-export const description = "Displays detailed information about a user"
-export const usage = "[user]"
-
-// Prefix command execution
-export async function run(message: Message, args: string[]) {
-  let targetUser = message.author
-  let targetMember = message.guild?.members.cache.get(message.author.id)
-
-  if (args.length > 0) {
-    const userMention = message.mentions.users.first()
-    if (userMention) {
-      targetUser = userMention
-      targetMember = message.guild?.members.cache.get(userMention.id)
-    } else {
-      try {
-        const user = await message.client.users.fetch(args[0])
-        targetUser = user
-        if (message.guild) {
-          try {
-            targetMember = await message.guild.members.fetch(user.id)
-          } catch {
-            targetMember = undefined
-          }
-        }
-      } catch {
-        if (message.guild) {
-          const foundMember = message.guild.members.cache.find(
-            (member) =>
-              member.user.username.toLowerCase() === args.join(" ").toLowerCase() ||
-              (member.nickname && member.nickname.toLowerCase() === args.join(" ").toLowerCase()),
-          )
-          if (foundMember) {
-            targetUser = foundMember.user
-            targetMember = foundMember
-          } else {
-            return message.reply(`Could not find user "${args.join(" ")}".`)
-          }
-        } else {
-          return message.reply(`Could not find user "${args.join(" ")}".`)
-        }
-      }
-    }
-  }
-
-  const embed = createUserEmbed(targetUser, targetMember)
-  embed.setFooter({ text: `Requested by ${message.author.tag}` }).setTimestamp()
-
-  await message.reply({ embeds: [embed] })
 }
 
 // Helper function to create user embed

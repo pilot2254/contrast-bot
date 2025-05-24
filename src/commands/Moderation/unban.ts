@@ -1,10 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  PermissionFlagsBits,
-  EmbedBuilder,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -74,60 +68,5 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       content: "There was an error trying to unban this user.",
       ephemeral: true,
     })
-  }
-}
-
-// Prefix command definition
-export const name = "unban"
-export const description = "Unbans a user from the server"
-export const usage = "<userId> [reason]"
-
-// Prefix command execution
-export async function run(message: Message, args: string[]) {
-  if (!message.guild) {
-    return message.reply("This command can only be used in a server.")
-  }
-
-  // Check user permissions
-  if (!message.member?.permissions.has(PermissionFlagsBits.BanMembers)) {
-    return message.reply("You don't have permission to unban members.")
-  }
-
-  // Check bot permissions
-  if (!message.guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers)) {
-    return message.reply("I don't have permission to unban members.")
-  }
-
-  if (!args[0]) {
-    return message.reply("You need to specify a user ID to unban.")
-  }
-
-  const userId = args[0]
-  const reason = args.slice(1).join(" ") || "No reason provided"
-
-  try {
-    // Check if the user is banned
-    let bannedUser
-    try {
-      bannedUser = await message.guild.bans.fetch(userId)
-    } catch {
-      return message.reply("This user is not banned or the ID is invalid.")
-    }
-
-    // Unban the user
-    await message.guild.members.unban(userId, `${reason} (Unbanned by ${message.author.tag})`)
-
-    const embed = new EmbedBuilder()
-      .setTitle("User Unbanned")
-      .setDescription(`${bannedUser.user.tag || userId} has been unbanned from the server.`)
-      .setColor(botInfo.colors.success)
-      .addFields({ name: "Reason", value: reason })
-      .setFooter({ text: `Unbanned by ${message.author.tag}` })
-      .setTimestamp()
-
-    await message.reply({ embeds: [embed] })
-  } catch (error) {
-    console.error("Error unbanning user:", error)
-    await message.reply("There was an error trying to unban this user.")
   }
 }
