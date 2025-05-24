@@ -8,11 +8,9 @@
     "dev": "ts-node src/index.ts",
     "build": "tsc",
     "deploy": "ts-node src/utils/deploy-commands.ts",
-    "clear-guild-commands": "ts-node src/utils/clear-guild-commands.ts",
     "watch": "tsc -w",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "migrate": "ts-node src/utils/migrate-json-to-sqlite.ts",
     "init-db": "ts-node src/utils/init-database.ts"
   },
   "keywords": ["discord", "bot", "typescript"],
