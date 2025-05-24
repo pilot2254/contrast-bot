@@ -15,8 +15,6 @@ async function migrateData(): Promise<void> {
     await initDatabase()
     logger.info("Database initialized")
 
-    const db = getDb()
-
     // Migrate bot stats
     await migrateBotStats()
 

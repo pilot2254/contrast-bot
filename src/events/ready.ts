@@ -60,39 +60,6 @@ export async function execute(client: Client): Promise<void> {
   }
 }
 
-// Helper function to parse activity type
-function parseActivityType(type: any): ActivityType {
-  // If it's already a number, validate it's in range
-  if (typeof type === "number") {
-    if (type >= 0 && type <= 5 && type !== 4) {
-      // 4 is Custom which bots can't use
-      return type as ActivityType
-    }
-    return ActivityType.Playing // Default fallback
-  }
-
-  // If it's a string, convert it
-  if (typeof type === "string") {
-    switch (type.toString().toUpperCase()) {
-      case "PLAYING":
-        return ActivityType.Playing
-      case "STREAMING":
-        return ActivityType.Streaming
-      case "LISTENING":
-        return ActivityType.Listening
-      case "WATCHING":
-        return ActivityType.Watching
-      case "COMPETING":
-        return ActivityType.Competing
-      default:
-        return ActivityType.Playing
-    }
-  }
-
-  // Default fallback
-  return ActivityType.Playing
-}
-
 // Helper function to get activity type name
 function getActivityTypeName(type: ActivityType): string {
   switch (type) {

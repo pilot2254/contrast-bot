@@ -11,7 +11,7 @@ export const usage = ""
 export const category = "Developer"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   try {
     const commandsPath = path.join(__dirname, "..")
     const { commands, prefixCommands } = await loadCommands(commandsPath)

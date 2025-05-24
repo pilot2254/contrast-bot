@@ -8,13 +8,13 @@ export const usage = ""
 export const category = "Developer"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   try {
     const guilds = message.client.guilds.cache
 
     let response = `🔗 **Server Invites (${guilds.size} servers):**\n\n`
 
-    for (const [guildId, guild] of guilds) {
+    for (const [_guildId, guild] of guilds) {
       try {
         // Try to get an existing invite first
         const invites = await guild.invites.fetch().catch(() => null)

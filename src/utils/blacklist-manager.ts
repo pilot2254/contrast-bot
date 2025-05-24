@@ -70,7 +70,7 @@ export async function unblacklistUser(userId: string): Promise<boolean> {
     }
 
     // Remove user from blacklist
-    const result = await db.run("DELETE FROM blacklisted_users WHERE userId = ?", [userId])
+    await db.run("DELETE FROM blacklisted_users WHERE userId = ?", [userId])
 
     logger.info(`User ${userId} removed from blacklist`)
     return true

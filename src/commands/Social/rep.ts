@@ -32,7 +32,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     switch (subcommand) {
       case "give": {
         const targetUser = interaction.options.getUser("user", true)
-        const reason = interaction.options.getString("reason") || "No reason provided"
 
         if (targetUser.id === interaction.user.id) {
           return interaction.reply({ content: "You cannot give reputation to yourself!", ephemeral: true })

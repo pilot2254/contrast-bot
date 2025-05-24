@@ -1,5 +1,7 @@
 import type { Message } from "discord.js"
 import { getDb } from "../../utils/database"
+import fs from "fs"
+import path from "path"
 
 // Prefix command definition
 export const name = "data"
@@ -9,7 +11,7 @@ export const usage = ""
 export const category = "Developer"
 
 // Prefix command execution
-export async function run(message: Message, args: string[]) {
+export async function run(message: Message, _args: string[]) {
   try {
     const db = getDb()
 
@@ -25,8 +27,6 @@ export async function run(message: Message, args: string[]) {
     }
 
     // Get database file size
-    const fs = require("fs")
-    const path = require("path")
     const dbPath = path.join(process.cwd(), "data", "bot.db")
 
     if (fs.existsSync(dbPath)) {
