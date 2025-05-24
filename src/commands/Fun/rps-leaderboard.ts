@@ -1,89 +1,75 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
+import { getRPSLeaderboard } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
-import { getTopPlayers, getPlayerStats } from "../../utils/rps-manager"
-import { logger } from "../../utils/logger"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("rps-leaderboard")
   .setDescription("Shows the Rock Paper Scissors leaderboard")
+  .addStringOption((option) =>
+    option
+      .setName("sort")
+      .setDescription("How to sort the leaderboard")
+      .setRequired(false)
+      .addChoices(
+        { name: "Wins", value: "wins" },
+        { name: "Win Rate", value: "winrate" },
+        { name: "Total Games", value: "total" },
+      ),
+  )
+  .addIntegerOption((option) =>
+    option
+      .setName("limit")
+      .setDescription("Number of users to show (1-20)")
+      .setRequired(false)
+      .setMinValue(1)
+      .setMaxValue(20),
+  )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
+  const sortBy = interaction.options.getString("sort") || "wins"
+  const limit = interaction.options.getInteger("limit") || 10
+
   try {
-    await interaction.deferReply()
+    const leaderboard = await getRPSLeaderboard(sortBy as "wins" | "winrate" | "total", limit)
 
-    const topPlayers = await getTopPlayers(10)
-    const userStats = await getPlayerStats(interaction.user.id)
-
-    const embed = createLeaderboardEmbed(topPlayers, userStats, interaction.user.id)
-
-    await interaction.editReply({ embeds: [embed] })
-  } catch (error) {
-    logger.error("Error executing rps-leaderboard command:", error)
-
-    if (interaction.deferred) {
-      await interaction.editReply("There was an error while fetching the leaderboard!")
-    } else {
-      await interaction.reply({ content: "There was an error while fetching the leaderboard!", ephemeral: true })
+    if (leaderboard.length === 0) {
+      return interaction.reply({ content: "No RPS data found!", ephemeral: true })
     }
-  }
-}
 
-// Prefix command definition
-export const name = "rps-leaderboard"
-export const aliases = ["rpsleaderboard", "rpslb", "rps-lb", "rps-top"]
-export const description = "Shows the Rock Paper Scissors leaderboard"
-export const usage = "[sort:winrate|wins|losses|ties] [limit]"
+    const embed = new EmbedBuilder()
+      .setTitle("🏆 Rock Paper Scissors Leaderboard")
+      .setColor(botInfo.colors.primary)
+      .setTimestamp()
 
-// Prefix command execution
-export async function run(message: Message, _args: string[]) {
-  try {
-    const reply = await message.reply("Fetching leaderboard...")
+    const description = leaderboard
+      .map((user, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
+        const winRate = user.total > 0 ? ((user.wins / user.total) * 100).toFixed(1) : "0.0"
 
-    const topPlayers = await getTopPlayers(10)
-    const userStats = await getPlayerStats(message.author.id)
+        if (sortBy === "winrate") {
+          return `${medal} **${user.userTag}** - ${winRate}% (${user.wins}W/${user.losses}L/${user.ties}T)`
+        } else if (sortBy === "total") {
+          return `${medal} **${user.userTag}** - ${user.total} games (${user.wins}W/${user.losses}L/${user.ties}T)`
+        } else {
+          return `${medal} **${user.userTag}** - ${user.wins} wins (${winRate}% WR)`
+        }
+      })
+      .join("\n")
 
-    const embed = createLeaderboardEmbed(topPlayers, userStats, message.author.id)
+    embed.setDescription(description)
 
-    await reply.edit({ content: null, embeds: [embed] })
+    const sortLabels = {
+      wins: "Most Wins",
+      winrate: "Highest Win Rate",
+      total: "Most Games Played",
+    }
+
+    embed.setFooter({ text: `Sorted by: ${sortLabels[sortBy as keyof typeof sortLabels]}` })
+
+    await interaction.reply({ embeds: [embed] })
   } catch (error) {
-    logger.error("Error executing rps-leaderboard command:", error)
-    await message.reply("There was an error while fetching the leaderboard!")
+    await interaction.reply({ content: "An error occurred while fetching the leaderboard.", ephemeral: true })
   }
-}
-
-// Helper function to create the leaderboard embed
-function createLeaderboardEmbed(topPlayers: any[], userStats: any | null, userId: string) {
-  const embed = new EmbedBuilder()
-    .setTitle("🎮 Rock Paper Scissors Leaderboard")
-    .setColor(botInfo.colors.primary)
-    .setTimestamp()
-    .setFooter({ text: "Play /rps to climb the leaderboard!" })
-
-  if (topPlayers.length === 0) {
-    embed.setDescription("No one has played Rock Paper Scissors yet!")
-    return embed
-  }
-
-  let leaderboardText = ""
-
-  topPlayers.forEach((player, index) => {
-    const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
-    const isUser = player.userId === userId ? "👉 " : ""
-
-    leaderboardText += `${isUser}${medal} **${player.username}** - ${player.wins} wins (${player.winRate.toFixed(1)}% win rate)\n`
-  })
-
-  embed.setDescription(leaderboardText)
-
-  // Add user's stats if they're not in the top 10
-  if (userStats && userStats.totalGames > 0 && !topPlayers.some((player) => player.userId === userId)) {
-    embed.addFields({
-      name: "Your Stats",
-      value: `**${userStats.username}** - ${userStats.wins} wins (${userStats.winRate.toFixed(1)}% win rate)`,
-    })
-  }
-
-  return embed
 }

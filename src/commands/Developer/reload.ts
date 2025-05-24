@@ -1,114 +1,39 @@
-import { type Message, ActivityType } from "discord.js"
-import { config } from "../../utils/config"
-import dotenv from "dotenv"
+import type { Message } from "discord.js"
+import { loadCommands } from "../../utils/command-loader"
 import { logger } from "../../utils/logger"
-import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
+import path from "path"
 
 // Prefix command definition
 export const name = "reload"
-export const aliases = ["refresh"]
-export const description = "Reload the bot's configuration"
+export const aliases = ["rl"]
+export const description = "Reload all commands"
 export const usage = ""
+export const category = "Developer"
 
 // Prefix command execution
-export async function run(message: Message, _args: string[]) {
-  // Check if user is a developer
-  if (!isDeveloper(message.author)) {
-    logUnauthorizedAttempt(message.author.id, "reload")
-    return message.reply("You don't have permission to use this command.")
-  }
-
-  await reloadConfig(message.client)
-  await message.reply("Configuration reloaded successfully!")
-}
-
-// Helper function to reload config
-async function reloadConfig(client: any) {
+export async function run(message: Message, args: string[]) {
   try {
-    // Reload environment variables
-    dotenv.config({ override: true })
+    const commandsPath = path.join(__dirname, "..")
+    const { commands, prefixCommands } = await loadCommands(commandsPath)
 
-    // Update config object
-    config.prefix = process.env.PREFIX || "?"
-    config.botName = process.env.BOT_NAME || "Contrast"
+    // Update the client's command collections
+    message.client.commands.clear()
+    message.client.prefixCommands.clear()
 
-    // Get presence settings from environment
-    const status = process.env.STATUS?.toLowerCase() || "online"
-    const activityTypeStr = process.env.ACTIVITY_TYPE?.toUpperCase() || "PLAYING"
-    const activityName = process.env.ACTIVITY_NAME || `with Discord.js`
+    commands.forEach((command, name) => {
+      message.client.commands.set(name, command)
+    })
 
-    // Parse status
-    let parsedStatus: "online" | "idle" | "dnd" | "invisible" = "online"
-    if (["online", "idle", "dnd", "invisible"].includes(status)) {
-      parsedStatus = status as "online" | "idle" | "dnd" | "invisible"
-    }
+    prefixCommands.forEach((command, name) => {
+      message.client.prefixCommands.set(name, command)
+    })
 
-    // Parse activity type
-    let parsedActivityType: ActivityType = ActivityType.Playing
-    switch (activityTypeStr) {
-      case "PLAYING":
-        parsedActivityType = ActivityType.Playing
-        break
-      case "STREAMING":
-        parsedActivityType = ActivityType.Streaming
-        break
-      case "LISTENING":
-        parsedActivityType = ActivityType.Listening
-        break
-      case "WATCHING":
-        parsedActivityType = ActivityType.Watching
-        break
-      case "COMPETING":
-        parsedActivityType = ActivityType.Competing
-        break
-    }
-
-    // Update config
-    config.presence.status = parsedStatus
-    config.presence.activity.type = parsedActivityType
-    config.presence.activity.name = activityName
-
-    // First, set the status
-    await client.user?.setStatus(parsedStatus)
-    logger.info(`Status set to: ${parsedStatus}`)
-
-    // Wait a moment before setting activity (helps with Discord API)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Set activity using the direct method that works in activity-test
-    await client.user?.setActivity(activityName, { type: parsedActivityType })
-
-    logger.info(`Activity set to: ${getActivityTypeName(parsedActivityType)} ${activityName}`)
-    logger.info(`Using direct setActivity() method that works in activity-test`)
-
-    // Note about invisible status
-    if (parsedStatus === "invisible") {
-      logger.info(
-        "Note: Discord may show the bot as DND briefly before changing to invisible. This is normal behavior.",
-      )
-    }
+    logger.info(`Reloaded ${commands.size} slash commands and ${prefixCommands.size} prefix commands`)
+    await message.reply(
+      `✅ Successfully reloaded ${commands.size} slash commands and ${prefixCommands.size} prefix commands.`,
+    )
   } catch (error) {
-    logger.error("Failed to reload configuration:", error)
-    throw error
-  }
-}
-
-// Helper function to get activity type name
-function getActivityTypeName(type: ActivityType): string {
-  switch (type) {
-    case ActivityType.Playing:
-      return "Playing"
-    case ActivityType.Streaming:
-      return "Streaming"
-    case ActivityType.Listening:
-      return "Listening to"
-    case ActivityType.Watching:
-      return "Watching"
-    case ActivityType.Custom:
-      return "Custom"
-    case ActivityType.Competing:
-      return "Competing in"
-    default:
-      return "Playing"
+    logger.error("Error reloading commands:", error)
+    await message.reply("❌ An error occurred while reloading commands.")
   }
 }

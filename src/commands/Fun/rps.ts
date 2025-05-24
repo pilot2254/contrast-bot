@@ -1,12 +1,7 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  EmbedBuilder,
-  type ColorResolvable,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
 import { logger } from "../../utils/logger"
-import { recordGame, getPlayerStats } from "../../utils/rps-manager"
+import { recordRPSGame, recordGame, getPlayerStats } from "../../utils/rps-manager"
+import { botInfo } from "../../utils/bot-info"
 
 // Define types
 type RPSChoice = "rock" | "paper" | "scissors"
@@ -22,9 +17,9 @@ export const data = new SlashCommandBuilder()
       .setDescription("Your choice")
       .setRequired(true)
       .addChoices(
-        { name: "Rock", value: "rock" },
-        { name: "Paper", value: "paper" },
-        { name: "Scissors", value: "scissors" },
+        { name: "🪨 Rock", value: "rock" },
+        { name: "📄 Paper", value: "paper" },
+        { name: "✂️ Scissors", value: "scissors" },
       ),
   )
 
@@ -36,7 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const result = determineWinner(userChoice, botChoice)
 
     // Record the game
-    await recordGame(interaction.user.id, interaction.user.username, result)
+    await recordRPSGame(interaction.user.id, interaction.user.username, userChoice, botChoice, result)
 
     // Get updated stats
     const stats = await getPlayerStats(interaction.user.id)
@@ -140,14 +135,14 @@ function getResultText(result: RPSResult): string {
 }
 
 // Helper function to get result color
-function getResultColor(result: RPSResult): ColorResolvable {
+function getResultColor(result: RPSResult): number {
   switch (result) {
     case "win":
-      return "#00FF00" // Green
+      return botInfo.colors.success
     case "loss":
-      return "#FF0000" // Red
+      return botInfo.colors.error
     default:
-      return "#FFFF00" // Yellow
+      return botInfo.colors.primary
   }
 }
 
@@ -173,5 +168,6 @@ function createResultEmbed(
         inline: false,
       },
     )
+    .setFooter({ text: `Played by ${username}` })
     .setTimestamp()
 }

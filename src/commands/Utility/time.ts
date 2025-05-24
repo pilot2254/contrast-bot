@@ -1,42 +1,55 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 
+// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("time")
-  .setDescription("Returns the current time as a Discord timestamp")
+  .setDescription("Shows the current time in different timezones")
+  .addStringOption((option) =>
+    option
+      .setName("timezone")
+      .setDescription("Timezone to display (e.g., UTC, EST, PST)")
+      .setRequired(false)
+      .addChoices(
+        { name: "UTC", value: "UTC" },
+        { name: "EST (Eastern)", value: "America/New_York" },
+        { name: "CST (Central)", value: "America/Chicago" },
+        { name: "MST (Mountain)", value: "America/Denver" },
+        { name: "PST (Pacific)", value: "America/Los_Angeles" },
+        { name: "GMT (London)", value: "Europe/London" },
+        { name: "CET (Central Europe)", value: "Europe/Paris" },
+        { name: "JST (Japan)", value: "Asia/Tokyo" },
+        { name: "AEST (Australia)", value: "Australia/Sydney" },
+      ),
+  )
 
+// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const currentTimestamp = Math.floor(Date.now() / 1000)
+  const timezone = interaction.options.getString("timezone") || "UTC"
 
-  const embed = new EmbedBuilder()
-    .setTitle("Current Time")
-    .setColor(botInfo.colors.primary)
-    .addFields(
-      { name: "Short Time", value: `<t:${currentTimestamp}:t>`, inline: true },
-      { name: "Code", value: `\`<t:${currentTimestamp}:t>\``, inline: true },
-    )
-    .setFooter({ text: "Copy the code to use this timestamp in your messages" })
-    .setTimestamp()
+  try {
+    const now = new Date()
+    const timeString = now.toLocaleString("en-US", {
+      timeZone: timezone,
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZoneName: "short",
+    })
 
-  await interaction.reply({ embeds: [embed] })
-}
+    const embed = new EmbedBuilder()
+      .setTitle("🕐 Current Time")
+      .setDescription(`**${timeString}**`)
+      .setColor(botInfo.colors.primary)
+      .addFields({ name: "Timezone", value: timezone, inline: true })
+      .setTimestamp()
 
-export const name = "time"
-export const aliases = ["timestamp", "now"]
-export const description = "Returns the current time as a Discord timestamp"
-
-export async function run(message: Message, _args: string[]) {
-  const currentTimestamp = Math.floor(Date.now() / 1000)
-
-  const embed = new EmbedBuilder()
-    .setTitle("Current Time")
-    .setColor(botInfo.colors.primary)
-    .addFields(
-      { name: "Short Time", value: `<t:${currentTimestamp}:t>`, inline: true },
-      { name: "Code", value: `\`<t:${currentTimestamp}:t>\``, inline: true },
-    )
-    .setFooter({ text: "Copy the code to use this timestamp in your messages" })
-    .setTimestamp()
-
-  await message.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] })
+  } catch (error) {
+    await interaction.reply({ content: "Invalid timezone specified.", ephemeral: true })
+  }
 }

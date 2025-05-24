@@ -1,33 +1,26 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type Message, EmbedBuilder } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
+import { giveReputation, getReputation } from "../../utils/reputation-manager"
 import { botInfo } from "../../utils/bot-info"
-import { givePositiveRep, giveNegativeRep, getUserReputation } from "../../utils/reputation-manager"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("rep")
-  .setDescription("Manages user reputation")
+  .setDescription("Manage user reputation")
   .addSubcommand((subcommand) =>
     subcommand
       .setName("give")
-      .setDescription("Gives positive reputation to a user")
-      .addUserOption((option) =>
-        option.setName("user").setDescription("The user to give reputation to").setRequired(true),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName("take")
-      .setDescription("Gives negative reputation to a user")
-      .addUserOption((option) =>
-        option.setName("user").setDescription("The user to give negative reputation to").setRequired(true),
+      .setDescription("Give reputation to a user")
+      .addUserOption((option) => option.setName("user").setDescription("User to give reputation to").setRequired(true))
+      .addStringOption((option) =>
+        option.setName("reason").setDescription("Reason for giving reputation").setRequired(false),
       ),
   )
   .addSubcommand((subcommand) =>
     subcommand
       .setName("check")
-      .setDescription("Checks a user's reputation")
+      .setDescription("Check reputation of a user")
       .addUserOption((option) =>
-        option.setName("user").setDescription("The user to check (defaults to yourself)").setRequired(false),
+        option.setName("user").setDescription("User to check reputation for").setRequired(false),
       ),
   )
 
@@ -35,191 +28,63 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand()
 
-  if (subcommand === "give") {
-    const targetUser = interaction.options.getUser("user", true)
+  try {
+    switch (subcommand) {
+      case "give": {
+        const targetUser = interaction.options.getUser("user", true)
+        const reason = interaction.options.getString("reason") || "No reason provided"
 
-    const result = await givePositiveRep(
-      interaction.user.id,
-      interaction.user.username,
-      targetUser.id,
-      targetUser.username,
-    )
+        if (targetUser.id === interaction.user.id) {
+          return interaction.reply({ content: "You cannot give reputation to yourself!", ephemeral: true })
+        }
 
-    if (result.success) {
-      const embed = new EmbedBuilder()
-        .setTitle("Reputation Given")
-        .setDescription(`${botInfo.emojis.success} ${result.message}`)
-        .setColor(botInfo.colors.success)
-        .setFooter({ text: `Requested by ${interaction.user.tag}` })
-        .setTimestamp()
+        if (targetUser.bot) {
+          return interaction.reply({ content: "You cannot give reputation to bots!", ephemeral: true })
+        }
 
-      await interaction.reply({ embeds: [embed] })
-    } else {
-      await interaction.reply({
-        content: `${botInfo.emojis.error} ${result.message}`,
-        ephemeral: true,
-      })
+        const result = await giveReputation(
+          interaction.user.id,
+          targetUser.id,
+          targetUser.tag,
+          reason,
+          interaction.guild?.id || null,
+        )
+
+        if (!result.success) {
+          return interaction.reply({ content: result.message, ephemeral: true })
+        }
+
+        const embed = new EmbedBuilder()
+          .setTitle("Reputation Given!")
+          .setDescription(`${targetUser.tag} now has **${result.newReputation}** reputation points`)
+          .addFields({ name: "Reason", value: reason })
+          .setColor(botInfo.colors.success)
+          .setTimestamp()
+
+        await interaction.reply({ embeds: [embed] })
+        break
+      }
+
+      case "check": {
+        const targetUser = interaction.options.getUser("user") || interaction.user
+        const reputation = await getReputation(targetUser.id, interaction.guild?.id || null)
+
+        const embed = new EmbedBuilder()
+          .setTitle(`${targetUser.tag}'s Reputation`)
+          .setDescription(`**${reputation.points}** reputation points`)
+          .addFields(
+            { name: "Reputation Given", value: reputation.given.toString(), inline: true },
+            { name: "Reputation Received", value: reputation.received.toString(), inline: true },
+          )
+          .setColor(botInfo.colors.primary)
+          .setThumbnail(targetUser.displayAvatarURL())
+          .setTimestamp()
+
+        await interaction.reply({ embeds: [embed] })
+        break
+      }
     }
-  } else if (subcommand === "take") {
-    const targetUser = interaction.options.getUser("user", true)
-
-    const result = await giveNegativeRep(
-      interaction.user.id,
-      interaction.user.username,
-      targetUser.id,
-      targetUser.username,
-    )
-
-    if (result.success) {
-      const embed = new EmbedBuilder()
-        .setTitle("Reputation Given")
-        .setDescription(`${botInfo.emojis.warning} ${result.message}`)
-        .setColor(botInfo.colors.warning)
-        .setFooter({ text: `Requested by ${interaction.user.tag}` })
-        .setTimestamp()
-
-      await interaction.reply({ embeds: [embed] })
-    } else {
-      await interaction.reply({
-        content: `${botInfo.emojis.error} ${result.message}`,
-        ephemeral: true,
-      })
-    }
-  } else if (subcommand === "check") {
-    const targetUser = interaction.options.getUser("user") || interaction.user
-    const repData = await getUserReputation(targetUser.id)
-
-    if (!repData) {
-      return interaction.reply({
-        content: `${targetUser.id === interaction.user.id ? "You don't" : `${targetUser.username} doesn't`} have any reputation yet.`,
-        ephemeral: true,
-      })
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`${targetUser.username}'s Reputation`)
-      .setColor(botInfo.colors.primary)
-      .addFields(
-        {
-          name: "Received",
-          value: `Positive: ${repData.receivedPositive} | Negative: ${repData.receivedNegative}`,
-          inline: false,
-        },
-        {
-          name: "Given",
-          value: `Positive: ${repData.givenPositive} | Negative: ${repData.givenNegative}`,
-          inline: false,
-        },
-        {
-          name: "Total",
-          value: `Received: ${repData.receivedPositive - repData.receivedNegative} | Given: ${repData.givenPositive - repData.givenNegative}`,
-          inline: false,
-        },
-      )
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
-      .setTimestamp()
-
-    await interaction.reply({ embeds: [embed] })
-  }
-}
-
-// Prefix command definition
-export const name = "rep"
-export const aliases = ["reputation"]
-export const description = "Manages user reputation"
-export const usage = "give <user> | take <user> | check [user]"
-
-// Prefix command execution
-export async function run(message: Message, args: string[]) {
-  if (!args.length) {
-    return message.reply(`Usage: ${usage}`)
-  }
-
-  const subcommand = args[0].toLowerCase()
-
-  if (subcommand === "give") {
-    if (args.length < 2) {
-      return message.reply("Please specify a user to give reputation to.")
-    }
-
-    const targetUser = message.mentions.users.first()
-    if (!targetUser) {
-      return message.reply("Please mention a user to give reputation to.")
-    }
-
-    const result = await givePositiveRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
-
-    if (result.success) {
-      const embed = new EmbedBuilder()
-        .setTitle("Reputation Given")
-        .setDescription(`${botInfo.emojis.success} ${result.message}`)
-        .setColor(botInfo.colors.success)
-        .setFooter({ text: `Requested by ${message.author.tag}` })
-        .setTimestamp()
-
-      await message.reply({ embeds: [embed] })
-    } else {
-      await message.reply(`${botInfo.emojis.error} ${result.message}`)
-    }
-  } else if (subcommand === "take") {
-    if (args.length < 2) {
-      return message.reply("Please specify a user to give negative reputation to.")
-    }
-
-    const targetUser = message.mentions.users.first()
-    if (!targetUser) {
-      return message.reply("Please mention a user to give negative reputation to.")
-    }
-
-    const result = await giveNegativeRep(message.author.id, message.author.username, targetUser.id, targetUser.username)
-
-    if (result.success) {
-      const embed = new EmbedBuilder()
-        .setTitle("Reputation Given")
-        .setDescription(`${botInfo.emojis.warning} ${result.message}`)
-        .setColor(botInfo.colors.warning)
-        .setFooter({ text: `Requested by ${message.author.tag}` })
-        .setTimestamp()
-
-      await message.reply({ embeds: [embed] })
-    } else {
-      await message.reply(`${botInfo.emojis.error} ${result.message}`)
-    }
-  } else if (subcommand === "check") {
-    const targetUser = message.mentions.users.first() || message.author
-    const repData = await getUserReputation(targetUser.id)
-
-    if (!repData) {
-      return message.reply(
-        `${targetUser.id === message.author.id ? "You don't" : `${targetUser.username} doesn't`} have any reputation yet.`,
-      )
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`${targetUser.username}'s Reputation`)
-      .setColor(botInfo.colors.primary)
-      .addFields(
-        {
-          name: "Received",
-          value: `Positive: ${repData.receivedPositive} | Negative: ${repData.receivedNegative}`,
-          inline: false,
-        },
-        {
-          name: "Given",
-          value: `Positive: ${repData.givenPositive} | Negative: ${repData.givenNegative}`,
-          inline: false,
-        },
-        {
-          name: "Total",
-          value: `Received: ${repData.receivedPositive - repData.receivedNegative} | Given: ${repData.givenPositive - repData.givenNegative}`,
-          inline: false,
-        },
-      )
-      .setFooter({ text: `Requested by ${message.author.tag}` })
-      .setTimestamp()
-
-    await message.reply({ embeds: [embed] })
-  } else {
-    await message.reply(`Unknown subcommand. Usage: ${usage}`)
+  } catch (error) {
+    await interaction.reply({ content: "An error occurred while processing the reputation command.", ephemeral: true })
   }
 }

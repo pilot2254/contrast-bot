@@ -1,197 +1,79 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  EmbedBuilder,
-  PermissionFlagsBits,
-  Colors,
-} from "discord.js"
-import { isDeveloper, logUnauthorizedAttempt } from "../../utils/permissions"
-import { logger } from "../../utils/logger"
-
-// Role name and color
-const DEV_ROLE_NAME = "Contrast Dev"
-
-// Slash command definition
-export const data = new SlashCommandBuilder()
-  .setName("dev-role")
-  .setDescription("Toggles the developer role in the current server")
-
-// Slash command execution
-export async function execute(interaction: ChatInputCommandInteraction) {
-  // Check if user is a developer
-  if (!isDeveloper(interaction.user)) {
-    logUnauthorizedAttempt(interaction.user.id, "dev-role")
-    return interaction.reply({ content: "You don't have permission to use this command.", ephemeral: true })
-  }
-
-  // Check if command is used in a guild
-  if (!interaction.guild) {
-    return interaction.reply({ content: "This command can only be used in a server.", ephemeral: true })
-  }
-
-  // Defer reply as this might take some time
-  await interaction.deferReply({ ephemeral: true })
-
-  try {
-    // Check if the bot has necessary permissions
-    const botMember = interaction.guild.members.me
-    if (!botMember) {
-      return interaction.editReply("I couldn't find my own member object in this server.")
-    }
-
-    if (!botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return interaction.editReply("I don't have permission to manage roles in this server.")
-    }
-
-    if (!botMember.permissions.has(PermissionFlagsBits.Administrator)) {
-      return interaction.editReply(
-        "I don't have Administrator permission in this server, so I can't create an admin role.",
-      )
-    }
-
-    // Check if the role already exists
-    const devRole = interaction.guild.roles.cache.find((role) => role.name === DEV_ROLE_NAME)
-
-    if (devRole) {
-      // Role exists, so remove it
-      logger.info(`Removing dev role from ${interaction.guild.name}`)
-      await devRole.delete(`Removed by developer ${interaction.user.tag}`)
-      logger.info(`Removed dev role from ${interaction.guild.name}`)
-
-      // Create success embed for removal
-      const embed = new EmbedBuilder()
-        .setTitle("Developer Role Removed")
-        .setDescription(`The ${DEV_ROLE_NAME} role has been removed from this server.`)
-        .setColor(Colors.Red)
-        .addFields({ name: "Server", value: interaction.guild.name })
-        .setFooter({ text: `Requested by ${interaction.user.tag}` })
-        .setTimestamp()
-
-      await interaction.editReply({ embeds: [embed] })
-    } else {
-      // Role doesn't exist, so create it
-      logger.info(`Creating dev role in ${interaction.guild.name}`)
-      const newRole = await interaction.guild.roles.create({
-        name: DEV_ROLE_NAME,
-        permissions: [PermissionFlagsBits.Administrator],
-        reason: `Developer role requested by ${interaction.user.tag}`,
-        hoist: false, // Don't show role separately in member list
-        mentionable: false, // Don't allow role to be mentioned
-      })
-      logger.info(`Created dev role in ${interaction.guild.name}`)
-
-      // Get the member object for the developer
-      const member = await interaction.guild.members.fetch(interaction.user.id)
-
-      // Add the role to the developer
-      await member.roles.add(newRole, `Self-assigned via dev-role command`)
-      logger.info(`Added dev role to ${interaction.user.tag} in ${interaction.guild.name}`)
-
-      // Create success embed for creation
-      const embed = new EmbedBuilder()
-        .setTitle("Developer Role Added")
-        .setDescription(`You have been given the ${DEV_ROLE_NAME} role with Administrator permissions.`)
-        .setColor(Colors.Purple)
-        .addFields({ name: "Server", value: interaction.guild.name })
-        .setFooter({ text: `Requested by ${interaction.user.tag}` })
-        .setTimestamp()
-
-      await interaction.editReply({ embeds: [embed] })
-    }
-  } catch (error) {
-    logger.error(`Error toggling dev role in ${interaction.guild?.name}:`, error)
-    await interaction.editReply("An error occurred while managing the developer role.")
-  }
-}
+import type { Message } from "discord.js"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "dev-role"
-export const aliases = ["devrole", "devr"]
-export const description = "Toggles the developer role in the current server"
+export const aliases = ["devrole"]
+export const description = "Manage developer role in the current server"
+export const usage = "<add|remove> <user> [role_name]"
+export const category = "Developer"
 
 // Prefix command execution
-export async function run(message: Message, _args: string[]) {
-  // Check if user is a developer
-  if (!isDeveloper(message.author)) {
-    logUnauthorizedAttempt(message.author.id, "dev-role")
-    return message.reply("You don't have permission to use this command.")
-  }
-
-  // Check if command is used in a guild
+export async function run(message: Message, args: string[]) {
   if (!message.guild) {
     return message.reply("This command can only be used in a server.")
   }
 
-  // Send initial response
-  const response = await message.reply("Managing developer role...")
+  if (args.length < 2) {
+    return message.reply(`Usage: \`${name} ${usage}\``)
+  }
+
+  const action = args[0].toLowerCase()
+  const userMention = args[1]
+  const roleName = args.slice(2).join(" ") || "Bot Developer"
 
   try {
-    // Check if the bot has necessary permissions
-    const botMember = message.guild.members.me
-    if (!botMember) {
-      return response.edit("I couldn't find my own member object in this server.")
+    // Parse user ID from mention or direct ID
+    const userId = userMention.replace(/[<@!>]/g, "")
+    const member = await message.guild.members.fetch(userId).catch(() => null)
+
+    if (!member) {
+      return message.reply("User not found in this server.")
     }
 
-    if (!botMember.permissions.has(PermissionFlagsBits.ManageRoles)) {
-      return response.edit("I don't have permission to manage roles in this server.")
-    }
+    switch (action) {
+      case "add": {
+        // Find or create the developer role
+        let role = message.guild.roles.cache.find((r) => r.name === roleName)
 
-    if (!botMember.permissions.has(PermissionFlagsBits.Administrator)) {
-      return response.edit("I don't have Administrator permission in this server, so I can't create an admin role.")
-    }
+        if (!role) {
+          role = await message.guild.roles.create({
+            name: roleName,
+            color: config.botInfo?.colors?.primary || "Blue",
+            permissions: [],
+            reason: "Developer role created by bot",
+          })
+        }
 
-    // Check if the role already exists
-    const devRole = message.guild.roles.cache.find((role) => role.name === DEV_ROLE_NAME)
+        if (member.roles.cache.has(role.id)) {
+          return message.reply(`${member.user.tag} already has the ${roleName} role.`)
+        }
 
-    if (devRole) {
-      // Role exists, so remove it
-      logger.info(`Removing dev role from ${message.guild.name}`)
-      await devRole.delete(`Removed by developer ${message.author.tag}`)
-      logger.info(`Removed dev role from ${message.guild.name}`)
+        await member.roles.add(role)
+        await message.reply(`✅ Added ${roleName} role to ${member.user.tag}`)
+        break
+      }
 
-      // Create success embed for removal
-      const embed = new EmbedBuilder()
-        .setTitle("Developer Role Removed")
-        .setDescription(`The ${DEV_ROLE_NAME} role has been removed from this server.`)
-        .setColor(Colors.Red)
-        .addFields({ name: "Server", value: message.guild.name })
-        .setFooter({ text: `Requested by ${message.author.tag}` })
-        .setTimestamp()
+      case "remove": {
+        const role = message.guild.roles.cache.find((r) => r.name === roleName)
 
-      await response.edit({ content: null, embeds: [embed] })
-    } else {
-      // Role doesn't exist, so create it
-      logger.info(`Creating dev role in ${message.guild.name}`)
-      const newRole = await message.guild.roles.create({
-        name: DEV_ROLE_NAME,
-        permissions: [PermissionFlagsBits.Administrator],
-        reason: `Developer role requested by ${message.author.tag}`,
-        hoist: false, // Don't show role separately in member list
-        mentionable: false, // Don't allow role to be mentioned
-      })
-      logger.info(`Created dev role in ${message.guild.name}`)
+        if (!role) {
+          return message.reply(`Role "${roleName}" not found.`)
+        }
 
-      // Get the member object for the developer
-      const member = await message.guild.members.fetch(message.author.id)
+        if (!member.roles.cache.has(role.id)) {
+          return message.reply(`${member.user.tag} doesn't have the ${roleName} role.`)
+        }
 
-      // Add the role to the developer
-      await member.roles.add(newRole, `Self-assigned via dev-role command`)
-      logger.info(`Added dev role to ${message.author.tag} in ${message.guild.name}`)
+        await member.roles.remove(role)
+        await message.reply(`✅ Removed ${roleName} role from ${member.user.tag}`)
+        break
+      }
 
-      // Create success embed for creation
-      const embed = new EmbedBuilder()
-        .setTitle("Developer Role Added")
-        .setDescription(`You have been given the ${DEV_ROLE_NAME} role with Administrator permissions.`)
-        .setColor(Colors.Purple)
-        .addFields({ name: "Server", value: message.guild.name })
-        .setFooter({ text: `Requested by ${message.author.tag}` })
-        .setTimestamp()
-
-      await response.edit({ content: null, embeds: [embed] })
+      default:
+        await message.reply("Invalid action. Use: add or remove")
     }
   } catch (error) {
-    logger.error(`Error toggling dev role in ${message.guild?.name}:`, error)
-    await response.edit("An error occurred while managing the developer role.")
+    await message.reply("❌ An error occurred while managing the developer role.")
   }
 }

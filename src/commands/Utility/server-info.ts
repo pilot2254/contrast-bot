@@ -1,111 +1,40 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type Message,
-  EmbedBuilder,
-  ChannelType,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 
+// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("server-info")
-  .setDescription("Displays information about the current server")
+  .setDescription("Shows information about the current server")
 
+// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
-    return interaction.reply({
-      content: "This command can only be used in a server, not in DMs or group chats.",
-      ephemeral: true,
-    })
+    return interaction.reply({ content: "This command can only be used in a server.", ephemeral: true })
   }
 
   const guild = interaction.guild
-  await guild.fetch()
-
-  const textChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildText).size
-  const voiceChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice).size
-  const categoryChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildCategory).size
+  const owner = await guild.fetchOwner()
 
   const embed = new EmbedBuilder()
-    .setTitle(`${guild.name} Server Information`)
+    .setTitle(`Server Information: ${guild.name}`)
     .setColor(botInfo.colors.primary)
-    .setThumbnail(guild.iconURL({ size: 1024 }) || "")
+    .setThumbnail(guild.iconURL())
     .addFields(
       { name: "Server ID", value: guild.id, inline: true },
-      { name: "Created On", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`, inline: true },
-      { name: "Owner", value: `<@${guild.ownerId}>`, inline: true },
-      {
-        name: "Members",
-        value: `Total: ${guild.memberCount}`,
-        inline: true,
-      },
-      {
-        name: "Channels",
-        value: `Text: ${textChannels} | Voice: ${voiceChannels} | Categories: ${categoryChannels}`,
-        inline: true,
-      },
-      {
-        name: "Other",
-        value: `Roles: ${guild.roles.cache.size} | Emojis: ${guild.emojis.cache.size}`,
-        inline: true,
-      },
+      { name: "Owner", value: `${owner.user.tag}`, inline: true },
+      { name: "Created", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`, inline: true },
+      { name: "Members", value: guild.memberCount.toString(), inline: true },
+      { name: "Channels", value: guild.channels.cache.size.toString(), inline: true },
+      { name: "Roles", value: guild.roles.cache.size.toString(), inline: true },
+      { name: "Boost Level", value: guild.premiumTier.toString(), inline: true },
+      { name: "Boosts", value: guild.premiumSubscriptionCount?.toString() || "0", inline: true },
+      { name: "Verification Level", value: guild.verificationLevel.toString(), inline: true },
     )
-    .setFooter({ text: `Requested by ${interaction.user.tag}` })
     .setTimestamp()
 
-  if (guild.banner) {
-    embed.setImage(guild.bannerURL({ size: 1024 }) || "")
+  if (guild.description) {
+    embed.setDescription(guild.description)
   }
 
   await interaction.reply({ embeds: [embed] })
-}
-
-export const name = "server-info"
-export const aliases = ["serverinfo", "server"]
-export const description = "Displays information about the current server"
-
-export async function run(message: Message, _args: string[]) {
-  if (!message.guild) {
-    return message.reply("This command can only be used in a server, not in DMs or group chats.")
-  }
-
-  const guild = message.guild
-  await guild.fetch()
-
-  const textChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildText).size
-  const voiceChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildVoice).size
-  const categoryChannels = guild.channels.cache.filter((c) => c.type === ChannelType.GuildCategory).size
-
-  const embed = new EmbedBuilder()
-    .setTitle(`${guild.name} Server Information`)
-    .setColor(botInfo.colors.primary)
-    .setThumbnail(guild.iconURL({ size: 1024 }) || "")
-    .addFields(
-      { name: "Server ID", value: guild.id, inline: true },
-      { name: "Created On", value: `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>`, inline: true },
-      { name: "Owner", value: `<@${guild.ownerId}>`, inline: true },
-      {
-        name: "Members",
-        value: `Total: ${guild.memberCount}`,
-        inline: true,
-      },
-      {
-        name: "Channels",
-        value: `Text: ${textChannels} | Voice: ${voiceChannels} | Categories: ${categoryChannels}`,
-        inline: true,
-      },
-      {
-        name: "Other",
-        value: `Roles: ${guild.roles.cache.size} | Emojis: ${guild.emojis.cache.size}`,
-        inline: true,
-      },
-    )
-    .setFooter({ text: `Requested by ${message.author.tag}` })
-    .setTimestamp()
-
-  if (guild.banner) {
-    embed.setImage(guild.bannerURL({ size: 1024 }) || "")
-  }
-
-  await message.reply({ embeds: [embed] })
 }
