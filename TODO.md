@@ -28,14 +28,14 @@
   - [x] Add auto Release on Tag creation
   - [x] Reject stale PR's
   
-- [ ] Commands
-  - [ ] General Command System
-    - [ ] Remove all legacy prefix commands
-    - [ ] Migrate to slash (`/`) commands exclusively (except developer commands)
-  - [ ] Developer Commands
+- [x] Commands
+  - [x] General Command System
+    - [x] Remove all legacy prefix commands
+    - [x] Migrate to slash (`/`) commands exclusively (except developer commands)
+  - [x] Developer Commands
     - [x] Restrict usage to developers only
-    - [ ] Remove slash (`/`) command support for developer commands
-    - [ ] Retain only prefix commands for developer tools
+    - [x] Remove slash (`/`) command support for developer commands
+    - [x] Retain only prefix commands for developer tools
 
 ### Economy
 
