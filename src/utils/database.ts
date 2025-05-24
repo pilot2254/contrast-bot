@@ -166,6 +166,72 @@ async function initTables(): Promise<void> {
       )
     `)
 
+    // Create economy tables
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS user_economy (
+    user_id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    balance INTEGER NOT NULL DEFAULT 0,
+    total_earned INTEGER NOT NULL DEFAULT 0,
+    total_spent INTEGER NOT NULL DEFAULT 0,
+    last_daily INTEGER NOT NULL DEFAULT 0,
+    daily_streak INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL DEFAULT 0
+  )
+`)
+
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    amount INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    related_user_id TEXT,
+    FOREIGN KEY (user_id) REFERENCES user_economy (user_id)
+  )
+`)
+
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS shop_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT NOT NULL,
+    price INTEGER NOT NULL,
+    category TEXT NOT NULL DEFAULT 'general',
+    effects TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL DEFAULT 0
+  )
+`)
+
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS user_inventory (
+    user_id TEXT NOT NULL,
+    item_id INTEGER NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    purchase_date INTEGER NOT NULL,
+    PRIMARY KEY (user_id, item_id),
+    FOREIGN KEY (user_id) REFERENCES user_economy (user_id),
+    FOREIGN KEY (item_id) REFERENCES shop_items (id)
+  )
+`)
+
+    await db?.exec(`
+  CREATE TABLE IF NOT EXISTS gambling_stats (
+    user_id TEXT PRIMARY KEY,
+    total_bet INTEGER NOT NULL DEFAULT 0,
+    total_won INTEGER NOT NULL DEFAULT 0,
+    total_lost INTEGER NOT NULL DEFAULT 0,
+    games_played INTEGER NOT NULL DEFAULT 0,
+    biggest_win INTEGER NOT NULL DEFAULT 0,
+    updated_at INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES user_economy (user_id)
+  )
+`)
+
     // Initialize maintenance mode if not exists
     const maintenanceExists = await db?.get("SELECT 1 FROM bot_settings WHERE key = 'maintenance_mode'")
     if (!maintenanceExists) {

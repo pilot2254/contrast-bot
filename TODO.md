@@ -46,14 +46,14 @@
 
 #### Economy Commands
 
-- [ ] `balance.ts`
-  - [ ] Check currency balance
-  - [ ] View transaction history
-  - [ ] Transfer currency
-  - [ ] Leaderboard
-    - [ ] Total Earned
-    - [ ] Total Spent
-    - [ ] Current Balance
+- [x] `balance.ts`
+  - [x] Check currency balance
+  - [x] View transaction history
+  - [x] Transfer currency
+  - [x] Leaderboard
+    - [x] Total Earned
+    - [x] Total Spent
+    - [x] Current Balance
 
 - [ ] `daily.ts`
   - [ ] Claim daily currency
