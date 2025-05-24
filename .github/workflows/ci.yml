@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ['*'] # All branches
+    branches: ['main', 'development'] # Add development branch
   pull_request:
-    branches: [ main ] # Main branch
+    branches: ['main', 'development'] # Add development branch
 
 jobs:
   build:
