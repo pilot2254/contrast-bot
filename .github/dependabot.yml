@@ -5,20 +5,34 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    target-branch: "development"
+    open-pull-requests-limit: 5
     # Specify labels for npm pull requests
     labels:
       - "npm"
       - "dependencies"
-    # Allow up to 10 open pull requests for npm dependencies
+    # Group minor and patch updates together
+    groups:
+      npm-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+    target-branch: "development"
+    open-pull-requests-limit: 3
     # Specify labels for GitHub Actions pull requests
     labels:
       - "github-actions"
       - "dependencies"
+    # Group GitHub Actions updates
+    groups:
+      github-actions:
+        patterns:
+          - "*"
