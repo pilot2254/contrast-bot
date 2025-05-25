@@ -1,10 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import {
-  getOrCreateUserEconomy,
-  transferCurrency,
-  getTransactionHistory,
-  getEconomyLeaderboard,
-} from "../../utils/economy-manager"
+import { getOrCreateUserEconomy, transferCurrency, getEconomyLeaderboard } from "../../utils/economy-manager"
 import { botInfo } from "../../utils/bot-info"
 
 // Slash command definition
@@ -26,19 +21,6 @@ export const data = new SlashCommandBuilder()
       .addUserOption((option) => option.setName("user").setDescription("User to transfer coins to").setRequired(true))
       .addIntegerOption((option) =>
         option.setName("amount").setDescription("Amount of coins to transfer").setRequired(true).setMinValue(1),
-      ),
-  )
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName("history")
-      .setDescription("View your transaction history")
-      .addIntegerOption((option) =>
-        option
-          .setName("limit")
-          .setDescription("Number of transactions to show (1-20)")
-          .setRequired(false)
-          .setMinValue(1)
-          .setMaxValue(20),
       ),
   )
   .addSubcommand((subcommand) =>
@@ -135,37 +117,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .setTimestamp()
 
         await interaction.reply({ embeds: [embed] })
-        break
-      }
-
-      case "history": {
-        const limit = interaction.options.getInteger("limit") || 10
-        const transactions = await getTransactionHistory(interaction.user.id, limit)
-
-        if (transactions.length === 0) {
-          return interaction.reply({ content: "📝 You have no transaction history yet!", ephemeral: true })
-        }
-
-        const embed = new EmbedBuilder()
-          .setTitle(`📋 Transaction History`)
-          .setDescription(`Last ${transactions.length} transactions`)
-          .setColor(botInfo.colors.primary)
-          .setFooter({ text: `Requested by ${interaction.user.username}` })
-          .setTimestamp()
-
-        transactions.forEach((transaction, index) => {
-          const date = new Date(transaction.timestamp).toLocaleDateString()
-          const amount = transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount.toString()
-          const emoji = transaction.amount > 0 ? "📈" : "📉"
-
-          embed.addFields({
-            name: `${emoji} ${transaction.description}`,
-            value: `${amount.toLocaleString()} coins • ${date}`,
-            inline: false,
-          })
-        })
-
-        await interaction.reply({ embeds: [embed], ephemeral: true })
         break
       }
 

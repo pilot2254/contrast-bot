@@ -62,7 +62,13 @@ export async function placeBet(
     }
 
     // Remove the bet amount from balance
-    const result = await removeCurrency(userId, username, amount, TRANSACTION_TYPES.GAMBLING_LOSS, `${gameType} bet`)
+    const result = await removeCurrency(
+      userId,
+      username,
+      amount,
+      TRANSACTION_TYPES.GAMBLING_BET,
+      `${gameType} bet placed`,
+    )
 
     if (!result.success) {
       return { success: false, message: result.message }
@@ -102,7 +108,7 @@ export async function processWin(
       username,
       winAmount,
       TRANSACTION_TYPES.GAMBLING_WIN,
-      `${gameType} win (${winAmount - betAmount} profit)`,
+      `${gameType} win - ${winAmount.toLocaleString()} coins (${(winAmount - betAmount).toLocaleString()} profit)`,
     )
 
     if (!success) {

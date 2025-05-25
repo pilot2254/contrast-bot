@@ -77,10 +77,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     // Calculate multiplier and potential winnings
     const multiplier = Math.floor(range * GAME_CONFIG.MULTIPLIER_RATIO)
-    const winnings = isBetting && isWin ? betAmount * multiplier : 0
+    const winnings = isBetting && isWin && betAmount ? betAmount * multiplier : 0
 
     // Process winnings if betting and won
-    if (isBetting && isWin) {
+    if (isBetting && isWin && betAmount) {
       await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.NUMBER_GUESS)
     }
 

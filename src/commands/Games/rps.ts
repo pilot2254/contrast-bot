@@ -55,11 +55,20 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       isBetting = true
     }
 
-    // Calculate winnings (2x multiplier for RPS wins)
-    const winnings = isBetting && result === "win" ? betAmount * 2 : 0
+    // Calculate winnings (2x multiplier for RPS wins, refund for ties)
+    let winnings = 0
+    if (isBetting && betAmount) {
+      if (result === "win") {
+        winnings = betAmount * 2
+      } else if (result === "tie") {
+        winnings = betAmount // Refund the bet on tie
+      }
+      // For losses, winnings stays 0
+    }
 
-    // Process winnings if betting and won
-    if (isBetting && result === "win") {
+    // Process winnings if betting and won/tied
+    if (isBetting && betAmount && (result === "win" || result === "tie")) {
+      const description = result === "win" ? "RPS win" : "RPS tie (refund)"
       await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.RPS)
     }
 
@@ -180,14 +189,17 @@ function createResultEmbed(
     } else if (result === "loss") {
       embed.addFields({ name: "💸 Lost", value: `${betAmount.toLocaleString()} coins`, inline: true })
     } else {
-      embed.addFields({ name: "🤝 Tie", value: "No coins lost or won", inline: true })
+      embed.addFields(
+        { name: "🤝 Tie - Refunded", value: `${betAmount.toLocaleString()} coins`, inline: true },
+        { name: "💰 No Loss", value: "Bet returned", inline: true },
+      )
     }
 
     embed.addFields({ name: "💵 New Balance", value: `${newBalance.toLocaleString()} coins`, inline: true })
   } else {
     embed.addFields({
       name: "💡 Tip",
-      value: "Add a bet next time to win coins! Wins pay 2x your bet!",
+      value: "Add a bet next time to win coins! Wins pay 2x your bet, ties refund your bet!",
       inline: false,
     })
   }

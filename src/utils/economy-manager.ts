@@ -39,6 +39,7 @@ export const TRANSACTION_TYPES = {
   SHOP_PURCHASE: "shop_purchase",
   GAMBLING_WIN: "gambling_win",
   GAMBLING_LOSS: "gambling_loss",
+  GAMBLING_BET: "gambling_bet",
   ADMIN_ADD: "admin_add",
   ADMIN_REMOVE: "admin_remove",
   BONUS: "bonus",
