@@ -122,12 +122,16 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 // Helper function to parse time strings like "1h30m", "2d", "30s"
 function parseTimeString(timeString: string): number | null {
+  // Remove any spaces and convert to lowercase
+  const cleanTimeString = timeString.replace(/\s+/g, "").toLowerCase()
+
   const regex = /^(\d+)([dhms])(?:(\d+)([dhms]))?(?:(\d+)([dhms]))?(?:(\d+)([dhms]))?$/i
-  const match = timeString.match(regex)
+  const match = cleanTimeString.match(regex)
 
   if (!match) return null
 
   let milliseconds = 0
+  const usedUnits = new Set<string>()
 
   for (let i = 1; i < match.length; i += 2) {
     if (!match[i]) continue
@@ -135,23 +139,31 @@ function parseTimeString(timeString: string): number | null {
     const value = Number.parseInt(match[i])
     const unit = match[i + 1]?.toLowerCase()
 
-    if (isNaN(value) || !unit) continue
+    if (isNaN(value) || !unit || value <= 0) continue
+
+    // Prevent duplicate units
+    if (usedUnits.has(unit)) return null
+    usedUnits.add(unit)
 
     switch (unit) {
       case "d":
+        if (value > 7) return null // Max 7 days
         milliseconds += value * 24 * 60 * 60 * 1000
         break
       case "h":
+        if (value > 23) return null // Max 23 hours
         milliseconds += value * 60 * 60 * 1000
         break
       case "m":
+        if (value > 59) return null // Max 59 minutes
         milliseconds += value * 60 * 1000
         break
       case "s":
+        if (value > 59) return null // Max 59 seconds
         milliseconds += value * 1000
         break
     }
   }
 
-  return milliseconds
+  return milliseconds > 0 ? milliseconds : null
 }

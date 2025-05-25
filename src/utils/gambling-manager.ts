@@ -148,6 +148,7 @@ async function updateGamblingStats(
 
     if (!currentStats) {
       // Create new stats record
+      const lostAmount = betAmount > wonAmount ? betAmount - wonAmount : 0
       await db.run(
         `INSERT INTO gambling_stats (
           user_id, total_bet, total_won, total_lost, games_played, biggest_win, updated_at
@@ -155,14 +156,15 @@ async function updateGamblingStats(
         userId,
         betAmount,
         wonAmount,
-        betAmount > wonAmount ? betAmount - wonAmount : 0,
+        lostAmount,
         wonAmount,
         now,
       )
     } else {
       // Update existing stats
       const newBiggestWin = Math.max(currentStats.biggest_win, wonAmount)
-      const newTotalLost = currentStats.total_lost + (betAmount > wonAmount ? betAmount - wonAmount : 0)
+      const lostThisGame = betAmount > wonAmount ? betAmount - wonAmount : 0
+      const newTotalLost = currentStats.total_lost + lostThisGame
 
       await db.run(
         `UPDATE gambling_stats SET

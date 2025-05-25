@@ -89,8 +89,21 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const targetUser = interaction.options.getUser("user", true)
         const amount = interaction.options.getInteger("amount", true)
 
+        // Add validation checks
         if (targetUser.bot) {
           return interaction.reply({ content: "❌ You cannot transfer coins to bots!", ephemeral: true })
+        }
+
+        if (targetUser.id === interaction.user.id) {
+          return interaction.reply({ content: "❌ You cannot transfer coins to yourself!", ephemeral: true })
+        }
+
+        if (amount <= 0) {
+          return interaction.reply({ content: "❌ Transfer amount must be positive!", ephemeral: true })
+        }
+
+        if (amount > 1000000) {
+          return interaction.reply({ content: "❌ Maximum transfer amount is 1,000,000 coins!", ephemeral: true })
         }
 
         const result = await transferCurrency(

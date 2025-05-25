@@ -133,6 +133,17 @@ export async function addCurrency(
   relatedUserId?: string,
 ): Promise<boolean> {
   try {
+    // Validate amount
+    if (amount <= 0) {
+      logger.warn(`Attempted to add non-positive amount: ${amount}`)
+      return false
+    }
+
+    if (amount > 10000000) {
+      logger.warn(`Attempted to add excessive amount: ${amount}`)
+      return false
+    }
+
     const db = getDb()
     const now = Date.now()
 
@@ -153,6 +164,12 @@ export async function addCurrency(
         now,
         userId,
       )
+
+      // Verify the update worked
+      const updatedUser = await db.get("SELECT balance FROM user_economy WHERE user_id = ?", userId)
+      if (!updatedUser) {
+        throw new Error("Failed to update user balance")
+      }
 
       // Create transaction record
       await db.run(

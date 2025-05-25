@@ -31,10 +31,28 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const text = interaction.options.getString("text", true)
         const author = interaction.options.getUser("author") || interaction.user
 
-        await addQuote(text, author.username, author.id)
+        // Validate quote text
+        if (text.length < 10) {
+          return interaction.reply({
+            content: "❌ Quote must be at least 10 characters long!",
+            ephemeral: true,
+          })
+        }
+
+        if (text.length > 1000) {
+          return interaction.reply({
+            content: "❌ Quote must be less than 1000 characters!",
+            ephemeral: true,
+          })
+        }
+
+        // Remove excessive whitespace
+        const cleanText = text.trim().replace(/\s+/g, " ")
+
+        await addQuote(cleanText, author.username, author.id)
 
         await interaction.reply({
-          content: `Quote added successfully! Attributed to ${author.tag}`,
+          content: `✅ Quote added successfully! Attributed to ${author.tag}`,
           ephemeral: true,
         })
         break

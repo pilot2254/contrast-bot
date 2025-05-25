@@ -227,18 +227,32 @@ async function claimDailyReward(
 
       // Calculate new streak
       let newStreak = economy.dailyStreak
-      const hoursSinceLastDaily = (now - economy.lastDaily) / (1000 * 60 * 60)
+      const hoursSinceLastDaily = economy.lastDaily === 0 ? 0 : (now - economy.lastDaily) / (1000 * 60 * 60)
 
       if (economy.lastDaily === 0) {
         // First time claiming
         newStreak = 1
-      } else if (hoursSinceLastDaily <= DAILY_CONFIG.STREAK_RESET_HOURS) {
-        // Within streak window
+      } else if (
+        hoursSinceLastDaily >= DAILY_CONFIG.COOLDOWN_HOURS &&
+        hoursSinceLastDaily <= DAILY_CONFIG.STREAK_RESET_HOURS
+      ) {
+        // Within streak window and past cooldown
         newStreak = economy.dailyStreak + 1
-      } else {
+      } else if (hoursSinceLastDaily > DAILY_CONFIG.STREAK_RESET_HOURS) {
         // Streak broken, reset to 1
         newStreak = 1
+      } else {
+        // Still in cooldown period
+        await db.exec("ROLLBACK")
+        return {
+          success: false,
+          message: "⏰ You've already claimed your daily reward! Come back later.",
+          nextClaimTime: economy.lastDaily + DAILY_CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000,
+        }
       }
+
+      // Ensure streak is never negative
+      newStreak = Math.max(1, newStreak)
 
       // Calculate rewards
       const baseReward = DAILY_CONFIG.BASE_REWARD

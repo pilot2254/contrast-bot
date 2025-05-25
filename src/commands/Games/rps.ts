@@ -204,11 +204,12 @@ function createResultEmbed(
     })
   }
 
-  // Add stats
-  if (stats) {
+  // Add stats - fix null check
+  if (stats && stats.totalGames > 0) {
+    const winRate = ((stats.wins / stats.totalGames) * 100).toFixed(1)
     embed.addFields({
       name: "Your RPS Stats",
-      value: `Wins: ${stats.wins} | Losses: ${stats.losses} | Ties: ${stats.ties} | Win Rate: ${((stats.wins / stats.totalGames) * 100).toFixed(1)}%`,
+      value: `Wins: ${stats.wins} | Losses: ${stats.losses} | Ties: ${stats.ties} | Win Rate: ${winRate}%`,
       inline: false,
     })
   }
