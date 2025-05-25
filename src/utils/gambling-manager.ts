@@ -19,6 +19,7 @@ export const GAME_TYPES = {
   NUMBER_GUESS: "number_guess",
   COINFLIP: "coinflip",
   DICE_ROLL: "dice_roll",
+  RUSSIAN_ROULETTE: "russian_roulette",
 } as const
 
 /**
@@ -134,7 +135,7 @@ export async function processWin(
  * @param wonAmount Amount won (0 if lost)
  * @param profit Net profit/loss
  */
-async function updateGamblingStats(
+export async function updateGamblingStats(
   userId: string,
   betAmount: number,
   wonAmount: number,
