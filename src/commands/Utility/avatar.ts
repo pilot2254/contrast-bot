@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -23,6 +24,6 @@ function createAvatarEmbed(user: any) {
     .setDescription(
       `[PNG](${user.displayAvatarURL({ size: 4096, extension: "png" })}) | [JPG](${user.displayAvatarURL({ size: 4096, extension: "jpg" })}) | [WEBP](${user.displayAvatarURL({ size: 4096, extension: "webp" })})`,
     )
-    .setFooter({ text: `User ID: ${user.id}` })
+    .setFooter({ text: `${config.botName} • User ID: ${user.id}` })
     .setTimestamp()
 }

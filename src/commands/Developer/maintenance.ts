@@ -1,5 +1,6 @@
 import type { Message } from "discord.js"
 import { setMaintenanceMode, isMaintenanceMode } from "../../utils/blacklist-manager"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "maintenance"
@@ -15,16 +16,20 @@ export async function run(message: Message, args: string[]) {
   try {
     if (!action || action === "status") {
       const status = await isMaintenanceMode()
-      await message.reply(`🔧 Maintenance mode is currently **${status ? "ON" : "OFF"}**`)
+      await message.reply(`🔧 ${config.botName} maintenance mode is currently **${status ? "ON" : "OFF"}**`)
       return
     }
 
     if (action === "on") {
       await setMaintenanceMode(true)
-      await message.reply("🔧 Maintenance mode has been **ENABLED**. Regular users cannot use commands.")
+      await message.reply(
+        `🔧 ${config.botName} maintenance mode has been **ENABLED**. Regular users cannot use commands.`,
+      )
     } else if (action === "off") {
       await setMaintenanceMode(false)
-      await message.reply("✅ Maintenance mode has been **DISABLED**. All users can use commands again.")
+      await message.reply(
+        `✅ ${config.botName} maintenance mode has been **DISABLED**. All users can use commands again.`,
+      )
     } else {
       await message.reply("Invalid option. Use: `on`, `off`, or `status`")
     }

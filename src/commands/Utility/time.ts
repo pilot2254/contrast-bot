@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -46,6 +47,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setDescription(`**${timeString}**`)
       .setColor(botInfo.colors.primary)
       .addFields({ name: "Timezone", value: timezone, inline: true })
+      .setFooter({ text: config.botName })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

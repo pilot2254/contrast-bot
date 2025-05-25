@@ -1,90 +1,57 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
+import { getUserLevel, calculateLevelFromXp, getLevelProgress, getUserRank } from "../../utils/level-manager"
 import { botInfo } from "../../utils/bot-info"
-import { getUserLevel, getLevelProgress, getUserRank } from "../../utils/level-manager"
+import { config } from "../../utils/config"
 
 export const data = new SlashCommandBuilder()
   .setName("level")
-  .setDescription("Check your or another user's level")
-  .addUserOption((option) => option.setName("user").setDescription("The user to check level for").setRequired(false))
+  .setDescription("Check your level and XP")
+  .addUserOption((option) => option.setName("user").setDescription("User to check level for").setRequired(false))
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const targetUser = interaction.options.getUser("user") || interaction.user
 
   try {
-    // Get user level data
     const userLevel = await getUserLevel(targetUser.id, targetUser.username)
-
-    // Get user rank
-    const rank = await getUserRank(targetUser.id)
-
-    // Get progress to next level
-    const progress = getLevelProgress(userLevel.xp, userLevel.level)
+    const currentLevel = calculateLevelFromXp(userLevel.xp)
+    const progress = getLevelProgress(userLevel.xp, currentLevel)
 
     // Create progress bar
-    const progressBar = createProgressBar(progress.progressPercent)
+    const progressBarLength = 20
+    const filledBars = Math.round((progress.progressPercent / 100) * progressBarLength)
+    const emptyBars = progressBarLength - filledBars
+    const progressBar = "█".repeat(filledBars) + "░".repeat(emptyBars)
 
-    // Create embed
     const embed = new EmbedBuilder()
-      .setTitle(`${targetUser.username}'s Level`)
+      .setTitle(`📊 Level Stats - ${targetUser.username}`)
       .setColor(botInfo.colors.primary)
-      .setThumbnail(targetUser.displayAvatarURL({ size: 256 }))
+      .setThumbnail(targetUser.displayAvatarURL())
       .addFields(
-        { name: "Level", value: `${userLevel.level}`, inline: true },
-        { name: "Rank", value: `#${rank}`, inline: true },
-        { name: "Total XP", value: `${userLevel.xp.toLocaleString()}`, inline: true },
+        { name: "🏆 Level", value: currentLevel.toString(), inline: true },
+        { name: "⭐ Total XP", value: userLevel.xp.toLocaleString(), inline: true },
+        { name: "📈 Rank", value: `#${(await getUserRank(targetUser.id)) || "N/A"}`, inline: true },
         {
-          name: "Progress to Level " + (userLevel.level + 1),
-          value: `${progressBar}\n${progress.currentLevelXp.toLocaleString()} / ${progress.nextLevelXp.toLocaleString()} XP (${progress.progressPercent}%)`,
-          inline: false,
-        },
-        {
-          name: "XP Needed",
-          value: `${progress.xpNeeded.toLocaleString()} more XP needed for next level`,
+          name: "📊 Progress to Next Level",
+          value: `${progressBar}\n${progress.currentLevelXp.toLocaleString()}/${progress.nextLevelXp.toLocaleString()} XP (${progress.progressPercent}%)`,
           inline: false,
         },
       )
-      .setFooter({ text: "Earn XP by using commands, playing games, and more!" })
+      .setFooter({ text: `${config.botName} • Global Level System` })
       .setTimestamp()
 
-    // Add stats if it's the user checking their own level
-    if (targetUser.id === interaction.user.id) {
-      embed.addFields(
-        { name: "Commands Used", value: userLevel.totalCommandsUsed.toLocaleString(), inline: true },
-        { name: "Games Played", value: userLevel.totalGamesPlayed.toLocaleString(), inline: true },
-        { name: "Games Won", value: userLevel.totalGamesWon.toLocaleString(), inline: true },
-        {
-          name: "Win Rate",
-          value:
-            userLevel.totalGamesPlayed > 0
-              ? `${((userLevel.totalGamesWon / userLevel.totalGamesPlayed) * 100).toFixed(1)}%`
-              : "N/A",
-          inline: true,
-        },
-        {
-          name: "Total Bet",
-          value: `${userLevel.totalBetAmount.toLocaleString()} coins`,
-          inline: true,
-        },
-      )
+    // Add activity stats if available
+    if (userLevel.totalCommandsUsed > 0 || userLevel.totalGamesPlayed > 0) {
+      const winRate =
+        userLevel.totalGamesPlayed > 0 ? Math.round((userLevel.totalGamesWon / userLevel.totalGamesPlayed) * 100) : 0
+      embed.addFields({
+        name: "🎮 Activity Stats",
+        value: `Commands: ${userLevel.totalCommandsUsed} | Games: ${userLevel.totalGamesPlayed} | Win Rate: ${winRate}%`,
+        inline: false,
+      })
     }
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {
-    await interaction.reply({
-      content: "Failed to retrieve level information. Please try again later.",
-      ephemeral: true,
-    })
+    await interaction.reply({ content: "❌ An error occurred while fetching level data.", ephemeral: true })
   }
-}
-
-// Helper function to create a progress bar
-function createProgressBar(percent: number): string {
-  const filledChar = "█"
-  const emptyChar = "░"
-  const barLength = 20
-
-  const filledLength = Math.round((percent / 100) * barLength)
-  const emptyLength = barLength - filledLength
-
-  return filledChar.repeat(filledLength) + emptyChar.repeat(emptyLength)
 }

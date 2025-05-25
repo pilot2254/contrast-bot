@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -124,7 +125,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         { name: "Reason", value: reason },
         { name: "Message Deletion", value: `${days} day${days === 1 ? "" : "s"}` },
       )
-      .setFooter({ text: `Banned by ${interaction.user.tag}` })
+      .setFooter({ text: `${config.botName} • Banned by ${interaction.user.tag}` })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

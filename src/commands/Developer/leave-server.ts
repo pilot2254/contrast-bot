@@ -1,4 +1,5 @@
 import type { Message, TextChannel } from "discord.js"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "leave-server"
@@ -27,7 +28,7 @@ export async function run(message: Message, args: string[]) {
 
     // Confirm before leaving
     await message.reply(
-      `⚠️ Are you sure you want to leave **${serverName}** (${memberCount} members)?\nReply with \`yes\` to confirm or \`no\` to cancel.`,
+      `⚠️ Are you sure you want ${config.botName} to leave **${serverName}** (${memberCount} members)?\nReply with \`yes\` to confirm or \`no\` to cancel.`,
     )
 
     const filter = (m: Message) => m.author.id === message.author.id && ["yes", "no"].includes(m.content.toLowerCase())

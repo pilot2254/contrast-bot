@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -58,7 +59,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setDescription(`${bannedUser.user.tag || userId} has been unbanned from the server.`)
       .setColor(botInfo.colors.success)
       .addFields({ name: "Reason", value: reason })
-      .setFooter({ text: `Unbanned by ${interaction.user.tag}` })
+      .setFooter({ text: `${config.botName} • Unbanned by ${interaction.user.tag}` })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

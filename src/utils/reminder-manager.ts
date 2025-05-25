@@ -1,6 +1,7 @@
 import { type User, type TextChannel, EmbedBuilder } from "discord.js"
 import { logger } from "./logger"
 import { botInfo } from "./bot-info"
+import { config } from "./config"
 
 // Reminder data structure
 interface Reminder {
@@ -94,7 +95,7 @@ async function sendReminder(id: string): Promise<void> {
         name: "Set",
         value: `<t:${Math.floor(reminder.timestamp / 1000) - Math.floor(reminder.timestamp - Date.now()) / 1000}:R>`,
       })
-      .setFooter({ text: `Reminder for <@${reminder.userId}>` })
+      .setFooter({ text: `${config.botName} • Reminder for <@${reminder.userId}>` })
       .setTimestamp()
 
     await channel.send({ content: `<@${reminder.userId}>, here's your reminder:`, embeds: [embed] })

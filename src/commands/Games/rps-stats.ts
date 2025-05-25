@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -36,6 +37,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         { name: "📈 Win Rate", value: `${winRate}%`, inline: true },
         { name: "🎯 Score", value: `${stats.wins - stats.losses}`, inline: true },
       )
+      .setFooter({ text: config.botName })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

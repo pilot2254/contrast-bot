@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getOrCreateUserEconomy, TRANSACTION_TYPES, type UserEconomy } from "../../utils/economy-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 import { getDb } from "../../utils/database"
 
 // Daily reward config
@@ -44,6 +45,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .setTitle("⏰ Daily Reward")
             .setDescription(result.message)
             .setColor(botInfo.colors.warning)
+            .setFooter({ text: config.botName })
             .setTimestamp()
 
           if (result.nextClaimTime) {
@@ -67,6 +69,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             { name: "💵 New Balance", value: `${result.newBalance!.toLocaleString()} coins`, inline: true },
             { name: "⏰ Next Claim", value: `<t:${Math.floor(result.nextClaimTime! / 1000)}:R>`, inline: true },
           )
+          .setFooter({ text: config.botName })
           .setTimestamp()
 
         // Add special messages for milestones
@@ -92,6 +95,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             { name: "🔥 Current Streak", value: `${economy.dailyStreak} days`, inline: true },
             { name: "💰 Next Reward", value: `${calculateDailyReward(economy.dailyStreak + 1)} coins`, inline: true },
           )
+          .setFooter({ text: config.botName })
           .setTimestamp()
 
         if (status.canClaim) {
@@ -120,6 +124,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const embed = new EmbedBuilder()
           .setTitle("🔥 Daily Streak Leaderboard")
           .setColor(botInfo.colors.primary)
+          .setFooter({ text: `${config.botName} • Showing top ${leaderboard.length} users by daily streak` })
           .setTimestamp()
 
         const description = leaderboard
@@ -131,7 +136,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .join("\n")
 
         embed.setDescription(description)
-        embed.setFooter({ text: `Showing top ${leaderboard.length} users by daily streak` })
 
         await interaction.reply({ embeds: [embed] })
         break
@@ -145,7 +149,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 }
 
-// Helper functions
+// Helper functions remain the same...
 async function claimDailyReward(userId: string, username: string) {
   try {
     const db = getDb()

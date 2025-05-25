@@ -2,6 +2,7 @@ import type { Message } from "discord.js"
 import { loadCommands } from "../../utils/command-loader"
 import { logger } from "../../utils/logger"
 import path from "path"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "reload"
@@ -30,7 +31,7 @@ export async function run(message: Message, _args: string[]) {
 
     logger.info(`Reloaded ${commands.size} slash commands and ${prefixCommands.size} prefix commands`)
     await message.reply(
-      `✅ Successfully reloaded ${commands.size} slash commands and ${prefixCommands.size} prefix commands.`,
+      `✅ Successfully reloaded ${commands.size} ${config.botName} slash commands and ${prefixCommands.size} prefix commands.`,
     )
   } catch (error) {
     logger.error("Error reloading commands:", error)

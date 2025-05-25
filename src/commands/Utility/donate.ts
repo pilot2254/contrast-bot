@@ -1,15 +1,16 @@
-import { SlashCommandBuilder, EmbedBuilder, type CommandInteraction } from "discord.js"
+import { SlashCommandBuilder, EmbedBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { config } from "../../utils/config"
 
-export const data = new SlashCommandBuilder().setName("donate").setDescription("Support the Contrast Bot developers")
+export const data = new SlashCommandBuilder().setName("donate").setDescription("Support the bot developers")
 
-export async function execute(interaction: CommandInteraction) {
+export async function execute(interaction: ChatInputCommandInteraction) {
   const donateUrl = process.env.DONATE_URL || "https://ko-fi.com/pilot2254"
 
   const embed = new EmbedBuilder()
     .setColor(0x00ff00)
-    .setTitle("💖 Support Contrast Bot")
+    .setTitle(`💖 Support ${config.botName}`)
     .setDescription(
-      "Help us keep Contrast Bot running and support future development!\n\n" +
+      `Help us keep ${config.botName} running and support future development!\n\n` +
         "Your donations help us:\n" +
         "• Keep the bot online 24/7\n" +
         "• Add new features and games\n" +
@@ -21,7 +22,7 @@ export async function execute(interaction: CommandInteraction) {
       { name: "🔗 Donation Link", value: `[Click here to donate](${donateUrl})`, inline: false },
       { name: "💝 Thank You!", value: "Your support means the world to us!", inline: false },
     )
-    .setFooter({ text: "Contrast Bot • Made with ❤️" })
+    .setFooter({ text: `${config.botName} • Made with ❤️` })
     .setTimestamp()
 
   await interaction.reply({ embeds: [embed], flags: 64 })

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder, type TextChannel } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 import { createReminder, getUserReminders, cancelReminder } from "../../utils/reminder-manager"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -64,7 +65,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setDescription(`I'll remind you: ${message}`)
       .setColor(botInfo.colors.primary)
       .addFields({ name: "When", value: `<t:${Math.floor((Date.now() + milliseconds) / 1000)}:R>` })
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
+      .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })
@@ -81,7 +82,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
       .setTitle("Your Reminders")
       .setColor(botInfo.colors.primary)
-      .setFooter({ text: `Requested by ${interaction.user.tag}` })
+      .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
       .setTimestamp()
 
     reminders.forEach((reminder, index) => {

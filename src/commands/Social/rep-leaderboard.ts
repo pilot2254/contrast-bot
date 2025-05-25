@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getTopUsers } from "../../utils/reputation-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -30,6 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTitle("🏆 Reputation Leaderboard")
       .setColor(botInfo.colors.primary)
       .setTimestamp()
+      .setFooter({ text: `${config.botName} • Showing top ${topUsers.length} users` })
 
     const description = topUsers
       .map((user: any, index: number) => {
@@ -40,7 +42,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .join("\n")
 
     embed.setDescription(description)
-    embed.setFooter({ text: `Showing top ${topUsers.length} users` })
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {

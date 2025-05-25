@@ -36,28 +36,28 @@ export async function execute(message: Message): Promise<void> {
   if (!command) {
     // If it's not a developer command, suggest using slash commands
     if (!isDeveloper(message.author)) {
-      await message.reply(`This bot uses slash commands! Try \`/help\` to see available commands.`)
+      await message.reply(`This bot uses slash commands! Try \`/help\` to see available ${config.botName} commands.`)
     }
     return
   }
 
   // Check if user is a developer (since all prefix commands are now developer-only)
   if (!isDeveloper(message.author)) {
-    await message.reply("Developer commands can only be used by bot developers.")
+    await message.reply(`${config.botName} developer commands can only be used by bot developers.`)
     return
   }
 
   // Check if user is blacklisted
   const blacklisted = await isBlacklisted(message.author.id)
   if (blacklisted) {
-    await message.reply("You have been blacklisted from using this bot.")
+    await message.reply(`You have been blacklisted from using ${config.botName}.`)
     return
   }
 
   // Check if maintenance mode is enabled (developers can bypass)
   const maintenanceMode = await isMaintenanceMode()
   if (maintenanceMode && !isDeveloper(message.author)) {
-    await message.reply("The bot is currently in maintenance mode. Please try again later.")
+    await message.reply(`${config.botName} is currently in maintenance mode. Please try again later.`)
     return
   }
 

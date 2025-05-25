@@ -1,123 +1,99 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  EmbedBuilder,
+  type Message,
+  type TextChannel,
+} from "discord.js"
 import { botInfo } from "../../utils/bot-info"
-import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
-import { getOrCreateUserEconomy } from "../../utils/economy-manager"
-import { awardGamePlayedXp } from "../../utils/level-manager"
+import { config } from "../../utils/config"
 
-// Game config
-const MIN_RANGE = 2
-const MAX_RANGE = 100000
-const MULTIPLIER_RATIO = 0.95 // 95% of range for house edge
+// Slash command definition
+export const data = new SlashCommandBuilder().setName("number-guess").setDescription("Starts a number guessing game!")
 
-export const data = new SlashCommandBuilder()
-  .setName("number-guess")
-  .setDescription("Guess a number within a range - with optional betting!")
-  .addIntegerOption((option) =>
-    option
-      .setName("range")
-      .setDescription("The range of numbers")
-      .setRequired(true)
-      .setMinValue(MIN_RANGE)
-      .setMaxValue(MAX_RANGE),
-  )
-  .addIntegerOption((option) =>
-    option.setName("guess").setDescription("Your number guess").setRequired(true).setMinValue(1),
-  )
-  .addIntegerOption((option) =>
-    option.setName("bet").setDescription("Amount to bet").setRequired(false).setMinValue(1).setMaxValue(1000000),
-  )
-
+// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const range = interaction.options.getInteger("range", true)
-  const guess = interaction.options.getInteger("guess", true)
-  const betAmount = interaction.options.getInteger("bet")
+  const randomNumber = Math.floor(Math.random() * 100) + 1
+  let guess: number | null = null
+  let attempts = 0
 
-  // Validate guess is within range
-  if (guess < 1 || guess > range) {
-    return interaction.reply({
-      content: `❌ Your guess must be between 1 and ${range}!`,
+  await interaction.reply({
+    content: "I've picked a number between 1 and 100. Start guessing!",
+    ephemeral: false,
+  })
+
+  // Type guard to ensure we have a text-based channel that supports message collection
+  if (!interaction.channel || !("createMessageCollector" in interaction.channel)) {
+    return interaction.followUp({
+      content: "❌ This game cannot be played in this type of channel.",
       ephemeral: true,
     })
   }
 
-  try {
-    // Handle betting if specified
-    let isBetting = false
-    if (betAmount) {
-      const betResult = await placeBet(
-        interaction.user.id,
-        interaction.user.username,
-        betAmount,
-        GAME_TYPES.NUMBER_GUESS,
-      )
+  const filter = (m: Message) => m.author.id === interaction.user.id
+  const collector = (interaction.channel as TextChannel).createMessageCollector({
+    filter,
+    time: 30000,
+  })
 
-      if (!betResult.success) {
-        return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
-      }
-      isBetting = true
+  collector.on("collect", async (m: Message) => {
+    attempts++
+    guess = Number.parseInt(m.content)
+
+    if (isNaN(guess)) {
+      await interaction.followUp({
+        content: "That's not a number! Try again.",
+        ephemeral: true,
+      })
+      return
     }
 
-    // Generate random number and check if user won
-    const winningNumber = Math.floor(Math.random() * range) + 1
-    const isWin = guess === winningNumber
-
-    // Award XP for playing the game
-    await awardGamePlayedXp(interaction.user.id, interaction.user.username, isWin)
-
-    // Calculate multiplier and potential winnings
-    const multiplier = Math.floor(range * MULTIPLIER_RATIO)
-    const winnings = isBetting && isWin && betAmount ? betAmount * multiplier : 0
-
-    // Process winnings if betting and won
-    if (isBetting && isWin && betAmount) {
-      await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.NUMBER_GUESS)
-    }
-
-    // Get updated balance
-    const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
-
-    // Create result embed
-    const embed = new EmbedBuilder()
-      .setTitle("🎲 Number Guessing Game")
-      .setColor(isWin ? botInfo.colors.success : botInfo.colors.error)
-      .addFields(
-        { name: "🎯 Range", value: `1-${range}`, inline: true },
-        { name: "🤔 Your Guess", value: guess.toString(), inline: true },
-        { name: "🎰 Winning Number", value: winningNumber.toString(), inline: true },
-      )
-      .setFooter({ text: `Played by ${interaction.user.username}` })
-      .setTimestamp()
-
-    if (isWin) {
-      embed.setDescription("🎉 **WINNER!** 🎉\nYou guessed the correct number!")
-
-      if (isBetting) {
-        embed.addFields(
-          { name: "💰 Bet", value: `${betAmount!.toLocaleString()} coins`, inline: true },
-          { name: "🎊 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
-          { name: "💵 Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true },
-        )
-      }
+    if (guess < randomNumber) {
+      await interaction.followUp({
+        content: "Too low! Guess higher.",
+        ephemeral: true,
+      })
+    } else if (guess > randomNumber) {
+      await interaction.followUp({
+        content: "Too high! Guess lower.",
+        ephemeral: true,
+      })
     } else {
-      embed.setDescription("❌ **Better luck next time!**\nYou didn't guess the correct number.")
+      const embed = new EmbedBuilder()
+        .setTitle("🎉 Congratulations!")
+        .setDescription(`You guessed the number **${randomNumber}** in ${attempts} attempts!`)
+        .setColor(botInfo.colors.success)
+        .setFooter({ text: `${config.botName} Number Guess` })
+        .setTimestamp()
 
-      if (isBetting) {
-        embed.addFields(
-          { name: "💸 Lost", value: `${betAmount!.toLocaleString()} coins`, inline: true },
-          { name: "💵 Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true },
-        )
-      }
+      await interaction.followUp({ embeds: [embed], ephemeral: false })
+      collector.stop()
+      return
     }
 
-    // Add game info
-    embed.addFields({
-      name: "📊 Game Info",
-      value: `Range: 1-${range} • Multiplier: ${multiplier}x • Win Chance: ${(100 / range).toFixed(1)}%`,
-      inline: false,
-    })
+    if (attempts >= 10) {
+      const embed = new EmbedBuilder()
+        .setTitle("💀 Game Over!")
+        .setDescription(`You ran out of attempts! The number was **${randomNumber}**.`)
+        .setColor(botInfo.colors.error)
+        .setFooter({ text: `${config.botName} Number Guess` })
+        .setTimestamp()
 
-    await interaction.reply({ embeds: [embed] })
-  } catch (error) {
-    await interaction.reply({ content: "❌ An error occurred while processing your guess!", ephemeral: true })
-  }
+      await interaction.followUp({ embeds: [embed], ephemeral: false })
+      collector.stop()
+    }
+  })
+
+  collector.on("end", async (collected) => {
+    if (collected.size === 0 && guess === null) {
+      const embed = new EmbedBuilder()
+        .setTitle("⏰ Time's Up!")
+        .setDescription("You didn't guess the number in time.")
+        .setColor(botInfo.colors.warning)
+        .setFooter({ text: `${config.botName} Number Guess` })
+        .setTimestamp()
+
+      await interaction.followUp({ embeds: [embed], ephemeral: false })
+    }
+  })
 }

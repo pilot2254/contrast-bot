@@ -1,6 +1,7 @@
 import { type Client, Events, ActivityType, type PresenceStatusData } from "discord.js"
 import { logger } from "../utils/logger"
 import { updateGuildCount } from "../utils/stats-manager"
+import { config } from "../utils/config"
 
 export const name = Events.ClientReady
 export const once = true
@@ -56,7 +57,9 @@ export async function execute(client: Client): Promise<void> {
   } catch (error) {
     logger.error("Failed to set presence:", error)
     // Fallback to default presence
-    client.user.setActivity(`/help | Serving ${client.guilds.cache.size} servers`)
+    client.user.setActivity(`${config.botName} | /help | Serving ${client.guilds.cache.size} servers`, {
+      type: ActivityType.Playing,
+    })
   }
 }
 

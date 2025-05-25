@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("ping").setDescription("Replies with bot latency")
@@ -17,7 +18,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       { name: "Bot Latency", value: `${latency}ms`, inline: true },
       { name: "API Latency", value: `${apiLatency}ms`, inline: true },
     )
-    .setFooter({ text: botInfo.name })
+    .setFooter({ text: config.botName })
     .setTimestamp()
 
   await interaction.editReply({ content: null, embeds: [embed] })

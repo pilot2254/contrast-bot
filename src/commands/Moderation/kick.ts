@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -100,7 +101,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setDescription(`${targetUser.tag} has been kicked from the server.`)
       .setColor(botInfo.colors.warning)
       .addFields({ name: "Reason", value: reason })
-      .setFooter({ text: `Kicked by ${interaction.user.tag}` })
+      .setFooter({ text: `${config.botName} • Kicked by ${interaction.user.tag}` })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

@@ -1,5 +1,6 @@
 import type { Message } from "discord.js"
 import { blacklistUser, unblacklistUser, isBlacklisted } from "../../utils/blacklist-manager"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "blacklist"
@@ -54,6 +55,6 @@ export async function run(message: Message, args: string[]) {
         await message.reply(`Invalid action. Use: add, remove, or check`)
     }
   } catch (error) {
-    await message.reply("An error occurred while managing the blacklist.")
+    await message.reply(`An error occurred while managing the ${config.botName} blacklist.`)
   }
 }

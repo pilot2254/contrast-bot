@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getOrCreateUserEconomy, transferCurrency, getEconomyLeaderboard } from "../../utils/economy-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -78,7 +79,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
               inline: true,
             },
           )
-          .setFooter({ text: `Account created` })
+          .setFooter({ text: `${config.botName} • Account created` })
           .setTimestamp(economy.createdAt)
 
         await interaction.reply({ embeds: [embed] })
@@ -127,6 +128,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             { name: "To", value: targetUser.username, inline: true },
             { name: "Amount", value: `${amount.toLocaleString()} coins`, inline: true },
           )
+          .setFooter({ text: config.botName })
           .setTimestamp()
 
         await interaction.reply({ embeds: [embed] })
@@ -151,6 +153,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const embed = new EmbedBuilder()
           .setTitle(`🏆 Economy Leaderboard - ${typeNames[type]}`)
           .setColor(botInfo.colors.primary)
+          .setFooter({ text: `${config.botName} • Showing top ${leaderboard.length} users` })
           .setTimestamp()
 
         const description = leaderboard
@@ -161,7 +164,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .join("\n")
 
         embed.setDescription(description)
-        embed.setFooter({ text: `Showing top ${leaderboard.length} users` })
+        embed.setFooter({ text: `${config.botName} • Showing top ${leaderboard.length} users` })
 
         await interaction.reply({ embeds: [embed] })
         break

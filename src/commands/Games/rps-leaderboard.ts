@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getTopPlayers } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -31,6 +32,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const sortBy = interaction.options.getString("sort") || "wins"
   const limit = interaction.options.getInteger("limit") || 10
 
+  const sortLabels = {
+    wins: "Most Wins",
+    winrate: "Highest Win Rate",
+    total: "Most Games Played",
+  }
+
   try {
     const leaderboard = await getTopPlayers(limit)
 
@@ -41,6 +48,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const embed = new EmbedBuilder()
       .setTitle("🏆 Rock Paper Scissors Leaderboard")
       .setColor(botInfo.colors.primary)
+      .setFooter({ text: `${config.botName} • Sorted by: ${sortLabels[sortBy as keyof typeof sortLabels]}` })
       .setTimestamp()
 
     const description = leaderboard
@@ -59,14 +67,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .join("\n")
 
     embed.setDescription(description)
-
-    const sortLabels = {
-      wins: "Most Wins",
-      winrate: "Highest Win Rate",
-      total: "Most Games Played",
-    }
-
-    embed.setFooter({ text: `Sorted by: ${sortLabels[sortBy as keyof typeof sortLabels]}` })
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {

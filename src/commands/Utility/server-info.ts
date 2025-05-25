@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -30,6 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       { name: "Boosts", value: guild.premiumSubscriptionCount?.toString() || "0", inline: true },
       { name: "Verification Level", value: guild.verificationLevel.toString(), inline: true },
     )
+    .setFooter({ text: config.botName })
     .setTimestamp()
 
   if (guild.description) {

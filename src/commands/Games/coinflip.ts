@@ -1,108 +1,102 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
-import { getOrCreateUserEconomy } from "../../utils/economy-manager"
 import { awardGamePlayedXp } from "../../utils/level-manager"
 
+// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("coinflip")
-  .setDescription("Flips a coin - with optional betting!")
+  .setDescription("Flip a coin and bet on the outcome!")
   .addStringOption((option) =>
     option
       .setName("choice")
-      .setDescription("Your prediction")
-      .setRequired(false)
-      .addChoices({ name: "🪙 Heads", value: "heads" }, { name: "💿 Tails", value: "tails" }),
+      .setDescription("Choose heads or tails")
+      .setRequired(true)
+      .addChoices({ name: "🪙 Heads", value: "heads" }, { name: "🪙 Tails", value: "tails" }),
   )
   .addIntegerOption((option) =>
-    option.setName("bet").setDescription("Amount to bet").setRequired(false).setMinValue(1).setMaxValue(1000000),
+    option
+      .setName("bet")
+      .setDescription("Amount to bet (optional)")
+      .setRequired(false)
+      .setMinValue(1)
+      .setMaxValue(100000),
   )
 
+// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  const userChoice = interaction.options.getString("choice")
-  const betAmount = interaction.options.getInteger("bet")
+  const playerChoice = interaction.options.getString("choice", true)
+  const betAmount = interaction.options.getInteger("bet") || 0
 
-  // Generate result
-  const result = Math.random() < 0.5 ? "heads" : "tails"
-  const resultEmoji = result === "heads" ? "🪙" : "💿"
-  const resultText = result === "heads" ? "Heads" : "Tails"
+  // Determine if this is a gambling game or just for fun
+  const isGambling = betAmount > 0
 
-  // Determine if user won (only if they made a prediction)
-  const isWin = userChoice ? userChoice === result : null
+  if (isGambling) {
+    // Handle betting logic
+    const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.COINFLIP)
 
-  try {
-    // Handle betting if specified
-    let isBetting = false
-    if (betAmount) {
-      if (!userChoice) {
-        return interaction.reply({
-          content: "❌ You must choose heads or tails when betting!",
-          ephemeral: true,
-        })
-      }
-
-      const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.COINFLIP)
-      if (!betResult.success) {
-        return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
-      }
-      isBetting = true
+    if (!betResult.success) {
+      return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
     }
-
-    // Award XP for playing the game
-    await awardGamePlayedXp(interaction.user.id, interaction.user.username, isWin === true)
-
-    // Calculate and process winnings
-    const winnings = isBetting && betAmount && isWin ? betAmount * 2 : 0
-    if (isBetting && betAmount && isWin) {
-      await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.COINFLIP)
-    }
-
-    // Get updated balance
-    const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
-
-    // Create result embed
-    const embed = new EmbedBuilder()
-      .setTitle(`${resultEmoji} Coin Flip`)
-      .setColor(
-        isWin === true ? botInfo.colors.success : isWin === false ? botInfo.colors.error : botInfo.colors.primary,
-      )
-      .setFooter({ text: `Flipped by ${interaction.user.username}` })
-      .setTimestamp()
-
-    if (userChoice) {
-      const userEmoji = userChoice === "heads" ? "🪙" : "💿"
-      const userText = userChoice === "heads" ? "Heads" : "Tails"
-
-      embed.addFields(
-        { name: "🤔 Your Choice", value: `${userEmoji} ${userText}`, inline: true },
-        { name: "🎰 Result", value: `${resultEmoji} ${resultText}`, inline: true },
-        { name: "📊 Outcome", value: isWin ? "🏆 You Win!" : "❌ You Lose!", inline: true },
-      )
-
-      embed.setDescription(isWin ? "🎉 **Correct prediction!** 🎉" : "❌ **Better luck next time!**")
-
-      if (isBetting) {
-        if (isWin) {
-          embed.addFields(
-            { name: "💰 Bet", value: `${betAmount!.toLocaleString()} coins`, inline: true },
-            { name: "🎊 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
-          )
-        } else {
-          embed.addFields({ name: "💸 Lost", value: `${betAmount!.toLocaleString()} coins`, inline: true })
-        }
-        embed.addFields({ name: "💵 Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true })
-      }
-    } else {
-      embed.setDescription(`The coin landed on **${resultText}**!`)
-      embed.addFields({
-        name: "💡 Tip",
-        value: "Choose heads or tails and add a bet to make it more exciting!",
-        inline: false,
-      })
-    }
-
-    await interaction.reply({ embeds: [embed] })
-  } catch (error) {
-    await interaction.reply({ content: "❌ An error occurred while flipping the coin!", ephemeral: true })
   }
+
+  // Flip the coin
+  const coinResult = Math.random() < 0.5 ? "heads" : "tails"
+  const won = playerChoice === coinResult
+
+  // Calculate winnings for gambling
+  let winnings = 0
+  if (isGambling && won) {
+    winnings = betAmount * 2 // 2x multiplier for coinflip
+    await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.COINFLIP)
+  }
+
+  // Award XP for playing
+  await awardGamePlayedXp(interaction.user.id, interaction.user.username, won)
+
+  // Create result embed
+  const embed = new EmbedBuilder()
+    .setTitle("🪙 Coinflip")
+    .setColor(won ? botInfo.colors.success : botInfo.colors.error)
+    .addFields(
+      {
+        name: "Your Choice",
+        value: `🪙 ${playerChoice.charAt(0).toUpperCase() + playerChoice.slice(1)}`,
+        inline: true,
+      },
+      { name: "Coin Result", value: `🪙 ${coinResult.charAt(0).toUpperCase() + coinResult.slice(1)}`, inline: true },
+      { name: "Result", value: won ? "🏆 You Won!" : "💀 You Lost!", inline: true },
+    )
+    .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
+    .setTimestamp()
+
+  if (isGambling) {
+    embed.addFields(
+      { name: "💰 Bet Amount", value: `${betAmount.toLocaleString()} coins`, inline: true },
+      { name: "💎 Winnings", value: won ? `${winnings.toLocaleString()} coins` : "0 coins", inline: true },
+      {
+        name: "📊 Net Result",
+        value: won ? `+${(winnings - betAmount).toLocaleString()} coins` : `-${betAmount.toLocaleString()} coins`,
+        inline: true,
+      },
+    )
+  }
+
+  // Set description based on result
+  if (won) {
+    embed.setDescription(
+      isGambling
+        ? `🎉 **Congratulations!** You won ${winnings.toLocaleString()} coins!`
+        : "🎉 **Lucky guess!** You called it right!",
+    )
+  } else {
+    embed.setDescription(
+      isGambling
+        ? `😔 **Better luck next time!** You lost ${betAmount.toLocaleString()} coins.`
+        : "😔 **Better luck next time!** The coin had other plans.",
+    )
+  }
+
+  await interaction.reply({ embeds: [embed] })
 }

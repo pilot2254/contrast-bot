@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 import { DEVELOPER_IDS } from "../../utils/permissions"
 import { logger } from "../../utils/logger"
 
@@ -15,7 +16,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   try {
     // Create embed for developer list
     const embed = new EmbedBuilder()
-      .setTitle("Bot Developers")
+      .setTitle(`${config.botName} Developers`)
       .setDescription("List of all developers who have special permissions")
       .setColor(botInfo.colors.primary)
       .setFooter({ text: `Requested by ${interaction.user.tag}` })

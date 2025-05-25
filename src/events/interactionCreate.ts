@@ -4,6 +4,7 @@ import { trackCommand } from "../utils/stats-manager"
 import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
 import { isDeveloper } from "../utils/permissions"
 import { awardCommandXp } from "../utils/level-manager"
+import { config } from "../utils/config"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -22,7 +23,7 @@ export async function execute(interaction: Interaction): Promise<void> {
     const blacklisted = await isBlacklisted(interaction.user.id)
     if (blacklisted) {
       await interaction.reply({
-        content: "You have been blacklisted from using this bot.",
+        content: `You have been blacklisted from using ${config.botName}.`,
         ephemeral: true,
       })
       return
@@ -32,7 +33,7 @@ export async function execute(interaction: Interaction): Promise<void> {
     const maintenanceMode = await isMaintenanceMode()
     if (maintenanceMode && !isDeveloper(interaction.user)) {
       await interaction.reply({
-        content: "The bot is currently in maintenance mode. Please try again later.",
+        content: `${config.botName} is currently in maintenance mode. Please try again later.`,
         ephemeral: true,
       })
       return

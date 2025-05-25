@@ -1,4 +1,5 @@
 import type { Message } from "discord.js"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "server-list"
@@ -12,7 +13,7 @@ export async function run(message: Message, _args: string[]) {
   try {
     const guilds = message.client.guilds.cache
 
-    let response = `🏠 **Server List (${guilds.size} servers):**\n\n`
+    let response = `🏠 **${config.botName} Server List (${guilds.size} servers):**\n\n`
 
     const sortedGuilds = guilds.sort((a, b) => b.memberCount - a.memberCount)
 
