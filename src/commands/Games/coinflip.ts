@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 export const data = new SlashCommandBuilder()
   .setName("coinflip")
@@ -46,6 +47,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
       isBetting = true
     }
+
+    // Award XP for playing the game
+    await awardGamePlayedXp(interaction.user.id, interaction.user.username, isWin === true)
 
     // Calculate and process winnings
     const winnings = isBetting && betAmount && isWin ? betAmount * 2 : 0

@@ -1,5 +1,6 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
+import { awardDailyStreakXp } from "./level-manager"
 
 // Define interfaces
 export interface UserEconomy {
@@ -362,5 +363,35 @@ export async function getEconomyLeaderboard(type: "balance" | "earned" | "spent"
   } catch (error) {
     logger.error(`Failed to get economy leaderboard:`, error)
     return []
+  }
+}
+
+export async function handleDailyReward(userId: string, username: string): Promise<void> {
+  try {
+    const db = getDb()
+    const now = Date.now()
+    const user = await getOrCreateUserEconomy(userId, username)
+
+    let newStreak = 1
+
+    if (user.lastDaily && now - user.lastDaily < 24 * 60 * 60 * 1000) {
+      newStreak = user.dailyStreak + 1
+    }
+
+    await db.run(
+      `UPDATE user_economy 
+       SET balance = balance + ?, daily_streak = ?, last_daily = ?, updated_at = ?
+       WHERE user_id = ?`,
+      100, // Example reward amount
+      newStreak,
+      now,
+      now,
+      userId,
+    )
+
+    // Award XP for daily streak
+    await awardDailyStreakXp(userId, username, newStreak)
+  } catch (error) {
+    logger.error(`Failed to handle daily reward for ${userId}:`, error)
   }
 }

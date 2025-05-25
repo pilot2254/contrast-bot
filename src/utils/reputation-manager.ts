@@ -1,5 +1,6 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
+import { awardReputationGivenXp, awardReputationReceivedXp } from "./level-manager"
 
 export interface UserReputation {
   userId: string
@@ -49,9 +50,9 @@ export async function canGiveReputation(
 
 export async function givePositiveRep(
   giverId: string,
-  giverName: string,
+  giverUsername: string,
   receiverId: string,
-  receiverName: string,
+  receiverUsername: string,
 ): Promise<{ success: boolean; message: string }> {
   try {
     const canGive = await canGiveReputation(giverId, receiverId)
@@ -75,9 +76,9 @@ export async function givePositiveRep(
          given_positive = given_positive + 1,
          updated_at = ?`,
         giverId,
-        giverName,
+        giverUsername,
         now,
-        giverName,
+        giverUsername,
         now,
       )
 
@@ -90,9 +91,9 @@ export async function givePositiveRep(
          received_positive = received_positive + 1,
          updated_at = ?`,
         receiverId,
-        receiverName,
+        receiverUsername,
         now,
-        receiverName,
+        receiverUsername,
         now,
       )
 
@@ -109,9 +110,15 @@ export async function givePositiveRep(
       // Get updated reputation
       const receiver = await db.get("SELECT received_positive FROM reputation WHERE user_id = ?", receiverId)
 
+      // Award XP to the giver
+      await awardReputationGivenXp(giverId, giverUsername)
+
+      // Award XP to the receiver
+      await awardReputationReceivedXp(receiverId, receiverUsername)
+
       return {
         success: true,
-        message: `You gave positive reputation to ${receiverName}. They now have ${receiver?.received_positive || 1} positive reputation.`,
+        message: `You gave positive reputation to ${receiverUsername}!`,
       }
     } catch (error) {
       await db.exec("ROLLBACK")

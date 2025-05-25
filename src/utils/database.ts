@@ -191,6 +191,33 @@ async function initTables(): Promise<void> {
       )
     `)
 
+    // Create level system tables
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS user_levels (
+        user_id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        xp INTEGER NOT NULL DEFAULT 0,
+        level INTEGER NOT NULL DEFAULT 0,
+        last_command_xp INTEGER NOT NULL DEFAULT 0,
+        total_commands_used INTEGER NOT NULL DEFAULT 0,
+        total_games_played INTEGER NOT NULL DEFAULT 0,
+        total_games_won INTEGER NOT NULL DEFAULT 0,
+        total_bet_amount INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      )
+    `)
+
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS level_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        old_level INTEGER NOT NULL,
+        new_level INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES user_levels (user_id)
+      )
+    `)
+
     // Initialize default values
     await initDefaultValues()
   } catch (error) {

@@ -1,5 +1,6 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
+import { awardFeedbackXp } from "./level-manager"
 
 // Define the feedback structure
 export interface Feedback {
@@ -28,7 +29,7 @@ export async function initFeedbackManager(): Promise<void> {
  * @param content The feedback content
  * @returns The added feedback entry
  */
-export async function addFeedback(userId: string, username: string, content: string): Promise<Feedback> {
+export async function addFeedback(userId: string, username: string, content: string): Promise<void> {
   try {
     const db = getDb()
     const timestamp = Date.now()
@@ -45,13 +46,8 @@ export async function addFeedback(userId: string, username: string, content: str
 
     logger.info(`Added feedback #${id} from ${username}`)
 
-    return {
-      id,
-      userId,
-      username,
-      content,
-      timestamp,
-    }
+    // After successfully adding feedback, add this line:
+    await awardFeedbackXp(userId, username)
   } catch (error) {
     logger.error("Failed to add feedback:", error)
     throw error

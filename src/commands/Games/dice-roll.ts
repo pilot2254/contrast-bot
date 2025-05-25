@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 // Multiplier configurations
 const MULTIPLIERS = {
@@ -139,6 +140,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           break
       }
     }
+
+    // Award XP for playing the game
+    await awardGamePlayedXp(interaction.user.id, interaction.user.username, isWin)
 
     // Calculate winnings
     const winnings = isBetting && betAmount && isWin ? Math.floor(betAmount * multiplier) : 0

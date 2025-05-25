@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 // Game config
 const MIN_RANGE = 2
@@ -59,6 +60,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Generate random number and check if user won
     const winningNumber = Math.floor(Math.random() * range) + 1
     const isWin = guess === winningNumber
+
+    // Award XP for playing the game
+    await awardGamePlayedXp(interaction.user.id, interaction.user.username, isWin)
 
     // Calculate multiplier and potential winnings
     const multiplier = Math.floor(range * MULTIPLIER_RATIO)

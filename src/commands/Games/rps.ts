@@ -4,6 +4,7 @@ import { recordGame, getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 type RPSChoice = "rock" | "paper" | "scissors"
 type RPSResult = "win" | "loss" | "tie"
@@ -48,6 +49,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     } else {
       result = "loss"
     }
+
+    // Award XP for playing the game
+    await awardGamePlayedXp(interaction.user.id, interaction.user.username, result === "win")
 
     // Handle betting if specified
     let isBetting = false

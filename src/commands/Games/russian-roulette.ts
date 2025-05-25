@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
 import { placeBet, processWin, GAME_TYPES, updateGamblingStats } from "../../utils/gambling-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 // Game config
 const MULTIPLIER = 5
@@ -117,6 +118,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
       await interaction.editReply({ embeds: [resultEmbed] })
     }
+
+    // Award XP for playing games
+    await awardGamePlayedXp(interaction.user.id, interaction.user.username, survived)
   } catch (error) {
     await interaction.editReply({ content: "❌ An error occurred while playing Russian Roulette!" })
   }

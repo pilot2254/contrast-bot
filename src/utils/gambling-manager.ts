@@ -1,6 +1,7 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
 import { getOrCreateUserEconomy, removeCurrency, addCurrency, TRANSACTION_TYPES } from "./economy-manager"
+import { awardBetXp } from "./level-manager"
 
 export interface GamblingStats {
   userId: string
@@ -66,6 +67,10 @@ export async function placeBet(
 
     // Update gambling stats
     await updateGamblingStats(userId, amount, 0, 0)
+
+    // Award XP for placing a bet
+    await awardBetXp(userId, username, amount)
+
     return { success: true, message: "Bet placed successfully" }
   } catch (error) {
     logger.error(`Failed to place bet for ${userId}:`, error)
