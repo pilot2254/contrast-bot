@@ -18,6 +18,7 @@ export const GAME_TYPES = {
   RPS: "rps",
   NUMBER_GUESS: "number_guess",
   COINFLIP: "coinflip",
+  DICE_ROLL: "dice_roll",
 } as const
 
 /**
