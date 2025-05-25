@@ -65,12 +65,6 @@
   - [ ] View available items
   - [ ] Item effects and benefits
 
-- [ ] `gamble.ts`
-  - [ ] Bet currency on games
-  - [ ] Different gambling games
-  - [ ] Win/loss tracking
-  - [ ] Gamble leaderboard
-
 ### New Commands
 
 #### Utility
@@ -112,11 +106,6 @@
   - [ ] Show random memes (for example: add integration from Reddit)
   - [ ] Allow category selection
   - [ ] Rate memes
-
-- [ ] `rps-tournament.ts`
-  - [ ] Create RPS tournaments
-  - [ ] Bracket system
-  - [ ] Prizes for winners (Contrast currency)
 
 #### Social
 - [ ] `profile.ts`
