@@ -39,10 +39,10 @@
 
 ### Economy
 
-- [ ] Bank Commands and Functionality
-  - [ ] Add a Contrast Bot currency
-  - [ ] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
-  - [ ] Commands for Bank Functionality
+- [x] Bank Commands and Functionality
+  - [x] Add a Contrast Bot currency
+  - [x] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
+  - [x] Commands for Bank Functionality
 
 #### Economy Commands
 
@@ -128,3 +128,5 @@
   - [ ] Track relationships
   - [ ] Divorce system using `divorce.ts`
   - [ ] Categorize this shit into `E-Dating/` folder in `commands/` dir
+
+- [x] Leveling System
