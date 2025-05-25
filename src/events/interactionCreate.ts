@@ -3,6 +3,7 @@ import { logger } from "../utils/logger"
 import { trackCommand } from "../utils/stats-manager"
 import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
 import { isDeveloper } from "../utils/permissions"
+import { awardCommandXp } from "../utils/level-manager"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -40,6 +41,9 @@ export async function execute(interaction: Interaction): Promise<void> {
     try {
       // Track command usage
       await trackCommand(interaction.commandName)
+
+      // Award XP for using a command
+      await awardCommandXp(interaction.user.id, interaction.user.username)
 
       // Execute the command
       if (command.execute) {

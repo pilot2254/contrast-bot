@@ -6,7 +6,7 @@ import type { Command } from "./utils/types"
 import { initDatabase } from "./utils/database"
 import { loadCommands } from "./utils/command-loader"
 import fs from "fs"
-import { initStats, updateGuildCount } from "./utils/stats-manager"
+import { updateGuildCount } from "./utils/stats-manager"
 
 // Create a new client instance with ALL required intents
 const client = new Client({
@@ -38,13 +38,9 @@ client.prefixCommands = new Collection()
 // Initialize database and start the bot
 async function startBot() {
   try {
-    // Initialize database
+    // Initialize database (includes level system tables)
     await initDatabase()
-    logger.info("Database initialized")
-
-    // Initialize stats
-    await initStats()
-    logger.info("Stats initialized")
+    logger.info("Database and level system initialized")
 
     // Load commands
     const commandsPath = path.join(__dirname, "commands")

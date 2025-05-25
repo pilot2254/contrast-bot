@@ -15,7 +15,15 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   if (!interaction.guild) {
     return interaction.reply({
-      content: "This command can only be used in a server.",
+      content: "❌ This command can only be used in a server.",
+      ephemeral: true,
+    })
+  }
+
+  // Check user permissions
+  if (!interaction.memberPermissions?.has(PermissionFlagsBits.KickMembers)) {
+    return interaction.reply({
+      content: "❌ You don't have permission to kick members.",
       ephemeral: true,
     })
   }
@@ -23,7 +31,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   // Check bot permissions
   if (!interaction.guild.members.me?.permissions.has(PermissionFlagsBits.KickMembers)) {
     return interaction.reply({
-      content: "I don't have permission to kick members.",
+      content: "❌ I don't have permission to kick members.",
       ephemeral: true,
     })
   }
@@ -31,7 +39,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const targetUser = interaction.options.getUser("user")
   if (!targetUser) {
     return interaction.reply({
-      content: "You need to specify a user to kick.",
+      content: "❌ You need to specify a user to kick.",
       ephemeral: true,
     })
   }
@@ -39,12 +47,19 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const reason = interaction.options.getString("reason") || "No reason provided"
 
   try {
-    const targetMember = await interaction.guild.members.fetch(targetUser.id)
+    const targetMember = await interaction.guild.members.fetch(targetUser.id).catch(() => null)
+
+    if (!targetMember) {
+      return interaction.reply({
+        content: "❌ User is not in this server.",
+        ephemeral: true,
+      })
+    }
 
     // Check if the target is kickable
     if (!targetMember.kickable) {
       return interaction.reply({
-        content: "I cannot kick this user. They may have higher permissions than me.",
+        content: "❌ I cannot kick this user. They may have higher permissions than me.",
         ephemeral: true,
       })
     }
@@ -52,7 +67,27 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     // Check if the user is trying to kick themselves
     if (targetUser.id === interaction.user.id) {
       return interaction.reply({
-        content: "You cannot kick yourself.",
+        content: "❌ You cannot kick yourself.",
+        ephemeral: true,
+      })
+    }
+
+    // Check if trying to kick the bot
+    if (targetUser.id === interaction.client.user?.id) {
+      return interaction.reply({
+        content: "❌ I cannot kick myself.",
+        ephemeral: true,
+      })
+    }
+
+    // Check role hierarchy
+    const executorMember = await interaction.guild.members.fetch(interaction.user.id)
+    if (
+      targetMember.roles.highest.position >= executorMember.roles.highest.position &&
+      interaction.guild.ownerId !== interaction.user.id
+    ) {
+      return interaction.reply({
+        content: "❌ You cannot kick someone with equal or higher roles.",
         ephemeral: true,
       })
     }
@@ -61,7 +96,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await targetMember.kick(reason)
 
     const embed = new EmbedBuilder()
-      .setTitle("User Kicked")
+      .setTitle("✅ User Kicked")
       .setDescription(`${targetUser.tag} has been kicked from the server.`)
       .setColor(botInfo.colors.warning)
       .addFields({ name: "Reason", value: reason })
@@ -72,7 +107,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   } catch (error) {
     console.error("Error kicking user:", error)
     await interaction.reply({
-      content: "There was an error trying to kick this user.",
+      content: "❌ There was an error trying to kick this user.",
       ephemeral: true,
     })
   }

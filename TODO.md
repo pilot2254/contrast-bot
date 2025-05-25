@@ -39,37 +39,31 @@
 
 ### Economy
 
-- [ ] Bank Commands and Functionality
-  - [ ] Add a Contrast Bot currency
-  - [ ] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
-  - [ ] Commands for Bank Functionality
+- [x] Bank Commands and Functionality
+  - [x] Add a Contrast Bot currency
+  - [x] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
+  - [x] Commands for Bank Functionality
 
 #### Economy Commands
 
-- [ ] `balance.ts`
-  - [ ] Check currency balance
-  - [ ] View transaction history
-  - [ ] Transfer currency
-  - [ ] Leaderboard
-    - [ ] Total Earned
-    - [ ] Total Spent
-    - [ ] Current Balance
+- [x] `balance.ts`
+  - [x] Check currency balance
+  - [x] View transaction history
+  - [x] Transfer currency
+  - [x] Leaderboard
+    - [x] Total Earned
+    - [x] Total Spent
+    - [x] Current Balance
 
-- [ ] `daily.ts`
-  - [ ] Claim daily currency
-  - [ ] Streak bonuses
-  - [ ] Cooldown system
+- [x] `daily.ts`
+  - [x] Claim daily currency
+  - [x] Streak bonuses
+  - [x] Cooldown system
 
 - [ ] `shop.ts`
   - [ ] Buy items with currency
   - [ ] View available items
   - [ ] Item effects and benefits
-
-- [ ] `gamble.ts`
-  - [ ] Bet currency on games
-  - [ ] Different gambling games
-  - [ ] Win/loss tracking
-  - [ ] Gamble leaderboard
 
 ### New Commands
 
@@ -113,11 +107,6 @@
   - [ ] Allow category selection
   - [ ] Rate memes
 
-- [ ] `rps-tournament.ts`
-  - [ ] Create RPS tournaments
-  - [ ] Bracket system
-  - [ ] Prizes for winners (Contrast currency)
-
 #### Social
 - [ ] `profile.ts`
   - [ ] Show user profile with stats
@@ -139,3 +128,5 @@
   - [ ] Track relationships
   - [ ] Divorce system using `divorce.ts`
   - [ ] Categorize this shit into `E-Dating/` folder in `commands/` dir
+
+- [x] Leveling System

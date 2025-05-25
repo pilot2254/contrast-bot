@@ -13,16 +13,34 @@ export const data = new SlashCommandBuilder()
 export async function execute(interaction: ChatInputCommandInteraction) {
   const message = interaction.options.getString("message", true)
 
+  // Validate feedback
+  if (message.length < 10) {
+    return interaction.reply({
+      content: "❌ Feedback must be at least 10 characters long!",
+      ephemeral: true,
+    })
+  }
+
+  if (message.length > 1000) {
+    return interaction.reply({
+      content: "❌ Feedback must be less than 1000 characters!",
+      ephemeral: true,
+    })
+  }
+
+  // Clean the message
+  const cleanMessage = message.trim().replace(/\s+/g, " ")
+
   try {
-    await addFeedback(interaction.user.id, interaction.user.username, message)
+    await addFeedback(interaction.user.id, interaction.user.username, cleanMessage)
 
     await interaction.reply({
-      content: "Thank you for your feedback! It has been recorded and will be reviewed by the developers.",
+      content: "✅ Thank you for your feedback! It has been recorded and will be reviewed by the developers.",
       ephemeral: true,
     })
   } catch (error) {
     await interaction.reply({
-      content: "Failed to submit feedback. Please try again later.",
+      content: "❌ Failed to submit feedback. Please try again later.",
       ephemeral: true,
     })
   }

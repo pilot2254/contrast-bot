@@ -33,12 +33,17 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       case "give": {
         const targetUser = interaction.options.getUser("user", true)
 
+        // Enhanced validation
         if (targetUser.id === interaction.user.id) {
-          return interaction.reply({ content: "You cannot give reputation to yourself!", ephemeral: true })
+          return interaction.reply({ content: "❌ You cannot give reputation to yourself!", ephemeral: true })
         }
 
         if (targetUser.bot) {
-          return interaction.reply({ content: "You cannot give reputation to bots!", ephemeral: true })
+          return interaction.reply({ content: "❌ You cannot give reputation to bots!", ephemeral: true })
+        }
+
+        if (targetUser.system) {
+          return interaction.reply({ content: "❌ You cannot give reputation to system accounts!", ephemeral: true })
         }
 
         const result = await givePositiveRep(

@@ -11,25 +11,16 @@ let db: sqlite3.Database | null = null
 // Path to the database file
 const DB_PATH = path.join(process.cwd(), "data", "bot.db")
 
-/**
- * Ensures the data directory exists
- */
+// Ensure data directory exists
 function ensureDataDirectory(): void {
   const dataDir = path.join(process.cwd(), "data")
-  try {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true })
-      logger.info(`Created data directory at ${dataDir}`)
-    }
-  } catch (error) {
-    logger.error("Failed to create data directory:", error)
-    throw error
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true })
+    logger.info(`Created data directory at ${dataDir}`)
   }
 }
 
-/**
- * Initializes the database connection
- */
+// Initialize database connection
 export async function initDatabase(): Promise<void> {
   try {
     ensureDataDirectory()
@@ -40,27 +31,20 @@ export async function initDatabase(): Promise<void> {
       driver: Database,
     })
 
-    // Enable foreign keys
+    // Enable foreign keys and set journal mode
     await db.exec("PRAGMA foreign_keys = ON")
-
-    // Set journal mode to WAL for better concurrency
     await db.exec("PRAGMA journal_mode = WAL")
 
-    logger.info("Database connection established")
-
-    // Initialize all tables
+    // Initialize tables
     await initTables()
-
-    logger.info("Database tables initialized")
+    logger.info("Database initialized successfully")
   } catch (error) {
     logger.error("Failed to initialize database:", error)
     throw error
   }
 }
 
-/**
- * Initializes all database tables
- */
+// Initialize all database tables
 async function initTables(): Promise<void> {
   try {
     // Create stats table
@@ -73,21 +57,21 @@ async function initTables(): Promise<void> {
 
     // Create blacklist table
     await db?.exec(`
-  CREATE TABLE IF NOT EXISTS blacklisted_users (
-    userId TEXT PRIMARY KEY,
-    reason TEXT,
-    blacklistedBy TEXT,
-    timestamp INTEGER NOT NULL
-  )
-`)
+      CREATE TABLE IF NOT EXISTS blacklisted_users (
+        userId TEXT PRIMARY KEY,
+        reason TEXT,
+        blacklistedBy TEXT,
+        timestamp INTEGER NOT NULL
+      )
+    `)
 
-    // Create maintenance_mode table
+    // Create bot settings table
     await db?.exec(`
-  CREATE TABLE IF NOT EXISTS bot_settings (
-    key TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  )
-`)
+      CREATE TABLE IF NOT EXISTS bot_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      )
+    `)
 
     // Create quotes table
     await db?.exec(`
@@ -136,27 +120,27 @@ async function initTables(): Promise<void> {
 
     // Create RPS tables
     await db?.exec(`
-  CREATE TABLE IF NOT EXISTS rps_players (
-    userId TEXT PRIMARY KEY,
-    username TEXT NOT NULL,
-    wins INTEGER NOT NULL DEFAULT 0,
-    losses INTEGER NOT NULL DEFAULT 0,
-    ties INTEGER NOT NULL DEFAULT 0,
-    totalGames INTEGER NOT NULL DEFAULT 0,
-    winRate REAL NOT NULL DEFAULT 0,
-    lastPlayed INTEGER NOT NULL DEFAULT 0
-  )
-`)
+      CREATE TABLE IF NOT EXISTS rps_players (
+        userId TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        wins INTEGER NOT NULL DEFAULT 0,
+        losses INTEGER NOT NULL DEFAULT 0,
+        ties INTEGER NOT NULL DEFAULT 0,
+        totalGames INTEGER NOT NULL DEFAULT 0,
+        winRate REAL NOT NULL DEFAULT 0,
+        lastPlayed INTEGER NOT NULL DEFAULT 0
+      )
+    `)
 
     await db?.exec(`
-  CREATE TABLE IF NOT EXISTS rps_games (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    userId TEXT NOT NULL,
-    username TEXT NOT NULL,
-    result TEXT NOT NULL,
-    timestamp INTEGER NOT NULL
-  )
-`)
+      CREATE TABLE IF NOT EXISTS rps_games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        userId TEXT NOT NULL,
+        username TEXT NOT NULL,
+        result TEXT NOT NULL,
+        timestamp INTEGER NOT NULL
+      )
+    `)
 
     // Create command_usage table
     await db?.exec(`
@@ -166,6 +150,85 @@ async function initTables(): Promise<void> {
       )
     `)
 
+    // Create economy tables
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS user_economy (
+        user_id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        balance INTEGER NOT NULL DEFAULT 0,
+        total_earned INTEGER NOT NULL DEFAULT 0,
+        total_spent INTEGER NOT NULL DEFAULT 0,
+        last_daily INTEGER NOT NULL DEFAULT 0,
+        daily_streak INTEGER NOT NULL DEFAULT 0,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      )
+    `)
+
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        amount INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        related_user_id TEXT,
+        FOREIGN KEY (user_id) REFERENCES user_economy (user_id)
+      )
+    `)
+
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS gambling_stats (
+        user_id TEXT PRIMARY KEY,
+        total_bet INTEGER NOT NULL DEFAULT 0,
+        total_won INTEGER NOT NULL DEFAULT 0,
+        total_lost INTEGER NOT NULL DEFAULT 0,
+        games_played INTEGER NOT NULL DEFAULT 0,
+        biggest_win INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES user_economy (user_id)
+      )
+    `)
+
+    // Create level system tables
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS user_levels (
+        user_id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        xp INTEGER NOT NULL DEFAULT 0,
+        level INTEGER NOT NULL DEFAULT 0,
+        last_command_xp INTEGER NOT NULL DEFAULT 0,
+        total_commands_used INTEGER NOT NULL DEFAULT 0,
+        total_games_played INTEGER NOT NULL DEFAULT 0,
+        total_games_won INTEGER NOT NULL DEFAULT 0,
+        total_bet_amount INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0
+      )
+    `)
+
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS level_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        old_level INTEGER NOT NULL,
+        new_level INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES user_levels (user_id)
+      )
+    `)
+
+    // Initialize default values
+    await initDefaultValues()
+  } catch (error) {
+    logger.error("Failed to initialize tables:", error)
+    throw error
+  }
+}
+
+// Initialize default values in the database
+async function initDefaultValues(): Promise<void> {
+  try {
     // Initialize maintenance mode if not exists
     const maintenanceExists = await db?.get("SELECT 1 FROM bot_settings WHERE key = 'maintenance_mode'")
     if (!maintenanceExists) {
@@ -181,15 +244,11 @@ async function initTables(): Promise<void> {
       await db?.run("INSERT INTO stats (key, value) VALUES ('guild_count', '0')")
     }
   } catch (error) {
-    logger.error("Failed to initialize tables:", error)
-    throw error
+    logger.error("Failed to initialize default values:", error)
   }
 }
 
-/**
- * Gets the database instance
- * @returns The database instance
- */
+// Get database instance
 export function getDb(): sqlite3.Database {
   if (!db) {
     throw new Error("Database not initialized")
@@ -197,40 +256,46 @@ export function getDb(): sqlite3.Database {
   return db
 }
 
-/**
- * Closes the database connection
- */
+// Close database connection
 export async function closeDatabase(): Promise<void> {
-  try {
-    if (db) {
-      await db.close()
-      db = null
-      logger.info("Database connection closed")
-    }
-  } catch (error) {
-    logger.error("Failed to close database:", error)
+  if (db) {
+    await db.close()
+    db = null
+    logger.info("Database connection closed")
   }
 }
 
-// Handle process exit to close database connection
+// Handle process exit events
 process.on("exit", () => {
   if (db) {
     logger.info("Process exiting, closing database connection")
-    // Use sync method since we're in process.exit
     db.close()
   }
 })
 
-// Handle SIGINT (Ctrl+C)
 process.on("SIGINT", async () => {
   logger.info("SIGINT received, closing database connection")
   await closeDatabase()
   process.exit(0)
 })
 
-// Handle SIGTERM
 process.on("SIGTERM", async () => {
   logger.info("SIGTERM received, closing database connection")
   await closeDatabase()
   process.exit(0)
 })
+
+/**
+ * Retrieves all shop items from the database.
+ * @returns A promise that resolves to an array of shop items.
+ */
+export async function getAllShopItems(): Promise<any[]> {
+  try {
+    const db = getDb()
+    const items = await db.all("SELECT * FROM shop_items")
+    return items
+  } catch (error) {
+    logger.error("Failed to retrieve shop items:", error)
+    throw error
+  }
+}

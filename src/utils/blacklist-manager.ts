@@ -1,11 +1,6 @@
 import { getDb } from "./database"
 import { logger } from "./logger"
 
-/**
- * Checks if a user is blacklisted
- * @param userId The ID of the user to check
- * @returns Whether the user is blacklisted
- */
 export async function isBlacklisted(userId: string): Promise<boolean> {
   try {
     const db = await getDb()
@@ -17,13 +12,6 @@ export async function isBlacklisted(userId: string): Promise<boolean> {
   }
 }
 
-/**
- * Adds a user to the blacklist
- * @param userId The ID of the user to blacklist
- * @param reason The reason for blacklisting
- * @param blacklistedBy The ID of the user who blacklisted
- * @returns Whether the operation was successful
- */
 export async function blacklistUser(
   userId: string,
   reason = "No reason provided",
@@ -32,13 +20,13 @@ export async function blacklistUser(
   try {
     const db = await getDb()
 
-    // Check if user is already blacklisted
+    // Check if already blacklisted
     const existing = await db.get("SELECT * FROM blacklisted_users WHERE userId = ?", [userId])
     if (existing) {
       return false
     }
 
-    // Add user to blacklist
+    // Add to blacklist
     await db.run("INSERT INTO blacklisted_users (userId, reason, blacklistedBy, timestamp) VALUES (?, ?, ?, ?)", [
       userId,
       reason,
@@ -54,24 +42,18 @@ export async function blacklistUser(
   }
 }
 
-/**
- * Removes a user from the blacklist
- * @param userId The ID of the user to unblacklist
- * @returns Whether the operation was successful
- */
 export async function unblacklistUser(userId: string): Promise<boolean> {
   try {
     const db = await getDb()
 
-    // Check if user is blacklisted
+    // Check if blacklisted
     const existing = await db.get("SELECT * FROM blacklisted_users WHERE userId = ?", [userId])
     if (!existing) {
       return false
     }
 
-    // Remove user from blacklist
+    // Remove from blacklist
     await db.run("DELETE FROM blacklisted_users WHERE userId = ?", [userId])
-
     logger.info(`User ${userId} removed from blacklist`)
     return true
   } catch (error) {
@@ -80,28 +62,18 @@ export async function unblacklistUser(userId: string): Promise<boolean> {
   }
 }
 
-/**
- * Gets all blacklisted users
- * @returns An array of blacklisted users
- */
 export async function getBlacklistedUsers(): Promise<
   { userId: string; reason: string; blacklistedBy: string; timestamp: number }[]
 > {
   try {
     const db = await getDb()
-    const users = await db.all("SELECT * FROM blacklisted_users")
-    return users
+    return await db.all("SELECT * FROM blacklisted_users")
   } catch (error) {
     logger.error("Error getting blacklisted users:", error)
     return []
   }
 }
 
-/**
- * Sets the maintenance mode
- * @param enabled Whether maintenance mode should be enabled
- * @returns Whether the operation was successful
- */
 export async function setMaintenanceMode(enabled: boolean): Promise<boolean> {
   try {
     const db = await getDb()
@@ -117,10 +89,6 @@ export async function setMaintenanceMode(enabled: boolean): Promise<boolean> {
   }
 }
 
-/**
- * Checks if maintenance mode is enabled
- * @returns Whether maintenance mode is enabled
- */
 export async function isMaintenanceMode(): Promise<boolean> {
   try {
     const db = await getDb()
