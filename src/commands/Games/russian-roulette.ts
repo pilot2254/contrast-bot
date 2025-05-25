@@ -13,10 +13,15 @@ const cooldowns = new Map<string, number>()
 
 // Calculate multiplier based on bullets (more bullets = higher risk = higher reward)
 function getMultiplier(bullets: number): number {
-  const deathChance = bullets / CHAMBERS
-  const survivalChance = (CHAMBERS - bullets) / CHAMBERS
-  // Higher risk should give higher reward - use death chance to calculate multiplier
-  return Math.round((1 / survivalChance) * 0.9) // 90% of theoretical fair odds
+  // Fixed multipliers for balanced gameplay
+  const multipliers = {
+    1: 2, // 83.3% survival, 16.7% death
+    2: 4, // 66.7% survival, 33.3% death
+    3: 6, // 50% survival, 50% death
+    4: 8, // 33.3% survival, 66.7% death
+    5: 10, // 16.7% survival, 83.3% death
+  }
+  return multipliers[bullets as keyof typeof multipliers] || 2
 }
 
 export const data = new SlashCommandBuilder()
