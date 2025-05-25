@@ -30,7 +30,7 @@ export const data = new SlashCommandBuilder()
       .setDescription("Amount to bet (optional)")
       .setRequired(false)
       .setMinValue(1)
-      .setMaxValue(10000),
+      .setMaxValue(1000000),
   )
 
 // Slash command execution

@@ -51,8 +51,8 @@ export async function placeBet(
       return { success: false, message: "Bet amount must be positive" }
     }
 
-    if (amount > 10000) {
-      return { success: false, message: "Maximum bet is 10,000 coins" }
+    if (amount > 1000000) {
+      return { success: false, message: "Maximum bet is 1,000,000 coins" }
     }
 
     // Check if user has enough balance

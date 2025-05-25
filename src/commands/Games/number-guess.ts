@@ -6,9 +6,9 @@ import { getOrCreateUserEconomy } from "../../utils/economy-manager"
 // Game configuration
 const GAME_CONFIG = {
   MIN_RANGE: 2,
-  MAX_RANGE: 100,
+  MAX_RANGE: 100000,
   MIN_BET: 1,
-  MAX_BET: 10000,
+  MAX_BET: 1000000,
   // Multipliers are slightly less than the range to give house edge
   MULTIPLIER_RATIO: 0.95, // 95% of the range size
 }
