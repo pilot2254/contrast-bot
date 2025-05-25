@@ -13,24 +13,16 @@ export interface PlayerStats {
   ties: number
   totalGames: number
   winRate: number
-  lastPlayed: number // Timestamp when the player last played
+  lastPlayed: number
 }
 
-/**
- * Get a player's RPS stats
- * @param userId The ID of the player
- * @returns The player's stats
- */
+// Get player stats
 export async function getPlayerStats(userId: string): Promise<PlayerStats | null> {
   try {
     const db = await getDb()
-
-    // Get player stats from database
     const player = await db.get("SELECT * FROM rps_players WHERE userId = ?", [userId])
 
-    if (!player) {
-      return null
-    }
+    if (!player) return null
 
     // Calculate win rate
     const totalGames = player.wins + player.losses + player.ties
@@ -52,16 +44,10 @@ export async function getPlayerStats(userId: string): Promise<PlayerStats | null
   }
 }
 
-/**
- * Get the top players by win rate
- * @param limit The maximum number of players to return
- * @returns An array of player stats
- */
+// Get top players
 export async function getTopPlayers(limit = 10): Promise<PlayerStats[]> {
   try {
     const db = await getDb()
-
-    // Get top players from database
     const players = await db.all(
       "SELECT * FROM rps_players WHERE totalGames > 0 ORDER BY winRate DESC, totalGames DESC LIMIT ?",
       [limit],
@@ -83,13 +69,7 @@ export async function getTopPlayers(limit = 10): Promise<PlayerStats[]> {
   }
 }
 
-/**
- * Record a game result
- * @param userId The ID of the player
- * @param username The username of the player
- * @param result The result of the game
- * @returns Whether the game was successfully recorded
- */
+// Record game result
 export async function recordGame(userId: string, username: string, result: RPSResult): Promise<boolean> {
   try {
     const db = await getDb()
@@ -140,21 +120,13 @@ export async function recordGame(userId: string, username: string, result: RPSRe
   }
 }
 
-/**
- * Get a random choice for the bot
- * @returns A random RPS choice
- */
+// Get bot choice
 export function getBotChoice(): RPSChoice {
   const choices: RPSChoice[] = ["rock", "paper", "scissors"]
   return choices[Math.floor(Math.random() * choices.length)]
 }
 
-/**
- * Determine the result of a game
- * @param playerChoice The player's choice
- * @param botChoice The bot's choice
- * @returns The result of the game
- */
+// Determine game result
 export function determineResult(playerChoice: RPSChoice, botChoice: RPSChoice): RPSResult {
   if (playerChoice === botChoice) {
     return "tie"

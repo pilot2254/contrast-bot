@@ -2,7 +2,6 @@ import { logger } from "./logger"
 import { getDb } from "./database"
 import { getOrCreateUserEconomy, removeCurrency, addCurrency, TRANSACTION_TYPES } from "./economy-manager"
 
-// Define gambling stats interface
 export interface GamblingStats {
   userId: string
   totalBet: number
@@ -22,9 +21,6 @@ export const GAME_TYPES = {
   RUSSIAN_ROULETTE: "russian_roulette",
 } as const
 
-/**
- * Initializes the gambling manager
- */
 export async function initGamblingManager(): Promise<void> {
   try {
     logger.info("Gambling manager initialized")
@@ -33,14 +29,6 @@ export async function initGamblingManager(): Promise<void> {
   }
 }
 
-/**
- * Places a bet for a user
- * @param userId The user's ID
- * @param username The user's username
- * @param amount The bet amount
- * @param gameType The type of game
- * @returns Whether the bet was placed successfully
- */
 export async function placeBet(
   userId: string,
   username: string,
@@ -78,8 +66,6 @@ export async function placeBet(
 
     // Update gambling stats
     await updateGamblingStats(userId, amount, 0, 0)
-
-    logger.info(`${username} placed a ${amount} coin bet on ${gameType}`)
     return { success: true, message: "Bet placed successfully" }
   } catch (error) {
     logger.error(`Failed to place bet for ${userId}:`, error)
@@ -87,15 +73,6 @@ export async function placeBet(
   }
 }
 
-/**
- * Processes a gambling win
- * @param userId The user's ID
- * @param username The user's username
- * @param betAmount The original bet amount
- * @param winAmount The amount won
- * @param gameType The type of game
- * @returns Whether the win was processed successfully
- */
 export async function processWin(
   userId: string,
   username: string,
@@ -110,7 +87,7 @@ export async function processWin(
       username,
       winAmount,
       TRANSACTION_TYPES.GAMBLING_WIN,
-      `${gameType} win - ${winAmount.toLocaleString()} coins (${(winAmount - betAmount).toLocaleString()} profit)`,
+      `${gameType} win - ${winAmount.toLocaleString()} coins`,
     )
 
     if (!success) {
@@ -119,8 +96,6 @@ export async function processWin(
 
     // Update gambling stats
     await updateGamblingStats(userId, 0, winAmount, winAmount - betAmount)
-
-    logger.info(`${username} won ${winAmount} coins from ${gameType} (bet: ${betAmount})`)
     return { success: true, message: "Winnings processed successfully" }
   } catch (error) {
     logger.error(`Failed to process win for ${userId}:`, error)
@@ -128,13 +103,6 @@ export async function processWin(
   }
 }
 
-/**
- * Updates gambling statistics for a user
- * @param userId The user's ID
- * @param betAmount Amount bet (0 if not betting)
- * @param wonAmount Amount won (0 if lost)
- * @param profit Net profit/loss
- */
 export async function updateGamblingStats(
   userId: string,
   betAmount: number,
@@ -190,19 +158,12 @@ export async function updateGamblingStats(
   }
 }
 
-/**
- * Gets gambling statistics for a user
- * @param userId The user's ID
- * @returns The user's gambling stats or null if not found
- */
 export async function getGamblingStats(userId: string): Promise<GamblingStats | null> {
   try {
     const db = getDb()
     const stats = await db.get("SELECT * FROM gambling_stats WHERE user_id = ?", userId)
 
-    if (!stats) {
-      return null
-    }
+    if (!stats) return null
 
     return {
       userId: stats.user_id,
@@ -219,16 +180,7 @@ export async function getGamblingStats(userId: string): Promise<GamblingStats | 
   }
 }
 
-/**
- * Gets gambling leaderboard
- * @param type The type of leaderboard (profit, won, bet)
- * @param limit The maximum number of users to return
- * @returns Array of leaderboard entries
- */
-export async function getGamblingLeaderboard(
-  type: "profit" | "won" | "bet" = "profit",
-  limit = 10,
-): Promise<{ userId: string; value: number; rank: number }[]> {
+export async function getGamblingLeaderboard(type: "profit" | "won" | "bet" = "profit", limit = 10) {
   try {
     const db = getDb()
 

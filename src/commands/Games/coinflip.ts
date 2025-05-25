@@ -3,7 +3,6 @@ import { botInfo } from "../../utils/bot-info"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { getOrCreateUserEconomy } from "../../utils/economy-manager"
 
-// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("coinflip")
   .setDescription("Flips a coin - with optional betting!")
@@ -15,15 +14,9 @@ export const data = new SlashCommandBuilder()
       .addChoices({ name: "🪙 Heads", value: "heads" }, { name: "💿 Tails", value: "tails" }),
   )
   .addIntegerOption((option) =>
-    option
-      .setName("bet")
-      .setDescription("Amount to bet (optional)")
-      .setRequired(false)
-      .setMinValue(1)
-      .setMaxValue(1000000),
+    option.setName("bet").setDescription("Amount to bet").setRequired(false).setMinValue(1).setMaxValue(1000000),
   )
 
-// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const userChoice = interaction.options.getString("choice")
   const betAmount = interaction.options.getInteger("bet")
@@ -48,23 +41,14 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       }
 
       const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.COINFLIP)
-
       if (!betResult.success) {
-        return interaction.reply({
-          content: `❌ ${betResult.message}`,
-          ephemeral: true,
-        })
+        return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
       }
       isBetting = true
     }
 
-    // Calculate winnings (2x multiplier for coinflip wins)
-    let winnings = 0
-    if (isBetting && betAmount && isWin) {
-      winnings = betAmount * 2
-    }
-
-    // Process winnings if betting and won
+    // Calculate and process winnings
+    const winnings = isBetting && betAmount && isWin ? betAmount * 2 : 0
     if (isBetting && betAmount && isWin) {
       await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.COINFLIP)
     }
@@ -73,90 +57,48 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
 
     // Create result embed
-    const embed = createCoinflipEmbed(
-      interaction.user.username,
-      userChoice,
-      result,
-      resultEmoji,
-      resultText,
-      isWin,
-      isBetting,
-      betAmount || 0,
-      winnings,
-      economy.balance,
-    )
+    const embed = new EmbedBuilder()
+      .setTitle(`${resultEmoji} Coin Flip`)
+      .setColor(
+        isWin === true ? botInfo.colors.success : isWin === false ? botInfo.colors.error : botInfo.colors.primary,
+      )
+      .setFooter({ text: `Flipped by ${interaction.user.username}` })
+      .setTimestamp()
 
-    await interaction.reply({ embeds: [embed] })
-  } catch (error) {
-    await interaction.reply({
-      content: "❌ An error occurred while flipping the coin!",
-      ephemeral: true,
-    })
-  }
-}
+    if (userChoice) {
+      const userEmoji = userChoice === "heads" ? "🪙" : "💿"
+      const userText = userChoice === "heads" ? "Heads" : "Tails"
 
-// Helper function to create coinflip result embed
-function createCoinflipEmbed(
-  username: string,
-  userChoice: string | null,
-  result: string,
-  resultEmoji: string,
-  resultText: string,
-  isWin: boolean | null,
-  isBetting: boolean,
-  betAmount: number,
-  winnings: number,
-  newBalance: number,
-): EmbedBuilder {
-  const embed = new EmbedBuilder()
-    .setTitle(`${resultEmoji} Coin Flip`)
-    .setColor(isWin === true ? botInfo.colors.success : isWin === false ? botInfo.colors.error : botInfo.colors.primary)
-    .setFooter({ text: `Flipped by ${username}` })
-    .setTimestamp()
+      embed.addFields(
+        { name: "🤔 Your Choice", value: `${userEmoji} ${userText}`, inline: true },
+        { name: "🎰 Result", value: `${resultEmoji} ${resultText}`, inline: true },
+        { name: "📊 Outcome", value: isWin ? "🏆 You Win!" : "❌ You Lose!", inline: true },
+      )
 
-  if (userChoice) {
-    const userEmoji = userChoice === "heads" ? "🪙" : "💿"
-    const userText = userChoice === "heads" ? "Heads" : "Tails"
+      embed.setDescription(isWin ? "🎉 **Correct prediction!** 🎉" : "❌ **Better luck next time!**")
 
-    embed.addFields(
-      { name: "🤔 Your Choice", value: `${userEmoji} ${userText}`, inline: true },
-      { name: "🎰 Result", value: `${resultEmoji} ${resultText}`, inline: true },
-      { name: "📊 Outcome", value: isWin ? "🏆 You Win!" : "❌ You Lose!", inline: true },
-    )
-
-    if (isWin) {
-      embed.setDescription("🎉 **Correct prediction!** 🎉")
-    } else {
-      embed.setDescription("❌ **Better luck next time!**")
-    }
-
-    // Add betting information if applicable
-    if (isBetting) {
-      if (isWin) {
-        embed.addFields(
-          { name: "💰 Bet Amount", value: `${betAmount.toLocaleString()} coins`, inline: true },
-          { name: "🎊 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
-          { name: "📈 Profit", value: `${(winnings - betAmount).toLocaleString()} coins`, inline: true },
-        )
-      } else {
-        embed.addFields({ name: "💸 Lost", value: `${betAmount.toLocaleString()} coins`, inline: true })
+      if (isBetting) {
+        if (isWin) {
+          embed.addFields(
+            { name: "💰 Bet", value: `${betAmount!.toLocaleString()} coins`, inline: true },
+            { name: "🎊 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
+          )
+        } else {
+          embed.addFields({ name: "💸 Lost", value: `${betAmount!.toLocaleString()} coins`, inline: true })
+        }
+        embed.addFields({ name: "💵 Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true })
       }
-      embed.addFields({ name: "💵 New Balance", value: `${newBalance.toLocaleString()} coins`, inline: true })
     } else {
+      embed.setDescription(`The coin landed on **${resultText}**!`)
       embed.addFields({
         name: "💡 Tip",
-        value: "Add a bet next time to win coins! Correct predictions pay 2x your bet!",
+        value: "Choose heads or tails and add a bet to make it more exciting!",
         inline: false,
       })
     }
-  } else {
-    embed.setDescription(`The coin landed on **${resultText}**!`)
-    embed.addFields({
-      name: "💡 Tip",
-      value: "Choose heads or tails and add a bet to make it more exciting! Correct predictions pay 2x!",
-      inline: false,
-    })
-  }
 
-  return embed
+    await interaction.reply({ embeds: [embed] })
+  } catch (error) {
+    await interaction.reply({ content: "❌ An error occurred while flipping the coin!", ephemeral: true })
+  }
 }

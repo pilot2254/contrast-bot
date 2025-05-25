@@ -17,14 +17,9 @@ const reminders = new Map<string, Reminder>()
 
 /**
  * Creates a new reminder
- * @param user The user who set the reminder
- * @param channel The channel where the reminder was set
- * @param message The reminder message
- * @param delay The delay in milliseconds
- * @returns The created reminder
  */
 export function createReminder(user: User, channel: TextChannel, message: string, delay: number): Reminder {
-  const id = generateId()
+  const id = Math.random().toString(36).substring(2, 15)
   const timestamp = Date.now() + delay
 
   const timeout = setTimeout(() => {
@@ -48,8 +43,6 @@ export function createReminder(user: User, channel: TextChannel, message: string
 
 /**
  * Cancels a reminder
- * @param id The ID of the reminder to cancel
- * @returns Whether the reminder was cancelled
  */
 export function cancelReminder(id: string): boolean {
   const reminder = reminders.get(id)
@@ -66,8 +59,6 @@ export function cancelReminder(id: string): boolean {
 
 /**
  * Gets all reminders for a user
- * @param userId The ID of the user
- * @returns Array of reminders for the user
  */
 export function getUserReminders(userId: string): Reminder[] {
   return Array.from(reminders.values()).filter((reminder) => reminder.userId === userId)
@@ -75,7 +66,6 @@ export function getUserReminders(userId: string): Reminder[] {
 
 /**
  * Sends a reminder
- * @param id The ID of the reminder to send
  */
 async function sendReminder(id: string): Promise<void> {
   const reminder = reminders.get(id)
@@ -114,12 +104,4 @@ async function sendReminder(id: string): Promise<void> {
   } finally {
     reminders.delete(id)
   }
-}
-
-/**
- * Generates a unique ID for a reminder
- * @returns A unique ID
- */
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15)
 }

@@ -3,16 +3,15 @@ import { getOrCreateUserEconomy, TRANSACTION_TYPES, type UserEconomy } from "../
 import { botInfo } from "../../utils/bot-info"
 import { getDb } from "../../utils/database"
 
-// Daily reward configuration
+// Daily reward config
 const DAILY_CONFIG = {
-  BASE_REWARD: 100, // Base daily reward
-  STREAK_BONUS: 25, // Bonus per streak day
-  MAX_STREAK_BONUS: 500, // Maximum streak bonus
-  STREAK_RESET_HOURS: 48, // Hours before streak resets
-  COOLDOWN_HOURS: 20, // Hours between daily claims (allows for some flexibility)
+  BASE_REWARD: 100,
+  STREAK_BONUS: 25,
+  MAX_STREAK_BONUS: 500,
+  STREAK_RESET_HOURS: 48,
+  COOLDOWN_HOURS: 20,
 }
 
-// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("daily")
   .setDescription("Claim your daily coins and manage streaks")
@@ -25,14 +24,13 @@ export const data = new SlashCommandBuilder()
       .addIntegerOption((option) =>
         option
           .setName("limit")
-          .setDescription("Number of users to show (1-20)")
+          .setDescription("Number of users to show")
           .setRequired(false)
           .setMinValue(1)
           .setMaxValue(20),
       ),
   )
 
-// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand()
 
@@ -52,7 +50,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             embed.addFields({
               name: "Next Claim Available",
               value: `<t:${Math.floor(result.nextClaimTime / 1000)}:R>`,
-              inline: false,
             })
           }
 
@@ -64,31 +61,18 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .setDescription(`You received **${result.reward!.toLocaleString()} coins**!`)
           .setColor(botInfo.colors.success)
           .addFields(
-            { name: "💰 Base Reward", value: `${DAILY_CONFIG.BASE_REWARD.toLocaleString()} coins`, inline: true },
-            {
-              name: "🔥 Streak Bonus",
-              value: `${result.streakBonus!.toLocaleString()} coins`,
-              inline: true,
-            },
+            { name: "💰 Base Reward", value: `${DAILY_CONFIG.BASE_REWARD} coins`, inline: true },
+            { name: "🔥 Streak Bonus", value: `${result.streakBonus!} coins`, inline: true },
             { name: "📅 Current Streak", value: `${result.newStreak!} days`, inline: true },
             { name: "💵 New Balance", value: `${result.newBalance!.toLocaleString()} coins`, inline: true },
-            {
-              name: "⏰ Next Claim",
-              value: `<t:${Math.floor(result.nextClaimTime! / 1000)}:R>`,
-              inline: true,
-            },
+            { name: "⏰ Next Claim", value: `<t:${Math.floor(result.nextClaimTime! / 1000)}:R>`, inline: true },
           )
-          .setFooter({ text: `Keep your streak going! Come back tomorrow for more coins.` })
           .setTimestamp()
 
         // Add special messages for milestones
         if (result.newStreak! % 7 === 0 && result.newStreak! > 0) {
           embed.setDescription(
-            `🎊 **WEEKLY MILESTONE!** 🎊\nYou received **${result.reward!.toLocaleString()} coins** for your ${result.newStreak!}-day streak!`,
-          )
-        } else if (result.newStreak! % 30 === 0 && result.newStreak! > 0) {
-          embed.setDescription(
-            `🏆 **MONTHLY MILESTONE!** 🏆\nYou received **${result.reward!.toLocaleString()} coins** for your ${result.newStreak!}-day streak!`,
+            `🎊 **WEEKLY MILESTONE!** 🎊\nYou received **${result.reward!.toLocaleString()} coins**!`,
           )
         }
 
@@ -106,47 +90,18 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .setThumbnail(interaction.user.displayAvatarURL())
           .addFields(
             { name: "🔥 Current Streak", value: `${economy.dailyStreak} days`, inline: true },
-            {
-              name: "💰 Next Reward",
-              value: `${calculateDailyReward(economy.dailyStreak + 1).toLocaleString()} coins`,
-              inline: true,
-            },
-            { name: "📈 Streak Bonus", value: `${calculateStreakBonus(economy.dailyStreak + 1)} coins`, inline: true },
+            { name: "💰 Next Reward", value: `${calculateDailyReward(economy.dailyStreak + 1)} coins`, inline: true },
           )
           .setTimestamp()
 
         if (status.canClaim) {
           embed.setDescription("✅ **You can claim your daily reward now!**")
-          embed.addFields({
-            name: "🎯 Action",
-            value: "Use `/daily claim` to get your coins!",
-            inline: false,
-          })
+          embed.addFields({ name: "🎯 Action", value: "Use `/daily claim` to get your coins!" })
         } else {
           embed.setDescription("⏰ **Daily reward is on cooldown**")
           embed.addFields({
             name: "⏰ Next Claim Available",
             value: `<t:${Math.floor(status.nextClaimTime / 1000)}:R>`,
-            inline: false,
-          })
-        }
-
-        // Add streak information
-        if (economy.dailyStreak > 0) {
-          embed.addFields({
-            name: "📅 Last Claimed",
-            value: `<t:${Math.floor(economy.lastDaily / 1000)}:R>`,
-            inline: true,
-          })
-        }
-
-        // Add milestone progress
-        const nextMilestone = getNextMilestone(economy.dailyStreak)
-        if (nextMilestone) {
-          embed.addFields({
-            name: "🎯 Next Milestone",
-            value: `${nextMilestone.days} days (${nextMilestone.days - economy.dailyStreak} days to go)`,
-            inline: true,
           })
         }
 
@@ -190,26 +145,12 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 }
 
-/**
- * Claims the daily reward for a user
- */
-async function claimDailyReward(
-  userId: string,
-  username: string,
-): Promise<{
-  success: boolean
-  message: string
-  reward?: number
-  streakBonus?: number
-  newStreak?: number
-  newBalance?: number
-  nextClaimTime?: number
-}> {
+// Helper functions
+async function claimDailyReward(userId: string, username: string) {
   try {
     const db = getDb()
     const now = Date.now()
 
-    // Start transaction
     await db.exec("BEGIN TRANSACTION")
 
     try {
@@ -230,19 +171,15 @@ async function claimDailyReward(
       const hoursSinceLastDaily = economy.lastDaily === 0 ? 0 : (now - economy.lastDaily) / (1000 * 60 * 60)
 
       if (economy.lastDaily === 0) {
-        // First time claiming
         newStreak = 1
       } else if (
         hoursSinceLastDaily >= DAILY_CONFIG.COOLDOWN_HOURS &&
         hoursSinceLastDaily <= DAILY_CONFIG.STREAK_RESET_HOURS
       ) {
-        // Within streak window and past cooldown
         newStreak = economy.dailyStreak + 1
       } else if (hoursSinceLastDaily > DAILY_CONFIG.STREAK_RESET_HOURS) {
-        // Streak broken, reset to 1
         newStreak = 1
       } else {
-        // Still in cooldown period
         await db.exec("ROLLBACK")
         return {
           success: false,
@@ -313,10 +250,7 @@ async function claimDailyReward(
   }
 }
 
-/**
- * Gets the daily claim status for a user
- */
-function getDailyStatus(economy: UserEconomy): { canClaim: boolean; nextClaimTime: number } {
+function getDailyStatus(economy: UserEconomy) {
   const now = Date.now()
   const hoursSinceLastDaily = (now - economy.lastDaily) / (1000 * 60 * 60)
 
@@ -328,43 +262,16 @@ function getDailyStatus(economy: UserEconomy): { canClaim: boolean; nextClaimTim
   return { canClaim: false, nextClaimTime }
 }
 
-/**
- * Calculates the streak bonus for a given streak
- */
-function calculateStreakBonus(streak: number): number {
+function calculateStreakBonus(streak: number) {
   const bonus = (streak - 1) * DAILY_CONFIG.STREAK_BONUS
   return Math.min(bonus, DAILY_CONFIG.MAX_STREAK_BONUS)
 }
 
-/**
- * Calculates the total daily reward for a given streak
- */
-function calculateDailyReward(streak: number): number {
+function calculateDailyReward(streak: number) {
   return DAILY_CONFIG.BASE_REWARD + calculateStreakBonus(streak)
 }
 
-/**
- * Gets the next milestone for a streak
- */
-function getNextMilestone(currentStreak: number): { days: number; name: string } | null {
-  const milestones = [
-    { days: 7, name: "Weekly" },
-    { days: 14, name: "Bi-weekly" },
-    { days: 30, name: "Monthly" },
-    { days: 60, name: "Bi-monthly" },
-    { days: 100, name: "Centurion" },
-    { days: 365, name: "Annual" },
-  ]
-
-  return milestones.find((milestone) => milestone.days > currentStreak) || null
-}
-
-/**
- * Gets the daily streak leaderboard
- */
-async function getDailyStreakLeaderboard(
-  limit: number,
-): Promise<{ userId: string; username: string; streak: number; rank: number }[]> {
+async function getDailyStreakLeaderboard(limit: number) {
   try {
     const db = getDb()
     const users = await db.all(

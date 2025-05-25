@@ -1,7 +1,6 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
 
-// Update the UserReputation interface
 export interface UserReputation {
   userId: string
   username: string
@@ -11,23 +10,10 @@ export interface UserReputation {
   givenNegative: number
 }
 
-/**
- * Initializes the reputation manager
- */
 export async function initReputationManager(): Promise<void> {
-  try {
-    logger.info("Reputation manager initialized")
-  } catch (error) {
-    logger.error("Failed to initialize reputation manager:", error)
-  }
+  logger.info("Reputation manager initialized")
 }
 
-/**
- * Checks if a user can give reputation to another user
- * @param giverId The ID of the user giving reputation
- * @param receiverId The ID of the user receiving reputation
- * @returns Object indicating if reputation can be given and a message
- */
 export async function canGiveReputation(
   giverId: string,
   receiverId: string,
@@ -40,7 +26,7 @@ export async function canGiveReputation(
 
     const db = getDb()
 
-    // Check if the giver has already given reputation to the receiver
+    // Check if already given
     const existingRep = await db.get(
       "SELECT 1 FROM reputation_given WHERE giver_id = ? AND receiver_id = ?",
       giverId,
@@ -50,7 +36,7 @@ export async function canGiveReputation(
     if (existingRep) {
       return {
         canGive: false,
-        message: "You have already given reputation to this user. You can only give reputation to a user once.",
+        message: "You have already given reputation to this user.",
       }
     }
 
@@ -61,14 +47,6 @@ export async function canGiveReputation(
   }
 }
 
-/**
- * Gives positive reputation to a user
- * @param giverId The ID of the user giving reputation
- * @param giverName The username of the user giving reputation
- * @param receiverId The ID of the user receiving reputation
- * @param receiverName The username of the user receiving reputation
- * @returns Object indicating success and a message
- */
 export async function givePositiveRep(
   giverId: string,
   giverName: string,
@@ -77,7 +55,6 @@ export async function givePositiveRep(
 ): Promise<{ success: boolean; message: string }> {
   try {
     const canGive = await canGiveReputation(giverId, receiverId)
-
     if (!canGive.canGive) {
       return { success: false, message: canGive.message }
     }
@@ -89,7 +66,7 @@ export async function givePositiveRep(
     await db.exec("BEGIN TRANSACTION")
 
     try {
-      // Update or insert giver's record
+      // Update giver's record
       await db.run(
         `INSERT INTO reputation (user_id, username, given_positive, updated_at) 
          VALUES (?, ?, 1, ?)
@@ -104,7 +81,7 @@ export async function givePositiveRep(
         now,
       )
 
-      // Update or insert receiver's record
+      // Update receiver's record
       await db.run(
         `INSERT INTO reputation (user_id, username, received_positive, updated_at) 
          VALUES (?, ?, 1, ?)
@@ -119,7 +96,7 @@ export async function givePositiveRep(
         now,
       )
 
-      // Record that the giver has given reputation to this receiver
+      // Record the reputation
       await db.run(
         "INSERT INTO reputation_given (giver_id, receiver_id, is_positive, timestamp) VALUES (?, ?, 1, ?)",
         giverId,
@@ -127,10 +104,9 @@ export async function givePositiveRep(
         now,
       )
 
-      // Commit the transaction
       await db.exec("COMMIT")
 
-      // Get the updated receiver's reputation for the message
+      // Get updated reputation
       const receiver = await db.get("SELECT received_positive FROM reputation WHERE user_id = ?", receiverId)
 
       return {
@@ -138,7 +114,6 @@ export async function givePositiveRep(
         message: `You gave positive reputation to ${receiverName}. They now have ${receiver?.received_positive || 1} positive reputation.`,
       }
     } catch (error) {
-      // Rollback on error
       await db.exec("ROLLBACK")
       throw error
     }
@@ -235,11 +210,6 @@ export async function giveNegativeRep(
   }
 }
 
-/**
- * Gets a user's reputation data
- * @param userId The user's ID
- * @returns The user's reputation data or undefined if not found
- */
 export async function getUserReputation(userId: string): Promise<UserReputation | undefined> {
   try {
     const db = getDb()
@@ -267,12 +237,6 @@ export async function getUserReputation(userId: string): Promise<UserReputation 
   }
 }
 
-/**
- * Gets the top users by specified reputation criteria
- * @param sortBy The criteria to sort by
- * @param limit The maximum number of users to return
- * @returns Array of top users
- */
 export async function getTopUsers(sortBy = "receivedTotal", limit = 10): Promise<UserReputation[]> {
   try {
     const db = getDb()
@@ -308,7 +272,7 @@ export async function getTopUsers(sortBy = "receivedTotal", limit = 10): Promise
       limit,
     )
 
-    return users.map((user) => ({
+    return users.map((user: any) => ({
       userId: user.user_id,
       username: user.username,
       receivedPositive: user.received_positive,

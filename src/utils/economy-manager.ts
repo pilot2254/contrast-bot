@@ -24,13 +24,6 @@ export interface Transaction {
   relatedUserId?: string
 }
 
-export interface EconomyLeaderboard {
-  userId: string
-  username: string
-  value: number
-  rank: number
-}
-
 // Transaction types
 export const TRANSACTION_TYPES = {
   DAILY: "daily",
@@ -45,9 +38,6 @@ export const TRANSACTION_TYPES = {
   BONUS: "bonus",
 } as const
 
-/**
- * Initializes the economy manager
- */
 export async function initEconomyManager(): Promise<void> {
   try {
     logger.info("Economy manager initialized")
@@ -56,17 +46,9 @@ export async function initEconomyManager(): Promise<void> {
   }
 }
 
-/**
- * Gets or creates a user's economy data
- * @param userId The user's ID
- * @param username The user's username
- * @returns The user's economy data
- */
 export async function getOrCreateUserEconomy(userId: string, username: string): Promise<UserEconomy> {
   try {
     const db = getDb()
-
-    // Try to get existing user
     let user = await db.get("SELECT * FROM user_economy WHERE user_id = ?", userId)
 
     if (!user) {
@@ -84,17 +66,15 @@ export async function getOrCreateUserEconomy(userId: string, username: string): 
       )
 
       user = await db.get("SELECT * FROM user_economy WHERE user_id = ?", userId)
-    } else {
-      // Update username if it changed
-      if (user.username !== username) {
-        await db.run(
-          "UPDATE user_economy SET username = ?, updated_at = ? WHERE user_id = ?",
-          username,
-          Date.now(),
-          userId,
-        )
-        user.username = username
-      }
+    } else if (user.username !== username) {
+      // Update username if changed
+      await db.run(
+        "UPDATE user_economy SET username = ?, updated_at = ? WHERE user_id = ?",
+        username,
+        Date.now(),
+        userId,
+      )
+      user.username = username
     }
 
     return {
@@ -114,16 +94,6 @@ export async function getOrCreateUserEconomy(userId: string, username: string): 
   }
 }
 
-/**
- * Adds currency to a user's balance
- * @param userId The user's ID
- * @param username The user's username
- * @param amount The amount to add
- * @param type The transaction type
- * @param description The transaction description
- * @param relatedUserId Optional related user ID
- * @returns Whether the operation was successful
- */
 export async function addCurrency(
   userId: string,
   username: string,
@@ -134,20 +104,14 @@ export async function addCurrency(
 ): Promise<boolean> {
   try {
     // Validate amount
-    if (amount <= 0) {
-      logger.warn(`Attempted to add non-positive amount: ${amount}`)
-      return false
-    }
-
-    if (amount > 10000000) {
-      logger.warn(`Attempted to add excessive amount: ${amount}`)
+    if (amount <= 0 || amount > 10000000) {
+      logger.warn(`Invalid amount: ${amount}`)
       return false
     }
 
     const db = getDb()
     const now = Date.now()
 
-    // Start transaction
     await db.exec("BEGIN TRANSACTION")
 
     try {
@@ -165,12 +129,6 @@ export async function addCurrency(
         userId,
       )
 
-      // Verify the update worked
-      const updatedUser = await db.get("SELECT balance FROM user_economy WHERE user_id = ?", userId)
-      if (!updatedUser) {
-        throw new Error("Failed to update user balance")
-      }
-
       // Create transaction record
       await db.run(
         `INSERT INTO transactions (user_id, type, amount, description, timestamp, related_user_id)
@@ -184,7 +142,6 @@ export async function addCurrency(
       )
 
       await db.exec("COMMIT")
-      logger.info(`Added ${amount} currency to ${username} (${userId})`)
       return true
     } catch (error) {
       await db.exec("ROLLBACK")
@@ -196,16 +153,6 @@ export async function addCurrency(
   }
 }
 
-/**
- * Removes currency from a user's balance
- * @param userId The user's ID
- * @param username The user's username
- * @param amount The amount to remove
- * @param type The transaction type
- * @param description The transaction description
- * @param relatedUserId Optional related user ID
- * @returns Whether the operation was successful
- */
 export async function removeCurrency(
   userId: string,
   username: string,
@@ -218,7 +165,6 @@ export async function removeCurrency(
     const db = getDb()
     const now = Date.now()
 
-    // Start transaction
     await db.exec("BEGIN TRANSACTION")
 
     try {
@@ -254,7 +200,6 @@ export async function removeCurrency(
       )
 
       await db.exec("COMMIT")
-      logger.info(`Removed ${amount} currency from ${username} (${userId})`)
       return { success: true, message: "Currency removed successfully" }
     } catch (error) {
       await db.exec("ROLLBACK")
@@ -266,15 +211,6 @@ export async function removeCurrency(
   }
 }
 
-/**
- * Transfers currency between users
- * @param fromUserId The sender's ID
- * @param fromUsername The sender's username
- * @param toUserId The recipient's ID
- * @param toUsername The recipient's username
- * @param amount The amount to transfer
- * @returns Transfer result
- */
 export async function transferCurrency(
   fromUserId: string,
   fromUsername: string,
@@ -294,7 +230,6 @@ export async function transferCurrency(
     const db = getDb()
     const now = Date.now()
 
-    // Start transaction
     await db.exec("BEGIN TRANSACTION")
 
     try {
@@ -355,7 +290,6 @@ export async function transferCurrency(
       )
 
       await db.exec("COMMIT")
-      logger.info(`Transferred ${amount} currency from ${fromUsername} to ${toUsername}`)
       return { success: true, message: `Successfully transferred ${amount} coins to ${toUsername}` }
     } catch (error) {
       await db.exec("ROLLBACK")
@@ -367,12 +301,6 @@ export async function transferCurrency(
   }
 }
 
-/**
- * Gets a user's transaction history
- * @param userId The user's ID
- * @param limit The maximum number of transactions to return
- * @returns Array of transactions
- */
 export async function getTransactionHistory(userId: string, limit = 10): Promise<Transaction[]> {
   try {
     const db = getDb()
@@ -400,16 +328,7 @@ export async function getTransactionHistory(userId: string, limit = 10): Promise
   }
 }
 
-/**
- * Gets economy leaderboard
- * @param type The type of leaderboard (balance, earned, spent)
- * @param limit The maximum number of users to return
- * @returns Array of leaderboard entries
- */
-export async function getEconomyLeaderboard(
-  type: "balance" | "earned" | "spent" = "balance",
-  limit = 10,
-): Promise<EconomyLeaderboard[]> {
+export async function getEconomyLeaderboard(type: "balance" | "earned" | "spent" = "balance", limit = 10) {
   try {
     const db = getDb()
 
