@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { config } from "../../utils/config"
 import { recordGame, getBotChoice, determineResult, type RPSChoice, type RPSResult } from "../../utils/rps-manager"
+import { awardGamePlayedXp } from "../../utils/level-manager"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -27,6 +28,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
   // Record the game result
   await recordGame(interaction.user.id, interaction.user.username, result)
+
+  // Award XP for playing the game
+  await awardGamePlayedXp(interaction.user.id, interaction.user.username, result === "win")
 
   // Create result embed
   const embed = new EmbedBuilder()
