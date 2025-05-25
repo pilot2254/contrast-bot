@@ -102,11 +102,17 @@ export async function addCurrency(
   type: string,
   description: string,
   relatedUserId?: string,
+  skipLimits = false, // New parameter to skip limits for special cases
 ): Promise<boolean> {
   try {
-    // Validate amount
-    if (amount <= 0 || amount > 10000000) {
-      logger.warn(`Invalid amount: ${amount}`)
+    // Validate amount (skip limits for admin actions or special cases)
+    if (amount <= 0) {
+      logger.warn(`Attempted to add non-positive amount: ${amount}`)
+      return false
+    }
+
+    if (!skipLimits && amount > 10000000) {
+      logger.warn(`Attempted to add excessive amount: ${amount}`)
       return false
     }
 
