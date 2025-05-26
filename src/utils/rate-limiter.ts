@@ -9,7 +9,7 @@ export interface RateLimitConfig {
 export const RATE_LIMITS = {
   GAMBLING: { windowMs: 2000, maxRequests: 1 }, // 1 request per 2 seconds for gambling
   GENERAL: { windowMs: 1000, maxRequests: 3 }, // 3 requests per second for general commands
-  DAILY: { windowMs: 60000, maxRequests: 1 }, // 1 request per minute for daily commands
+  REWARD: { windowMs: 10000, maxRequests: 1 }, // 1 request per 10 seconds for reward commands
 }
 
 export function checkRateLimit(userId: string, commandName: string, config: RateLimitConfig): boolean {

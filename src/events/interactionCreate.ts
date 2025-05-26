@@ -42,7 +42,7 @@ export async function execute(interaction: Interaction): Promise<void> {
 
     // Apply rate limiting for gambling commands
     const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette"]
-    const dailyCommands = ["daily", "monthly", "yearly"]
+    const rewardCommands = ["daily", "monthly", "yearly"]
 
     if (gamblingCommands.includes(interaction.commandName)) {
       if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)) {
@@ -53,9 +53,9 @@ export async function execute(interaction: Interaction): Promise<void> {
         })
         return
       }
-    } else if (dailyCommands.includes(interaction.commandName)) {
-      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)
+    } else if (rewardCommands.includes(interaction.commandName)) {
+      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.REWARD)) {
+        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.REWARD)
         await interaction.reply({
           content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
           ephemeral: true,
