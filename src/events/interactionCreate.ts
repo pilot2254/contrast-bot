@@ -47,26 +47,29 @@ export async function execute(interaction: Interaction): Promise<void> {
     if (gamblingCommands.includes(interaction.commandName)) {
       if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)) {
         const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)
-        return interaction.reply({
+        await interaction.reply({
           content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
           ephemeral: true,
         })
+        return
       }
     } else if (dailyCommands.includes(interaction.commandName)) {
       if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)) {
         const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)
-        return interaction.reply({
+        await interaction.reply({
           content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
           ephemeral: true,
         })
+        return
       }
     } else {
       if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)) {
         const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)
-        return interaction.reply({
+        await interaction.reply({
           content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
           ephemeral: true,
         })
+        return
       }
     }
 
