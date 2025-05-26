@@ -72,7 +72,9 @@ async function loadCommands(dir: string) {
     }
 
     logger.info(`Registered ${(data as any[]).length} slash commands.`)
-    logger.info(`Note: Developer commands use prefix (${config.prefix}) and are not deployed as slash commands.`)
+    logger.info(
+      `Note: ${config.botName} developer commands use prefix (${config.prefix}) and are not deployed as slash commands.`,
+    )
   } catch (error) {
     logger.error("Error refreshing commands:", error)
   }

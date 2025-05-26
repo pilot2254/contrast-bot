@@ -2,6 +2,7 @@ import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } f
 import { botInfo } from "../../utils/bot-info"
 import { isDeveloper } from "../../utils/permissions"
 import { logger } from "../../utils/logger"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -18,7 +19,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const directCheck = userId === "171395713064894465"
 
   const embed = new EmbedBuilder()
-    .setTitle("Debug Information")
+    .setTitle(`${config.botName} Debug Information`)
     .setColor(botInfo.colors.primary)
     .addFields(
       { name: "User ID", value: `"${userId}" (${typeof userId})`, inline: true },
@@ -29,7 +30,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       { name: "Node.js", value: botInfo.technical.node, inline: true },
       { name: "Discord.js", value: botInfo.technical.discordJs, inline: true },
     )
-    .setFooter({ text: `Requested by ${interaction.user.tag}` })
+    .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
     .setTimestamp()
 
   await interaction.reply({ embeds: [embed], ephemeral: true })

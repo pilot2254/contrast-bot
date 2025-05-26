@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 import { jokes } from "../../constants/jokes"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("joke").setDescription("Tells a random joke")
@@ -13,7 +14,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     .setTitle("Here's a joke for you")
     .setDescription(randomJoke)
     .setColor(botInfo.colors.primary)
-    .setFooter({ text: `Requested by ${interaction.user.tag}` })
+    .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
     .setTimestamp()
 
   await interaction.reply({ embeds: [embed] })

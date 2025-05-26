@@ -1,17 +1,14 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { logger } from "../../utils/logger"
-import { recordGame, getPlayerStats } from "../../utils/rps-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
+import { getBotChoice, determineResult, type RPSChoice, type RPSResult } from "../../utils/rps-manager"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
-import { getOrCreateUserEconomy } from "../../utils/economy-manager"
 import { awardGamePlayedXp } from "../../utils/level-manager"
 
-type RPSChoice = "rock" | "paper" | "scissors"
-type RPSResult = "win" | "loss" | "tie"
-
+// Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("rps")
-  .setDescription("Play Rock Paper Scissors against the bot - with optional betting!")
+  .setDescription("Play Rock Paper Scissors with optional betting!")
   .addStringOption((option) =>
     option
       .setName("choice")
@@ -24,110 +21,140 @@ export const data = new SlashCommandBuilder()
       ),
   )
   .addIntegerOption((option) =>
-    option.setName("bet").setDescription("Amount to bet").setRequired(false).setMinValue(1).setMaxValue(1000000),
+    option
+      .setName("bet")
+      .setDescription("Amount to bet (optional)")
+      .setRequired(false)
+      .setMinValue(1)
+      .setMaxValue(100000),
   )
 
+// Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
-  try {
-    const userChoice = interaction.options.getString("choice") as RPSChoice
-    const betAmount = interaction.options.getInteger("bet")
+  const playerChoice = interaction.options.getString("choice", true) as RPSChoice
+  const betAmount = interaction.options.getInteger("bet") || 0
+  const isGambling = betAmount > 0
 
-    // Bot makes a choice
-    const choices: RPSChoice[] = ["rock", "paper", "scissors"]
-    const botChoice = choices[Math.floor(Math.random() * choices.length)]
+  if (isGambling) {
+    // Handle betting logic
+    const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.RPS)
 
-    // Determine winner
-    let result: RPSResult
-    if (userChoice === botChoice) {
-      result = "tie"
-    } else if (
-      (userChoice === "rock" && botChoice === "scissors") ||
-      (userChoice === "paper" && botChoice === "rock") ||
-      (userChoice === "scissors" && botChoice === "paper")
-    ) {
-      result = "win"
-    } else {
-      result = "loss"
+    if (!betResult.success) {
+      return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
     }
+  }
 
-    // Award XP for playing the game
-    await awardGamePlayedXp(interaction.user.id, interaction.user.username, result === "win")
+  const botChoice = getBotChoice()
+  const result = determineResult(playerChoice, botChoice)
 
-    // Handle betting if specified
-    let isBetting = false
-    let winnings = 0
+  // Calculate winnings for gambling
+  let winnings = 0
+  if (isGambling && result === "win") {
+    winnings = betAmount * 2 // 2x multiplier for RPS wins
+    await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.RPS)
+  }
 
-    if (betAmount) {
-      const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.RPS)
-      if (!betResult.success) {
-        return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
-      }
+  // Award XP for playing the game
+  await awardGamePlayedXp(interaction.user.id, interaction.user.username, result === "win")
 
-      isBetting = true
-      if (result === "win") {
-        winnings = betAmount * 2
-      } else if (result === "tie") {
-        winnings = betAmount // Refund on tie
-      }
+  // Create result embed
+  const embed = new EmbedBuilder()
+    .setTitle("🎮 Rock Paper Scissors")
+    .setColor(getResultColor(result))
+    .addFields(
+      { name: "Your Choice", value: getChoiceEmoji(playerChoice), inline: true },
+      { name: `${config.botName}'s Choice`, value: getChoiceEmoji(botChoice), inline: true },
+      { name: "Result", value: getResultText(result), inline: true },
+    )
+    .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
+    .setTimestamp()
 
-      if (result === "win" || result === "tie") {
-        await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.RPS)
-      }
-    }
+  // Add result-specific description and gambling info
+  let description = ""
+  switch (result) {
+    case "win":
+      description = isGambling
+        ? `🎉 **You won!** You earned ${winnings.toLocaleString()} coins!`
+        : "🎉 **You won!** Great choice!"
+      break
+    case "loss":
+      description = isGambling
+        ? `😔 **You lost!** You lost ${betAmount.toLocaleString()} coins.`
+        : "😔 **You lost!** Better luck next time!"
+      break
+    case "tie":
+      description = isGambling
+        ? `🤝 **It's a tie!** Your bet of ${betAmount.toLocaleString()} coins has been refunded.`
+        : "🤝 **It's a tie!** Great minds think alike!"
+      break
+  }
 
-    // Record game and get stats
-    await recordGame(interaction.user.id, interaction.user.username, result)
-    const stats = await getPlayerStats(interaction.user.id)
-    const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
+  embed.setDescription(description)
 
-    // Create embed
-    const choiceEmojis = { rock: "🪨", paper: "📄", scissors: "✂️" }
-    const resultTexts = { win: "🏆 You Win!", loss: "❌ You Lose!", tie: "🤝 It's a Tie!" }
-    const resultColors = {
-      win: botInfo.colors.success,
-      loss: botInfo.colors.error,
-      tie: botInfo.colors.primary,
-    }
+  // Add gambling-specific fields
+  if (isGambling) {
+    embed.addFields(
+      { name: "💰 Bet Amount", value: `${betAmount.toLocaleString()} coins`, inline: true },
+      { name: "⚡ Multiplier", value: "2x (win)", inline: true },
+      {
+        name: "💎 Outcome",
+        value:
+          result === "win"
+            ? `+${(winnings - betAmount).toLocaleString()} coins`
+            : result === "tie"
+              ? "Refunded"
+              : `-${betAmount.toLocaleString()} coins`,
+        inline: true,
+      },
+    )
 
-    const embed = new EmbedBuilder()
-      .setTitle("Rock Paper Scissors")
-      .setDescription(
-        `${interaction.user.username} chose ${choiceEmojis[userChoice]} vs Bot's ${choiceEmojis[botChoice]}`,
+    // Handle tie refund
+    if (result === "tie") {
+      // Refund the bet for ties
+      const { addCurrency, TRANSACTION_TYPES } = await import("../../utils/economy-manager")
+      await addCurrency(
+        interaction.user.id,
+        interaction.user.username,
+        betAmount,
+        TRANSACTION_TYPES.GAMBLING_WIN,
+        "RPS tie refund",
       )
-      .setColor(resultColors[result])
-      .addFields({ name: "Result", value: resultTexts[result], inline: false })
-      .setFooter({ text: `Played by ${interaction.user.username}` })
-      .setTimestamp()
-
-    // Add betting info if applicable
-    if (isBetting) {
-      if (result === "win") {
-        embed.addFields(
-          { name: "💰 Bet", value: `${betAmount!.toLocaleString()} coins`, inline: true },
-          { name: "🎊 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
-        )
-      } else if (result === "loss") {
-        embed.addFields({ name: "💸 Lost", value: `${betAmount!.toLocaleString()} coins`, inline: true })
-      } else {
-        embed.addFields({ name: "🤝 Tie - Refunded", value: `${betAmount!.toLocaleString()} coins`, inline: true })
-      }
-
-      embed.addFields({ name: "💵 Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true })
     }
+  }
 
-    // Add stats if available
-    if (stats && stats.totalGames > 0) {
-      const winRate = ((stats.wins / stats.totalGames) * 100).toFixed(1)
-      embed.addFields({
-        name: "Your Stats",
-        value: `W: ${stats.wins} | L: ${stats.losses} | T: ${stats.ties} | Rate: ${winRate}%`,
-        inline: false,
-      })
-    }
+  await interaction.reply({ embeds: [embed] })
+}
 
-    await interaction.reply({ embeds: [embed] })
-  } catch (error) {
-    logger.error("Error executing rps command:", error)
-    await interaction.reply({ content: "There was an error while playing Rock Paper Scissors!", ephemeral: true })
+// Helper functions
+function getChoiceEmoji(choice: RPSChoice): string {
+  switch (choice) {
+    case "rock":
+      return "🪨 Rock"
+    case "paper":
+      return "📄 Paper"
+    case "scissors":
+      return "✂️ Scissors"
+  }
+}
+
+function getResultText(result: RPSResult): string {
+  switch (result) {
+    case "win":
+      return "🏆 Victory!"
+    case "loss":
+      return "💀 Defeat"
+    case "tie":
+      return "🤝 Tie"
+  }
+}
+
+function getResultColor(result: RPSResult): number {
+  switch (result) {
+    case "win":
+      return botInfo.colors.success
+    case "loss":
+      return botInfo.colors.error
+    case "tie":
+      return botInfo.colors.warning
   }
 }

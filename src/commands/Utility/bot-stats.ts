@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getStats } from "../../utils/stats-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("bot-stats").setDescription("Shows bot usage statistics")
@@ -16,7 +17,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       commandEntries.length > 0 ? commandEntries.reduce((a, b) => (a[1] > b[1] ? a : b))[0] : "None"
 
     const embed = new EmbedBuilder()
-      .setTitle("Bot Statistics")
+      .setTitle(`${config.botName} Statistics`)
       .setColor(botInfo.colors.primary)
       .addFields(
         { name: "Total Commands Used", value: stats.totalCommands.toString(), inline: true },
@@ -26,6 +27,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         { name: "Channels", value: interaction.client.channels.cache.size.toString(), inline: true },
         { name: "Uptime", value: formatUptime(process.uptime()), inline: true },
       )
+      .setFooter({ text: config.botName })
       .setTimestamp()
 
     await interaction.reply({ embeds: [embed] })

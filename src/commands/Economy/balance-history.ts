@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getTransactionHistory } from "../../utils/economy-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -94,7 +95,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         `${filterType === "all" ? "All" : filterType.charAt(0).toUpperCase() + filterType.slice(1)} transactions for ${username}`,
       )
       .setColor(botInfo.colors.primary)
-      .setFooter({ text: `Showing ${transactions.length} of ${filteredTransactions.length} transactions` })
+      .setFooter({
+        text: `${config.botName} • Showing ${transactions.length} of ${filteredTransactions.length} transactions`,
+      })
       .setTimestamp()
 
     // Add transaction fields

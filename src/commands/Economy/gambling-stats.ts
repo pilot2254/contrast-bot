@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getGamblingStats, getGamblingLeaderboard } from "../../utils/gambling-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -81,7 +82,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
               inline: true,
             },
           )
-          .setFooter({ text: `Last updated` })
+          .setFooter({ text: `${config.botName} • Last updated` })
           .setTimestamp(stats.updatedAt)
 
         await interaction.reply({ embeds: [embed] })
@@ -112,6 +113,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         const embed = new EmbedBuilder()
           .setTitle(`${typeEmojis[type]} Gambling Leaderboard - ${typeNames[type]}`)
           .setColor(botInfo.colors.primary)
+          .setFooter({ text: `${config.botName} • Showing top ${leaderboard.length} gamblers` })
           .setTimestamp()
 
         // We need to get usernames for the leaderboard
@@ -138,7 +140,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
           .join("\n")
 
         embed.setDescription(description)
-        embed.setFooter({ text: `Showing top ${leaderboard.length} gamblers` })
 
         await interaction.reply({ embeds: [embed] })
         break

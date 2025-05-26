@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("info").setDescription("Shows information about the bot")
@@ -7,7 +8,7 @@ export const data = new SlashCommandBuilder().setName("info").setDescription("Sh
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const embed = new EmbedBuilder()
-    .setTitle(botInfo.name)
+    .setTitle(config.botName)
     .setDescription(botInfo.description)
     .setColor(botInfo.colors.primary)
     .setThumbnail(interaction.client.user?.displayAvatarURL({ size: 256 }))

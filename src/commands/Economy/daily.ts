@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getOrCreateUserEconomy, TRANSACTION_TYPES, type UserEconomy } from "../../utils/economy-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 import { getDb } from "../../utils/database"
 
 // Daily reward config
@@ -17,19 +18,6 @@ export const data = new SlashCommandBuilder()
   .setDescription("Claim your daily coins and manage streaks")
   .addSubcommand((subcommand) => subcommand.setName("claim").setDescription("Claim your daily reward"))
   .addSubcommand((subcommand) => subcommand.setName("status").setDescription("Check your daily reward status"))
-  .addSubcommand((subcommand) =>
-    subcommand
-      .setName("leaderboard")
-      .setDescription("View the daily streak leaderboard")
-      .addIntegerOption((option) =>
-        option
-          .setName("limit")
-          .setDescription("Number of users to show")
-          .setRequired(false)
-          .setMinValue(1)
-          .setMaxValue(20),
-      ),
-  )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const subcommand = interaction.options.getSubcommand()
@@ -44,6 +32,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             .setTitle("⏰ Daily Reward")
             .setDescription(result.message)
             .setColor(botInfo.colors.warning)
+            .setFooter({ text: config.botName })
             .setTimestamp()
 
           if (result.nextClaimTime) {
@@ -67,6 +56,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             { name: "💵 New Balance", value: `${result.newBalance!.toLocaleString()} coins`, inline: true },
             { name: "⏰ Next Claim", value: `<t:${Math.floor(result.nextClaimTime! / 1000)}:R>`, inline: true },
           )
+          .setFooter({ text: config.botName })
           .setTimestamp()
 
         // Add special messages for milestones
@@ -92,6 +82,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             { name: "🔥 Current Streak", value: `${economy.dailyStreak} days`, inline: true },
             { name: "💰 Next Reward", value: `${calculateDailyReward(economy.dailyStreak + 1)} coins`, inline: true },
           )
+          .setFooter({ text: config.botName })
           .setTimestamp()
 
         if (status.canClaim) {
@@ -108,34 +99,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         await interaction.reply({ embeds: [embed], ephemeral: true })
         break
       }
-
-      case "leaderboard": {
-        const limit = interaction.options.getInteger("limit") || 10
-        const leaderboard = await getDailyStreakLeaderboard(limit)
-
-        if (leaderboard.length === 0) {
-          return interaction.reply({ content: "📊 No daily streak data available yet!", ephemeral: true })
-        }
-
-        const embed = new EmbedBuilder()
-          .setTitle("🔥 Daily Streak Leaderboard")
-          .setColor(botInfo.colors.primary)
-          .setTimestamp()
-
-        const description = leaderboard
-          .map((entry, index) => {
-            const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
-            const streakEmoji = entry.streak >= 30 ? "🏆" : entry.streak >= 7 ? "🔥" : "📅"
-            return `${medal} **${entry.username}** ${streakEmoji} ${entry.streak} days`
-          })
-          .join("\n")
-
-        embed.setDescription(description)
-        embed.setFooter({ text: `Showing top ${leaderboard.length} users by daily streak` })
-
-        await interaction.reply({ embeds: [embed] })
-        break
-      }
     }
   } catch (error) {
     await interaction.reply({
@@ -145,7 +108,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   }
 }
 
-// Helper functions
+// Helper functions remain the same...
 async function claimDailyReward(userId: string, username: string) {
   try {
     const db = getDb()

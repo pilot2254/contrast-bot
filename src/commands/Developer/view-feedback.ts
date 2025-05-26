@@ -1,5 +1,6 @@
 import type { Message } from "discord.js"
 import { getAllFeedback } from "../../utils/feedback-manager"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "view-feedback"
@@ -20,7 +21,7 @@ export async function run(message: Message, args: string[]) {
     const limit = Number.parseInt(args[0]) || Math.min(feedback.length, 10)
     const limitedFeedback = feedback.slice(0, limit)
 
-    let response = `📝 **Recent Feedback (${limitedFeedback.length} entries):**\n\n`
+    let response = `📝 **${config.botName} Recent Feedback (${limitedFeedback.length} entries):**\n\n`
 
     limitedFeedback.forEach((entry, index) => {
       const date = new Date(entry.timestamp).toLocaleDateString()

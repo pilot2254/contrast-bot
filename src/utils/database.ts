@@ -118,30 +118,6 @@ async function initTables(): Promise<void> {
       )
     `)
 
-    // Create RPS tables
-    await db?.exec(`
-      CREATE TABLE IF NOT EXISTS rps_players (
-        userId TEXT PRIMARY KEY,
-        username TEXT NOT NULL,
-        wins INTEGER NOT NULL DEFAULT 0,
-        losses INTEGER NOT NULL DEFAULT 0,
-        ties INTEGER NOT NULL DEFAULT 0,
-        totalGames INTEGER NOT NULL DEFAULT 0,
-        winRate REAL NOT NULL DEFAULT 0,
-        lastPlayed INTEGER NOT NULL DEFAULT 0
-      )
-    `)
-
-    await db?.exec(`
-      CREATE TABLE IF NOT EXISTS rps_games (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId TEXT NOT NULL,
-        username TEXT NOT NULL,
-        result TEXT NOT NULL,
-        timestamp INTEGER NOT NULL
-      )
-    `)
-
     // Create command_usage table
     await db?.exec(`
       CREATE TABLE IF NOT EXISTS command_usage (
@@ -150,7 +126,7 @@ async function initTables(): Promise<void> {
       )
     `)
 
-    // Create economy tables
+    // Create economy tables with ALL required columns
     await db?.exec(`
       CREATE TABLE IF NOT EXISTS user_economy (
         user_id TEXT PRIMARY KEY,
@@ -160,6 +136,10 @@ async function initTables(): Promise<void> {
         total_spent INTEGER NOT NULL DEFAULT 0,
         last_daily INTEGER NOT NULL DEFAULT 0,
         daily_streak INTEGER NOT NULL DEFAULT 0,
+        last_monthly INTEGER NOT NULL DEFAULT 0,
+        monthly_streak INTEGER NOT NULL DEFAULT 0,
+        last_yearly INTEGER NOT NULL DEFAULT 0,
+        yearly_streak INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER NOT NULL DEFAULT 0
       )

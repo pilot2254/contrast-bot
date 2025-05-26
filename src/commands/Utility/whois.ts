@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder, type Role } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -15,7 +16,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const targetMember = interaction.guild?.members.cache.get(targetUser.id)
 
   const embed = createUserEmbed(targetUser, targetMember)
-  embed.setFooter({ text: `Requested by ${interaction.user.tag}` }).setTimestamp()
+  embed.setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` }).setTimestamp()
 
   await interaction.reply({ embeds: [embed] })
 }

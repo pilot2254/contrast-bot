@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder().setName("uptime").setDescription("Shows how long the bot has been online")
@@ -6,7 +7,7 @@ export const data = new SlashCommandBuilder().setName("uptime").setDescription("
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
   const uptime = formatUptime(interaction.client.uptime || 0)
-  await interaction.reply(`Bot has been online for: **${uptime}**`)
+  await interaction.reply(`**${config.botName}** has been online for: **${uptime}**`)
 }
 
 // Helper function to format uptime

@@ -20,6 +20,7 @@ export const GAME_TYPES = {
   COINFLIP: "coinflip",
   DICE_ROLL: "dice_roll",
   RUSSIAN_ROULETTE: "russian_roulette",
+  SLOTS: "slots",
 } as const
 
 export async function initGamblingManager(): Promise<void> {
@@ -86,21 +87,25 @@ export async function processWin(
   gameType: string,
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Add winnings to balance
+    // Add winnings to balance - SKIP LIMITS for gambling wins since they're legitimate
     const success = await addCurrency(
       userId,
       username,
       winAmount,
       TRANSACTION_TYPES.GAMBLING_WIN,
       `${gameType} win - ${winAmount.toLocaleString()} coins`,
+      undefined, // relatedUserId
+      true, // skipLimits = true for gambling wins
     )
 
     if (!success) {
+      logger.error(`Failed to add gambling winnings for ${userId}: ${winAmount} coins`)
       return { success: false, message: "Failed to process winnings" }
     }
 
     // Update gambling stats
     await updateGamblingStats(userId, 0, winAmount, winAmount - betAmount)
+    logger.info(`Processed gambling win for ${userId}: ${winAmount} coins from ${gameType}`)
     return { success: true, message: "Winnings processed successfully" }
   } catch (error) {
     logger.error(`Failed to process win for ${userId}:`, error)

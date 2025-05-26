@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { addQuote, getRandomQuote, getAllQuotes } from "../../utils/quote-manager"
 import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -67,7 +68,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         const embed = new EmbedBuilder()
           .setDescription(`"${quote.text}"`)
-          .setFooter({ text: `— ${quote.author}` })
+          .setFooter({ text: `${config.botName} • — ${quote.author}` })
           .setColor(botInfo.colors.primary)
           .setTimestamp(quote.timestamp)
 
@@ -93,7 +94,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
         const embed = new EmbedBuilder()
           .setDescription(`"${randomQuote.text}"`)
-          .setFooter({ text: `— ${randomQuote.author} (${filteredQuotes.length} total quotes)` })
+          .setFooter({ text: `${config.botName} • — ${randomQuote.author} (${filteredQuotes.length} total quotes)` })
           .setColor(botInfo.colors.primary)
           .setTimestamp(randomQuote.timestamp)
 

@@ -2,6 +2,7 @@ import type { Message } from "discord.js"
 import { getDb } from "../../utils/database"
 import fs from "fs"
 import path from "path"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "data"
@@ -18,7 +19,7 @@ export async function run(message: Message, _args: string[]) {
     // Get table information
     const tables = await db.all("SELECT name FROM sqlite_master WHERE type='table'")
 
-    let info = "📊 **Database Information**\n\n"
+    let info = `📊 **${config.botName} Database Information**\n\n`
     info += `**Tables:** ${tables.length}\n`
 
     for (const table of tables) {

@@ -1,4 +1,5 @@
 import type { Message } from "discord.js"
+import { config } from "../../utils/config"
 
 // Prefix command definition
 export const name = "get-invites"
@@ -12,7 +13,7 @@ export async function run(message: Message, _args: string[]) {
   try {
     const guilds = message.client.guilds.cache
 
-    let response = `🔗 **Server Invites (${guilds.size} servers):**\n\n`
+    let response = `🔗 **${config.botName} Server Invites (${guilds.size} servers):**\n\n`
 
     for (const [_guildId, guild] of guilds) {
       try {

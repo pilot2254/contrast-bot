@@ -1,4 +1,6 @@
 import type { Message, TextChannel } from "discord.js"
+import { config } from "../../utils/config"
+import { sendWebhookAlert, WEBHOOK_COLORS } from "../../utils/webhook-alerts"
 
 // Prefix command definition
 export const name = "leave-server"
@@ -27,7 +29,7 @@ export async function run(message: Message, args: string[]) {
 
     // Confirm before leaving
     await message.reply(
-      `⚠️ Are you sure you want to leave **${serverName}** (${memberCount} members)?\nReply with \`yes\` to confirm or \`no\` to cancel.`,
+      `⚠️ Are you sure you want ${config.botName} to leave **${serverName}** (${memberCount} members)?\nReply with \`yes\` to confirm or \`no\` to cancel.`,
     )
 
     const filter = (m: Message) => m.author.id === message.author.id && ["yes", "no"].includes(m.content.toLowerCase())
@@ -48,6 +50,19 @@ export async function run(message: Message, args: string[]) {
     if (confirmation === "yes") {
       await guild.leave()
       await message.reply(`✅ Successfully left **${serverName}**`)
+
+      // Send webhook alert
+      await sendWebhookAlert({
+        title: "🚪 Left Server",
+        description: `${config.botName} has left a server`,
+        color: WEBHOOK_COLORS.INFO,
+        fields: [
+          { name: "Server Name", value: serverName, inline: true },
+          { name: "Server ID", value: serverId, inline: true },
+          { name: "Member Count", value: memberCount.toString(), inline: true },
+          { name: "Initiated By", value: `${message.author.tag} (${message.author.id})`, inline: true },
+        ],
+      })
     } else {
       await message.reply("❌ Server leave cancelled.")
     }

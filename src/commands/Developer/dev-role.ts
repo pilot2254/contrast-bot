@@ -1,4 +1,5 @@
 import type { Message } from "discord.js"
+import { config } from "../../utils/config" // Declare the config variable
 
 // Prefix command definition
 export const name = "dev-role"
@@ -58,7 +59,7 @@ export async function run(message: Message, args: string[]) {
       permissions: isAdmin ? ["Administrator"] : [],
       hoist: isHoist,
       mentionable: isMentionable,
-      reason: `Developer role created by ${message.author.tag}`,
+      reason: `${config.botName} developer role created by ${message.author.tag}`,
     })
 
     // Add role to the developer

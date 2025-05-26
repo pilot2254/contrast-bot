@@ -63,13 +63,13 @@ function getBotMentionResponse(username: string, botName: string): string {
   const responses = [
     `Hey ${username}! I'm ${botName}, a utility bot. I don't have AI capabilities to chat, but I can help with various slash commands. Try \`/help\` to see what I can do!`,
 
-    `Hello there, ${username}! Unlike AI chatbots, I can't hold conversations. However, I have many useful slash commands you can use. Type \`/help\` to discover them!`,
+    `Hello there, ${username}! Unlike AI chatbots, I can't hold conversations. However, I have many useful ${botName} slash commands you can use. Type \`/help\` to discover them!`,
 
     `Hi ${username}! I'm ${botName}, but I'm not an AI chatbot. I'm a utility bot with specific slash commands. Check out \`/help\` to see all my features!`,
 
-    `Greetings, ${username}! I notice you've pinged me, but I'm not designed for open-ended conversations. I'm here to help with specific slash commands though! Try \`/help\` to see what I can do.`,
+    `Greetings, ${username}! I notice you've pinged me, but I'm not designed for open-ended conversations. I'm ${botName}, here to help with specific slash commands though! Try \`/help\` to see what I can do.`,
 
-    `${username}, thanks for the mention! While I can't chat like an AI, I have many useful slash commands. Use \`/help\` to explore my capabilities!`,
+    `${username}, thanks for the mention! While I can't chat like an AI, ${botName} has many useful slash commands. Use \`/help\` to explore my capabilities!`,
   ]
 
   // Return a random response from the list

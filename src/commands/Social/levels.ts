@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
-import { botInfo } from "../../utils/bot-info"
 import { getLevelLeaderboard } from "../../utils/level-manager"
+import { botInfo } from "../../utils/bot-info"
+import { config } from "../../utils/config"
 
 export const data = new SlashCommandBuilder()
   .setName("levels")
@@ -8,46 +9,40 @@ export const data = new SlashCommandBuilder()
   .addIntegerOption((option) =>
     option
       .setName("limit")
-      .setDescription("Number of users to show (1-25)")
+      .setDescription("Number of users to show (1-20)")
       .setRequired(false)
       .setMinValue(1)
-      .setMaxValue(25),
+      .setMaxValue(20),
   )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
   const limit = interaction.options.getInteger("limit") || 10
 
   try {
-    // Get leaderboard
     const leaderboard = await getLevelLeaderboard(limit)
 
     if (leaderboard.length === 0) {
-      return interaction.reply({
-        content: "No level data available yet!",
-        ephemeral: true,
-      })
+      return interaction.reply({ content: "📊 No level data available yet!", ephemeral: true })
     }
 
-    // Create embed
     const embed = new EmbedBuilder()
       .setTitle("🏆 Global Level Leaderboard")
       .setColor(botInfo.colors.primary)
-      .setDescription(
-        leaderboard
-          .map((user, index) => {
-            const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
-            return `${medal} **${user.username}** - Level ${user.level} (${user.xp.toLocaleString()} XP)`
-          })
-          .join("\n"),
-      )
-      .setFooter({ text: `Showing top ${leaderboard.length} users by level` })
+      .setFooter({ text: `${config.botName} • Showing top ${leaderboard.length} users` })
       .setTimestamp()
+
+    const description = leaderboard
+      .map((entry, index) => {
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `${index + 1}.`
+        const levelEmoji = entry.level >= 50 ? "🌟" : entry.level >= 25 ? "⭐" : entry.level >= 10 ? "🔥" : "📊"
+        return `${medal} **${entry.username}** ${levelEmoji} Level ${entry.level} (${entry.xp.toLocaleString()} XP)`
+      })
+      .join("\n")
+
+    embed.setDescription(description)
 
     await interaction.reply({ embeds: [embed] })
   } catch (error) {
-    await interaction.reply({
-      content: "Failed to retrieve leaderboard. Please try again later.",
-      ephemeral: true,
-    })
+    await interaction.reply({ content: "❌ An error occurred while fetching the leaderboard.", ephemeral: true })
   }
 }

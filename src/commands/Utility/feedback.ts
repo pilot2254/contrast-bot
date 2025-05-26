@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { addFeedback } from "../../utils/feedback-manager"
+import { config } from "../../utils/config"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
@@ -35,7 +36,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     await addFeedback(interaction.user.id, interaction.user.username, cleanMessage)
 
     await interaction.reply({
-      content: "✅ Thank you for your feedback! It has been recorded and will be reviewed by the developers.",
+      content: `✅ Thank you for your feedback! It has been recorded and will be reviewed by the ${config.botName} developers.`,
       ephemeral: true,
     })
   } catch (error) {

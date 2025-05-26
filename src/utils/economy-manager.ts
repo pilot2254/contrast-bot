@@ -11,6 +11,10 @@ export interface UserEconomy {
   totalSpent: number
   lastDaily: number
   dailyStreak: number
+  lastMonthly: number
+  monthlyStreak: number
+  lastYearly: number
+  yearlyStreak: number
   createdAt: number
   updatedAt: number
 }
@@ -28,6 +32,8 @@ export interface Transaction {
 // Transaction types
 export const TRANSACTION_TYPES = {
   DAILY: "daily",
+  MONTHLY: "monthly",
+  YEARLY: "yearly",
   TRANSFER_SENT: "transfer_sent",
   TRANSFER_RECEIVED: "transfer_received",
   SHOP_PURCHASE: "shop_purchase",
@@ -58,8 +64,9 @@ export async function getOrCreateUserEconomy(userId: string, username: string): 
       await db.run(
         `INSERT INTO user_economy (
           user_id, username, balance, total_earned, total_spent, 
-          last_daily, daily_streak, created_at, updated_at
-        ) VALUES (?, ?, 0, 0, 0, 0, 0, ?, ?)`,
+          last_daily, daily_streak, last_monthly, monthly_streak,
+          last_yearly, yearly_streak, created_at, updated_at
+        ) VALUES (?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 0, ?, ?)`,
         userId,
         username,
         now,
@@ -84,8 +91,12 @@ export async function getOrCreateUserEconomy(userId: string, username: string): 
       balance: user.balance,
       totalEarned: user.total_earned,
       totalSpent: user.total_spent,
-      lastDaily: user.last_daily,
-      dailyStreak: user.daily_streak,
+      lastDaily: user.last_daily || 0,
+      dailyStreak: user.daily_streak || 0,
+      lastMonthly: user.last_monthly || 0,
+      monthlyStreak: user.monthly_streak || 0,
+      lastYearly: user.last_yearly || 0,
+      yearlyStreak: user.yearly_streak || 0,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     }
@@ -102,11 +113,17 @@ export async function addCurrency(
   type: string,
   description: string,
   relatedUserId?: string,
+  skipLimits = false, // New parameter to skip limits for special cases
 ): Promise<boolean> {
   try {
-    // Validate amount
-    if (amount <= 0 || amount > 10000000) {
-      logger.warn(`Invalid amount: ${amount}`)
+    // Validate amount (skip limits for admin actions or special cases)
+    if (amount <= 0) {
+      logger.warn(`Attempted to add non-positive amount: ${amount}`)
+      return false
+    }
+
+    if (!skipLimits && amount > 10000000) {
+      logger.warn(`Attempted to add excessive amount: ${amount}`)
       return false
     }
 
@@ -393,5 +410,101 @@ export async function handleDailyReward(userId: string, username: string): Promi
     await awardDailyStreakXp(userId, username, newStreak)
   } catch (error) {
     logger.error(`Failed to handle daily reward for ${userId}:`, error)
+  }
+}
+
+export async function handleMonthlyReward(
+  userId: string,
+  username: string,
+): Promise<{ reward: number; streak: number; multiplier: number }> {
+  try {
+    const db = getDb()
+    const now = Date.now()
+    const user = await getOrCreateUserEconomy(userId, username)
+
+    const MONTHLY_COOLDOWN = 30 * 24 * 60 * 60 * 1000 // 30 days
+    let newStreak = 1
+
+    // Check if continuing streak (within 32 days to allow some flexibility)
+    if (user.lastMonthly && now - user.lastMonthly < 32 * 24 * 60 * 60 * 1000) {
+      newStreak = user.monthlyStreak + 1
+    }
+
+    // Calculate multiplier based on streak
+    const multiplier = Math.min(1 + (newStreak - 1) * 0.1, 3) // 10% increase per streak, max 3x
+    const baseReward = 500
+    const reward = Math.floor(baseReward * multiplier)
+
+    await db.run(
+      `UPDATE user_economy 
+       SET monthly_streak = ?, last_monthly = ?, updated_at = ?
+       WHERE user_id = ?`,
+      newStreak,
+      now,
+      now,
+      userId,
+    )
+
+    // Add the reward
+    await addCurrency(
+      userId,
+      username,
+      reward,
+      TRANSACTION_TYPES.MONTHLY,
+      `Monthly reward (${newStreak}x streak, ${multiplier.toFixed(1)}x multiplier)`,
+    )
+
+    return { reward, streak: newStreak, multiplier }
+  } catch (error) {
+    logger.error(`Failed to handle monthly reward for ${userId}:`, error)
+    throw error
+  }
+}
+
+export async function handleYearlyReward(
+  userId: string,
+  username: string,
+): Promise<{ reward: number; streak: number; multiplier: number }> {
+  try {
+    const db = getDb()
+    const now = Date.now()
+    const user = await getOrCreateUserEconomy(userId, username)
+
+    const YEARLY_COOLDOWN = 365 * 24 * 60 * 60 * 1000 // 365 days
+    let newStreak = 1
+
+    // Check if continuing streak (within 370 days to allow some flexibility)
+    if (user.lastYearly && now - user.lastYearly < 370 * 24 * 60 * 60 * 1000) {
+      newStreak = user.yearlyStreak + 1
+    }
+
+    // Calculate multiplier based on streak
+    const multiplier = Math.min(1 + (newStreak - 1) * 0.2, 5) // 20% increase per streak, max 5x
+    const baseReward = 1000
+    const reward = Math.floor(baseReward * multiplier)
+
+    await db.run(
+      `UPDATE user_economy 
+       SET yearly_streak = ?, last_yearly = ?, updated_at = ?
+       WHERE user_id = ?`,
+      newStreak,
+      now,
+      now,
+      userId,
+    )
+
+    // Add the reward
+    await addCurrency(
+      userId,
+      username,
+      reward,
+      TRANSACTION_TYPES.YEARLY,
+      `Yearly reward (${newStreak}x streak, ${multiplier.toFixed(1)}x multiplier)`,
+    )
+
+    return { reward, streak: newStreak, multiplier }
+  } catch (error) {
+    logger.error(`Failed to handle yearly reward for ${userId}:`, error)
+    throw error
   }
 }
