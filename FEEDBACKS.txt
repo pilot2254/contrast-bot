@@ -13,7 +13,7 @@ You should improve definitely the russian roulette since it is the best game, th
 I would add /slots. coinflip and dice roll is too boring. Rate-limit would be nice and some 24/7 server hosting. /monthly and /yearly would be nice too. But otherwise cool, works as it should.
 - The `/slots` - fruit spin, 3 random fruits + jackpot, dank memer had this in the past. I guess it was by percentage chance and not completely random,
 - `/monthly` - every month the user gets 500 coins
-- `/yearly` - both monthly but 1000 coins
+- `/yearly` - same as monthly but user gets 1000 coins
 
 @maty7253.
 It would be good if we delete all moderation commands, and then some Utility commands (for example /remind is completely useless). It would also be good if we finally fix bot names in footers since the project is supposed to be fully customizable and open-source. Also, all games should have the option to bet coins, because gambling is literally the only thing that keeps the bot alive. Possibly add a few more games and those commands @Blake was talking about (thanks a lot for the ideas @blake)
