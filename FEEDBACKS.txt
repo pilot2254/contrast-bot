@@ -26,3 +26,6 @@ Remove number-guess, since it's using a lot of bot's resources and absolutely de
 
 @odld25
 In certain games with betting function (such as dice roll, coinflip, rps or number-guess like @unknown said) Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times. This way we can prevent rate limits and high latency.
+
+@unknown
+Add an option to the .env file to set up a Discord webhook to send developer alerts, such as blacklist, reload, leave-server, and maintenance events. This way, you can monitor every important developer command action.
