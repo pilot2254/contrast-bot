@@ -6,5 +6,5 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 ---
 
-@7heKubko
-> There is another bug with the Russian Roulette command. When you have a large coin balance (around 10mil or more), play Russian Roulette, and win. It shows that you won some amount, but when you check your balance, you either didn't win anything or lost everything.
+## Current Status
+✅ **All feedback has been implemented!**
