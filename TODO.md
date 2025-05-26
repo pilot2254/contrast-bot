@@ -39,10 +39,11 @@
 
 ### Economy
 
-- [x] Bank Commands and Functionality
+- [ ] Bank Commands and Functionality
   - [x] Add a Contrast Bot currency
   - [x] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
   - [x] Commands for Bank Functionality
+  - [ ] Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times.
 
 #### Economy Commands
 
