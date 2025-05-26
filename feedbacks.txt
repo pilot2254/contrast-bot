@@ -15,3 +15,6 @@ Too few gambling possibilities
 
 @unknown
 Remove number-guess, since it's using a lot of bot's resources and absolutely destroying everything with rate limits. But if you really want to keep the command, you can change it to `/number-guess <number> <total numbers> <bet>` (where <number> is the number you are guessing, <total numbers> are all numbers (for example if total numbers equals to 4, it will be a range from 1 to 4 - 4 possible numbers))
+
+@odld25
+In certain games with betting function (such as dice roll, coinflip, rps or number-guess like @unknown said) Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times. This way we can prevent rate limits and high latency.
