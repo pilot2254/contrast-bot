@@ -6,14 +6,5 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 ---
 
-**No pending feedback at this time.**
-
-All previous feedback has been reviewed and implemented. Thank you to all contributors:
-- @7heKubko - Russian Roulette improvements and rate limiting ✅
-- @Blake - Slots game, monthly/yearly rewards, rate limiting ✅  
-- @maty7253 - Removed moderation commands, fixed bot names, added betting to all games ✅
-- @zwaldo2 - More gambling possibilities ✅
-- @unknown1 - Redesigned number-guess command ✅
-- @odld25 - Bulk gambling options ✅
-- @unknown2 - Developer webhook alerts ✅
-- @unknown3 - Removed unnecessary leaderboards ✅
+@7heKubko
+> There is another bug with the Russian Roulette command. When you have a large coin balance (around 10mil or more), play Russian Roulette, and win. It shows that you won some amount, but when you check your balance, you either didn't win anything or lost everything.
