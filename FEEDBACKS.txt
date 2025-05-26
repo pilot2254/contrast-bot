@@ -29,3 +29,6 @@ In certain games with betting function (such as dice roll, coinflip, rps or numb
 
 @unknown
 Add an option to the .env file to set up a Discord webhook to send developer alerts, such as blacklist, reload, leave-server, and maintenance events. This way, you can monitor every important developer command action.
+
+@unknown
+Remove Leaderboards for `daily`, `rps`, etc. Keep leaderboards only for Gambling, Balance (Current Balance, Total Earned, Total Spent), Levels, and that's it.
