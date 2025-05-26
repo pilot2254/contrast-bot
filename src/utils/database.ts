@@ -118,30 +118,6 @@ async function initTables(): Promise<void> {
       )
     `)
 
-    // Create RPS tables
-    await db?.exec(`
-      CREATE TABLE IF NOT EXISTS rps_players (
-        userId TEXT PRIMARY KEY,
-        username TEXT NOT NULL,
-        wins INTEGER NOT NULL DEFAULT 0,
-        losses INTEGER NOT NULL DEFAULT 0,
-        ties INTEGER NOT NULL DEFAULT 0,
-        totalGames INTEGER NOT NULL DEFAULT 0,
-        winRate REAL NOT NULL DEFAULT 0,
-        lastPlayed INTEGER NOT NULL DEFAULT 0
-      )
-    `)
-
-    await db?.exec(`
-      CREATE TABLE IF NOT EXISTS rps_games (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        userId TEXT NOT NULL,
-        username TEXT NOT NULL,
-        result TEXT NOT NULL,
-        timestamp INTEGER NOT NULL
-      )
-    `)
-
     // Create command_usage table
     await db?.exec(`
       CREATE TABLE IF NOT EXISTS command_usage (

@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 import { config } from "../../utils/config"
-import { recordGame, getBotChoice, determineResult, type RPSChoice, type RPSResult } from "../../utils/rps-manager"
+import { getBotChoice, determineResult, type RPSChoice, type RPSResult } from "../../utils/rps-manager"
 import { awardGamePlayedXp } from "../../utils/level-manager"
 
 // Slash command definition
@@ -25,9 +25,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const playerChoice = interaction.options.getString("choice", true) as RPSChoice
   const botChoice = getBotChoice()
   const result = determineResult(playerChoice, botChoice)
-
-  // Record the game result
-  await recordGame(interaction.user.id, interaction.user.username, result)
 
   // Award XP for playing the game
   await awardGamePlayedXp(interaction.user.id, interaction.user.username, result === "win")
