@@ -6,7 +6,7 @@ Contrast is a versatile, feature-rich Discord bot built with TypeScript and Disc
 
 ### Key Features
 
-- **Command System**: Supports both slash commands for users and prefix commands for developers
+- **Command System**: Supports slash commands for regular users and prefix commands exclusively for developers
 - **Economy System**: Virtual currency, daily/monthly/yearly rewards with streak multipliers, gambling games, and comprehensive transaction tracking
 - **Reputation System**: Allow users to give and receive reputation points with XP rewards
 - **Level System**: XP-based progression with rewards for various activities including commands, gambling, and social interactions
@@ -16,6 +16,22 @@ Contrast is a versatile, feature-rich Discord bot built with TypeScript and Disc
 - **Fun Features**: Jokes, facts, quotes, and mini-games
 - **Developer Tools**: Server management, blacklist control, maintenance mode with webhook alerts
 - **Webhook Alerts**: Optional Discord webhook notifications for developer actions
+
+### Command Architecture
+
+**STRICT COMMAND TYPE SEPARATION:**
+
+- **Regular User Commands**: ALL regular commands use SLASH COMMANDS ONLY (`/command`)
+  - No prefix commands for regular users
+  - Modern Discord interface with autocomplete and validation
+  - Better user experience and discoverability
+
+- **Developer Commands**: ALL developer commands use PREFIX COMMANDS ONLY (`?command`)
+  - No slash commands for developers
+  - Quick access for administrative tasks
+  - Separate from user-facing commands for security
+
+This separation ensures clear distinction between user and administrative functionality while providing the best interface for each use case.
 
 ### Global System Architecture
 
@@ -61,15 +77,18 @@ This design ensures users have a consistent experience across all servers where 
 
 5. **XP System Integration**: The level system is integrated with all major bot functions. Changes to one system may affect others.
 
+6. **Command Type Separation**: NEVER mix slash and prefix commands. Regular commands are slash-only, developer commands are prefix-only.
+
 ## Project Structure
 
 - `src/`: Source code directory
   - `commands/`: Command implementations organized by category
-    - `Games/`: Gambling and fun games (PUBLIC RESULTS)
-    - `Economy/`: Currency management and rewards
-    - `Social/`: Reputation and level systems
-    - `Utility/`: General bot utilities
-    - `Developer/`: Admin-only prefix commands
+    - `Games/`: Gambling and fun games (SLASH COMMANDS - PUBLIC RESULTS)
+    - `Economy/`: Currency management and rewards (SLASH COMMANDS)
+    - `Social/`: Reputation and level systems (SLASH COMMANDS)
+    - `Utility/`: General bot utilities (SLASH COMMANDS)
+    - `Fun/`: Entertainment commands (SLASH COMMANDS)
+    - `Developer/`: Admin-only commands (PREFIX COMMANDS ONLY)
   - `events/`: Discord.js event handlers
   - `utils/`: Core utility functions and managers
   - `constants/`: Static data like jokes and facts
@@ -84,6 +103,7 @@ This design ensures users have a consistent experience across all servers where 
    - Database transaction integrity
    - Rate limiting edge cases
    - Public vs private message handling
+   - Command type separation (slash vs prefix)
 
 2. **Optimization**: Code should be well-optimized and structured for easy future development and maintenance.
 
@@ -95,10 +115,12 @@ This design ensures users have a consistent experience across all servers where 
    - ⚠️ **NEVER** let AI modify gambling result visibility without explicit instruction
    - ⚠️ **NEVER** let AI change database transaction logic
    - ⚠️ **NEVER** let AI modify rate limiting without understanding the impact
+   - ⚠️ **NEVER** let AI mix slash and prefix commands
    - Ensure everything works correctly and maintains existing behavior
    - Refine AI-generated code to maintain natural, human-written style and quality
    - Test all gambling games thoroughly, especially with large balances
    - Verify that public/private message behavior is preserved
+   - Verify command type separation is maintained
 
 ### Customization and Flexibility
 
@@ -115,6 +137,7 @@ This design ensures users have a consistent experience across all servers where 
    - Clearly specify all changes made in your PR description
    - **MANDATORY**: State whether gambling results remain public
    - **MANDATORY**: Confirm rate limiting behavior is preserved
+   - **MANDATORY**: Confirm command type separation is maintained
    - PRs without proper descriptions will be closed
 
 8. **Branch Strategy**:
@@ -129,7 +152,7 @@ This design ensures users have a consistent experience across all servers where 
 3. Install dependencies with `npm install`
 4. Initialize the database with `npm run init-db`
 5. Build the project with `npm run build`
-6. Deploy commands with `npm run deploy`
+6. Deploy commands with `npm run deploy` (deploys slash commands only)
 7. Start the bot with `npm start`
 
 ## Environment Variables
@@ -204,6 +227,12 @@ Rate limits are applied per user and automatically clean up old entries.
    - No server-specific data isolation occurs
    - User balances/levels are the same in all servers
 
+6. **Command Type Verification**: Ensure that:
+   - All regular commands work as slash commands
+   - All developer commands work as prefix commands
+   - No command has both implementations
+   - Command deployment only registers slash commands
+
 ## For AI Assistants
 
 If you're an AI assistant helping with this project:
@@ -217,6 +246,8 @@ If you're an AI assistant helping with this project:
 5. **ALWAYS** preserve the existing error handling patterns
 6. **NEVER** implement server-specific data storage - all user data MUST be global
 7. **NEVER** use Guild ID for user data storage - only use Discord User ID
+8. **NEVER** create slash commands for developer functionality
+9. **NEVER** create prefix commands for regular user functionality
 
 ### Safe Practices
 
@@ -227,6 +258,7 @@ If you're an AI assistant helping with this project:
 5. Respect the separation of concerns between different managers and utilities
 6. Test any code suggestions thoroughly before providing them
 7. When in doubt about gambling visibility, ask for clarification
+8. Maintain strict command type separation
 
 ### Common Pitfalls to Avoid
 
@@ -235,6 +267,8 @@ If you're an AI assistant helping with this project:
 - Modifying rate limits without considering server load
 - Changing transaction logic without proper testing
 - Breaking the public/private message pattern
+- Mixing slash and prefix command implementations
+- Creating developer slash commands or user prefix commands
 
 ## Community Engagement Features
 
@@ -245,6 +279,7 @@ The bot is designed to maximize community engagement through:
 - **Streak Systems**: Rewards consistent usage
 - **XP Rewards**: Gamifies all bot interactions
 - **Reputation System**: Builds community trust and recognition
+- **Slash Commands**: Modern, discoverable interface for all users
 
 ## License
 
@@ -252,5 +287,5 @@ This project is open-source and available under the MIT License.
 
 ---
 
-**Last Updated**: 2025-05-26 9:34PM - @maty7253 & @pilot2254
-**Critical Systems**: Economy, Gambling, Rate Limiting, Database Transactions
+**Last Updated**: 2025-05-26 10:02PM - @pilot2254
+**Critical Systems**: Economy, Gambling, Rate Limiting, Database Transactions, Command Architecture
