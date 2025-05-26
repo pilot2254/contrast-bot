@@ -225,5 +225,17 @@ async function showResults(interaction: ChatInputCommandInteraction, results: an
     .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
     .setTimestamp()
 
-  await interaction.editReply({ embeds: [embed], components: [] })
+  // First, edit the confirmation to show it's processing
+  await interaction.editReply({
+    embeds: [
+      new EmbedBuilder()
+        .setTitle("🔫 Russian Roulette - Processing...")
+        .setDescription("Game completed! Results posted below.")
+        .setColor(botInfo.colors.primary),
+    ],
+    components: [],
+  })
+
+  // Then send the results publicly
+  await interaction.followUp({ embeds: [embed] })
 }
