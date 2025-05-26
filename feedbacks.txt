@@ -1,2 +1,8 @@
 @7heKubko
 You should improve definitely the russian roulette since it is the best game, then improve the ping and lags as well, put up on hosting, limit 1 message request to 2s for example or so
+
+@Blake
+I would add /slots. coinflip and dice roll is too boring. Rate-limit would be nice and some 24/7 server hosting. /monthly and /yearly would be nice too. But otherwise cool, works as it should.
+- The `/slots` - fruit spin, 3 random fruits + jackpot, dank memer had this in the past. I guess it was by percentage chance and not completely random,
+- `/monthly` - every month the user gets 500 coins
+- `/yearly` - both monthly but 1000 coins
