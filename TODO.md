@@ -8,11 +8,11 @@
   - [ ] Add command documentation
   - [ ] Add configuration guide
 
-- [ ] CONTRIBUTING.md
-  - [ ] Add development setup instructions
-  - [ ] Add coding standards
-  - [ ] Add pull request process
-  - [ ] Add testing guidelines
+- [x] IMPORTANT_INFO.md
+  - [x] Add development setup instructions
+  - [x] Add coding standards
+  - [x] Add pull request process
+  - [x] Add testing guidelines
 
 ## Future Features
 
@@ -39,11 +39,11 @@
 
 ### Economy
 
-- [ ] Bank Commands and Functionality
+- [x] Bank Commands and Functionality
   - [x] Add a Contrast Bot currency
   - [x] Reward Contrast currency for various tasks or activity (activity such as amount of Contrast Bot commands user used current day)
   - [x] Commands for Bank Functionality
-  - [ ] Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times.
+  - [x] Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times.
 
 #### Economy Commands
 
@@ -119,10 +119,9 @@
   - [ ] Filter by given/received
   - [ ] Show timestamps
 
-- [ ] `birthday.ts`
-  - [ ] Set and track user birthdays
-  - [ ] Send birthday announcements
-  - [ ] Show upcoming birthdays
+- [ ] `rep-leaderboard.ts`
+  - [ ] Show reputation leaderboard
+  - [ ] Filter by given/received
 
 - [ ] `marry.ts`
   - [ ] Allow users to marry each other
