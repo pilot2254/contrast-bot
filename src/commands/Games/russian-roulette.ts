@@ -12,6 +12,7 @@ import { config } from "../../utils/config"
 import { getOrCreateUserEconomy, removeCurrency, TRANSACTION_TYPES } from "../../utils/economy-manager"
 import { processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { awardGamePlayedXp } from "../../utils/level-manager"
+import { checkRateLimit, RATE_LIMITS, getRemainingCooldown } from "../../utils/rate-limiter"
 
 // Multipliers for each bullet count
 const BULLET_MULTIPLIERS = { 1: 2, 2: 4, 3: 6, 4: 8, 5: 10 }
@@ -29,6 +30,15 @@ export const data = new SlashCommandBuilder()
   )
 
 export async function execute(interaction: ChatInputCommandInteraction) {
+  // Rate limiting
+  if (!checkRateLimit(interaction.user.id, "russian-roulette", RATE_LIMITS.GAMBLING)) {
+    const remaining = getRemainingCooldown(interaction.user.id, "russian-roulette", RATE_LIMITS.GAMBLING)
+    return interaction.reply({
+      content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+      ephemeral: true,
+    })
+  }
+
   const bulletCount = interaction.options.getInteger("bullets") || 1
 
   try {

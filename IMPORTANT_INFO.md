@@ -7,13 +7,15 @@ Contrast is a versatile, feature-rich Discord bot built with TypeScript and Disc
 ### Key Features
 
 - **Command System**: Supports both slash commands for users and prefix commands for developers
-- **Economy System**: Virtual currency, daily rewards, gambling games, and transaction tracking
+- **Economy System**: Virtual currency, daily/monthly/yearly rewards, gambling games, and transaction tracking
 - **Reputation System**: Allow users to give and receive reputation points
 - **Level System**: XP-based progression with rewards for various activities
-- **Moderation Tools**: Ban, kick, and unban commands with proper permission handling
+- **Gambling Games**: Multiple games including slots, coinflip, dice roll, number guess, and Russian Roulette with bulk play options
+- **Rate Limiting**: Built-in rate limiting to prevent spam and reduce server load
 - **Utility Commands**: Server info, user info, avatar display, and more
 - **Fun Features**: Jokes, facts, quotes, and mini-games
-- **Developer Tools**: Server management, blacklist control, and maintenance mode
+- **Developer Tools**: Server management, blacklist control, maintenance mode with webhook alerts
+- **Webhook Alerts**: Optional Discord webhook notifications for developer actions
 
 ## Project Structure
 
@@ -78,13 +80,25 @@ The following environment variables can be configured in your `.env` file:
 - `ACTIVITY_TYPE`: Activity type (PLAYING, WATCHING, LISTENING, COMPETING, STREAMING)
 - `ACTIVITY_NAME`: Activity name displayed in the bot's status
 - `DEPLOY_GUILD_COMMANDS`: Set to "true" to deploy commands to a specific guild only
+- `DEVELOPER_WEBHOOK_URL`: Discord webhook URL for developer alerts (optional)
+- `DONATE_URL`: Donation URL for the donate command
+
+## Rate Limiting
+
+The bot includes built-in rate limiting to prevent spam and reduce server load:
+
+- **Gambling Commands**: 1 request per 2 seconds
+- **Daily/Monthly/Yearly Commands**: 1 request per minute  
+- **General Commands**: 3 requests per second
+
+Rate limits are applied per user and automatically clean up old entries.
 
 ## For AI Assistants
 
-Hi, If you're an AI assistant helping with this project:
+If you're an AI assistant helping with this project:
 
-1. First of all, familiarize yourself with the codebase structure and patterns
-2. Ensure any code you suggest follows best practices
+1. Familiarize yourself with the codebase structure and patterns
+2. Ensure any code you suggest follows TypeScript best practices
 3. Maintain the existing error handling and logging patterns
 4. Follow the database schema when suggesting changes to data operations
 5. Respect the separation of concerns between different managers and utilities

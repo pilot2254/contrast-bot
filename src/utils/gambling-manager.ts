@@ -20,6 +20,7 @@ export const GAME_TYPES = {
   COINFLIP: "coinflip",
   DICE_ROLL: "dice_roll",
   RUSSIAN_ROULETTE: "russian_roulette",
+  SLOTS: "slots",
 } as const
 
 export async function initGamblingManager(): Promise<void> {

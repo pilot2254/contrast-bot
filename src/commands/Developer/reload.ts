@@ -3,6 +3,7 @@ import { loadCommands } from "../../utils/command-loader"
 import { logger } from "../../utils/logger"
 import path from "path"
 import { config } from "../../utils/config"
+import { sendWebhookAlert, WEBHOOK_COLORS } from "../../utils/webhook-alerts"
 
 // Prefix command definition
 export const name = "reload"
@@ -33,6 +34,18 @@ export async function run(message: Message, _args: string[]) {
     await message.reply(
       `✅ Successfully reloaded ${commands.size} ${config.botName} slash commands and ${prefixCommands.size} prefix commands.`,
     )
+
+    // Send webhook alert
+    await sendWebhookAlert({
+      title: "🔄 Commands Reloaded",
+      description: `${config.botName} commands have been reloaded`,
+      color: WEBHOOK_COLORS.INFO,
+      fields: [
+        { name: "Slash Commands", value: commands.size.toString(), inline: true },
+        { name: "Prefix Commands", value: prefixCommands.size.toString(), inline: true },
+        { name: "Reloaded By", value: `${message.author.tag} (${message.author.id})`, inline: true },
+      ],
+    })
   } catch (error) {
     logger.error("Error reloading commands:", error)
     await message.reply("❌ An error occurred while reloading commands.")

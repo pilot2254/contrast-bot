@@ -28,6 +28,8 @@ export interface Transaction {
 // Transaction types
 export const TRANSACTION_TYPES = {
   DAILY: "daily",
+  MONTHLY: "monthly",
+  YEARLY: "yearly",
   TRANSFER_SENT: "transfer_sent",
   TRANSFER_RECEIVED: "transfer_received",
   SHOP_PURCHASE: "shop_purchase",

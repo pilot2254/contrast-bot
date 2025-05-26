@@ -5,6 +5,7 @@ import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
 import { isDeveloper } from "../utils/permissions"
 import { awardCommandXp } from "../utils/level-manager"
 import { config } from "../utils/config"
+import { checkRateLimit, RATE_LIMITS, getRemainingCooldown } from "../utils/rate-limiter"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -37,6 +38,36 @@ export async function execute(interaction: Interaction): Promise<void> {
         ephemeral: true,
       })
       return
+    }
+
+    // Apply rate limiting for gambling commands
+    const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette"]
+    const dailyCommands = ["daily", "monthly", "yearly"]
+
+    if (gamblingCommands.includes(interaction.commandName)) {
+      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)) {
+        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)
+        return interaction.reply({
+          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+          ephemeral: true,
+        })
+      }
+    } else if (dailyCommands.includes(interaction.commandName)) {
+      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)) {
+        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.DAILY)
+        return interaction.reply({
+          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+          ephemeral: true,
+        })
+      }
+    } else {
+      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)) {
+        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)
+        return interaction.reply({
+          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+          ephemeral: true,
+        })
+      }
     }
 
     try {

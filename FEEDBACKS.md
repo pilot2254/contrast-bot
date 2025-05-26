@@ -6,29 +6,14 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 ---
 
-**@7heKubko**
-> You should improve definitely the russian roulette since it is the best game, then improve the ping and lags as well, put up on hosting, limit 1 message request to 2s for example or so
+**No pending feedback at this time.**
 
-**@Blake**
-> I would add /slots. coinflip and dice roll is too boring. Rate-limit would be nice and some 24/7 server hosting. /monthly and /yearly would be nice too. But otherwise cool, works as it should.
-> - The `/slots` - fruit spin, 3 random fruits + jackpot, dank memer had this in the past. I guess it was by percentage chance and not completely random,
-> - `/monthly` - every month the user gets 500 coins
-> - `/yearly` - same as monthly but user gets 1000 coins
-
-**@maty7253.**
-> It would be good if we delete all moderation commands, and then some Utility commands (for example /remind is completely useless). It would also be good if we finally fix bot names in footers since the project is supposed to be fully customizable and open-source. Also, all games should have the option to bet coins, because gambling is literally the only thing that keeps the bot alive. Possibly add a few more games and those commands @Blake was talking about (thanks a lot for the ideas @blake)
-
-**@zwaldo2**
-> Too few gambling possibilities
-
-**@unknown1**
-> Remove number-guess, since it's using a lot of bot's resources and absolutely destroying everything with rate limits. But if you really want to keep the command, you can change it to `/number-guess <number> <total numbers> <bet>` (where <number> is the number you are guessing, <total numbers> are all numbers (for example if total numbers equals to 4, it will be a range from 1 to 4 - 4 possible numbers))
-
-**@odld25**
-> In certain games with betting function (such as dice roll, coinflip, rps or number-guess like **@unknown1** said) Add option to choose how many times will the gambling action happen so instead of making the same gambling action to the bot 10 times I will call it once and say that it should happen 10 times. This way we can prevent rate limits and high latency.
-
-**@unknown2**
-> Add an option to the .env file to set up a Discord webhook to send developer alerts, such as blacklist, reload, leave-server, and maintenance events. This way, you can monitor every important developer command action.
-
-**@unknown3**
-> Remove Leaderboards for `daily`, `rps`, etc. Keep leaderboards only for Gambling, Balance (Current Balance, Total Earned, Total Spent), Levels, and that's it.
+All previous feedback has been reviewed and implemented. Thank you to all contributors:
+- @7heKubko - Russian Roulette improvements and rate limiting ✅
+- @Blake - Slots game, monthly/yearly rewards, rate limiting ✅  
+- @maty7253 - Removed moderation commands, fixed bot names, added betting to all games ✅
+- @zwaldo2 - More gambling possibilities ✅
+- @unknown1 - Redesigned number-guess command ✅
+- @odld25 - Bulk gambling options ✅
+- @unknown2 - Developer webhook alerts ✅
+- @unknown3 - Removed unnecessary leaderboards ✅

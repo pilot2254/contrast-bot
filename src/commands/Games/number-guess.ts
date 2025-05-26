@@ -1,19 +1,25 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  EmbedBuilder,
-  type Message,
-  type TextChannel,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { botInfo } from "../../utils/bot-info"
 import { config } from "../../utils/config"
 import { placeBet, processWin, GAME_TYPES } from "../../utils/gambling-manager"
 import { awardGamePlayedXp } from "../../utils/level-manager"
+import { checkRateLimit, RATE_LIMITS, getRemainingCooldown } from "../../utils/rate-limiter"
 
 // Slash command definition
 export const data = new SlashCommandBuilder()
   .setName("number-guess")
-  .setDescription("Guess a number between 1-100! Fewer attempts = higher multiplier!")
+  .setDescription("Guess a number within a range!")
+  .addIntegerOption((option) =>
+    option.setName("guess").setDescription("Your number guess").setRequired(true).setMinValue(1),
+  )
+  .addIntegerOption((option) =>
+    option
+      .setName("range")
+      .setDescription("Maximum number in range (1 to this number)")
+      .setRequired(false)
+      .setMinValue(2)
+      .setMaxValue(100),
+  )
   .addIntegerOption((option) =>
     option
       .setName("bet")
@@ -22,191 +28,140 @@ export const data = new SlashCommandBuilder()
       .setMinValue(1)
       .setMaxValue(100000),
   )
+  .addIntegerOption((option) =>
+    option
+      .setName("rounds")
+      .setDescription("Number of rounds to play (1-10)")
+      .setRequired(false)
+      .setMinValue(1)
+      .setMaxValue(10),
+  )
 
 // Slash command execution
 export async function execute(interaction: ChatInputCommandInteraction) {
+  // Rate limiting
+  if (!checkRateLimit(interaction.user.id, "number-guess", RATE_LIMITS.GAMBLING)) {
+    const remaining = getRemainingCooldown(interaction.user.id, "number-guess", RATE_LIMITS.GAMBLING)
+    return interaction.reply({
+      content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+      ephemeral: true,
+    })
+  }
+
+  const guess = interaction.options.getInteger("guess", true)
+  const range = interaction.options.getInteger("range") || 10
   const betAmount = interaction.options.getInteger("bet") || 0
+  const rounds = interaction.options.getInteger("rounds") || 1
   const isGambling = betAmount > 0
 
+  // Validate guess is within range
+  if (guess > range) {
+    return interaction.reply({
+      content: `❌ Your guess (${guess}) must be within the range of 1-${range}!`,
+      ephemeral: true,
+    })
+  }
+
   if (isGambling) {
-    // Handle betting logic
-    const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.NUMBER_GUESS)
+    const totalBet = betAmount * rounds
+    const betResult = await placeBet(interaction.user.id, interaction.user.username, totalBet, GAME_TYPES.NUMBER_GUESS)
 
     if (!betResult.success) {
       return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
     }
   }
 
-  const randomNumber = Math.floor(Math.random() * 100) + 1
-  let guess: number | null = null
-  let attempts = 0
-  const maxAttempts = 10
+  // Play multiple rounds
+  const results = []
+  let totalWinnings = 0
+  let wins = 0
 
-  const embed = new EmbedBuilder()
-    .setTitle("🔢 Number Guessing Game")
-    .setDescription(
-      `I've picked a number between **1 and 100**. You have **${maxAttempts} attempts** to guess it!\n\n` +
-        (isGambling
-          ? `💰 **Bet:** ${betAmount.toLocaleString()} coins\n` +
-            `⚡ **Multiplier:** Depends on attempts used\n` +
-            `💎 **Max Payout:** ${(betAmount * 10).toLocaleString()} coins (1 attempt)`
-          : "🎯 **For fun mode** - no coins at stake!") +
-        "\n\n**Start guessing by typing a number!**",
-    )
-    .setColor(botInfo.colors.primary)
-    .setFooter({ text: `${config.botName} • You have ${maxAttempts} attempts` })
-    .setTimestamp()
+  for (let round = 1; round <= rounds; round++) {
+    const randomNumber = Math.floor(Math.random() * range) + 1
+    const won = guess === randomNumber
 
-  await interaction.reply({ embeds: [embed] })
+    if (won) {
+      wins++
+      if (isGambling) {
+        const multiplier = calculateMultiplier(range)
+        const roundWinnings = Math.floor(betAmount * multiplier)
+        totalWinnings += roundWinnings
+      }
+    }
 
-  // Type guard to ensure we have a text-based channel that supports message collection
-  if (!interaction.channel || !("createMessageCollector" in interaction.channel)) {
-    return interaction.followUp({
-      content: "❌ This game cannot be played in this type of channel.",
-      ephemeral: true,
+    results.push({
+      round,
+      randomNumber,
+      won,
     })
   }
 
-  const filter = (m: Message) => m.author.id === interaction.user.id && !isNaN(Number.parseInt(m.content))
-  const collector = (interaction.channel as TextChannel).createMessageCollector({
-    filter,
-    time: 120000, // 2 minutes
-    max: maxAttempts,
-  })
+  // Process winnings
+  if (isGambling && totalWinnings > 0) {
+    await processWin(
+      interaction.user.id,
+      interaction.user.username,
+      betAmount * rounds,
+      totalWinnings,
+      GAME_TYPES.NUMBER_GUESS,
+    )
+  }
 
-  collector.on("collect", async (m: Message) => {
-    attempts++
-    guess = Number.parseInt(m.content)
+  // Award XP
+  await awardGamePlayedXp(interaction.user.id, interaction.user.username, wins > 0)
 
-    if (guess < 1 || guess > 100) {
-      await interaction.followUp({
-        content: "❌ Please guess a number between 1 and 100!",
-        ephemeral: true,
-      })
-      return
-    }
+  // Create result embed
+  const embed = new EmbedBuilder()
+    .setTitle("🔢 Number Guessing Results")
+    .setColor(wins > 0 ? botInfo.colors.success : botInfo.colors.error)
+    .addFields(
+      { name: "🎯 Your Guess", value: guess.toString(), inline: true },
+      { name: "📊 Range", value: `1-${range}`, inline: true },
+      { name: "🏆 Wins", value: `${wins}/${rounds}`, inline: true },
+    )
+    .setFooter({ text: `${config.botName} • Requested by ${interaction.user.tag}` })
+    .setTimestamp()
 
-    if (guess === randomNumber) {
-      // Player won!
-      const multiplier = getMultiplierForAttempts(attempts)
-      let winnings = 0
+  // Add round details
+  const roundDetails = results.map((r) => `Round ${r.round}: ${r.randomNumber} ${r.won ? "✅" : "❌"}`).join("\n")
 
-      if (isGambling) {
-        winnings = Math.floor(betAmount * multiplier)
-        await processWin(interaction.user.id, interaction.user.username, betAmount, winnings, GAME_TYPES.NUMBER_GUESS)
-      }
+  embed.addFields({ name: "🎮 Round Results", value: roundDetails, inline: false })
 
-      // Award XP for winning
-      await awardGamePlayedXp(interaction.user.id, interaction.user.username, true)
+  if (isGambling) {
+    const multiplier = calculateMultiplier(range)
+    const totalBet = betAmount * rounds
+    const profit = totalWinnings - totalBet
 
-      const winEmbed = new EmbedBuilder()
-        .setTitle("🎉 Congratulations!")
-        .setDescription(
-          `You guessed the number **${randomNumber}** in **${attempts}** attempt${attempts === 1 ? "" : "s"}!`,
-        )
-        .setColor(botInfo.colors.success)
-        .addFields(
-          { name: "🎯 Number", value: randomNumber.toString(), inline: true },
-          { name: "🔢 Attempts", value: attempts.toString(), inline: true },
-          { name: "⚡ Multiplier", value: `${multiplier}x`, inline: true },
-        )
-        .setFooter({ text: `${config.botName} • Amazing guess!` })
-        .setTimestamp()
+    embed.addFields(
+      { name: "💰 Total Bet", value: `${totalBet.toLocaleString()} coins`, inline: true },
+      { name: "⚡ Multiplier", value: `${multiplier}x`, inline: true },
+      { name: "💎 Total Winnings", value: `${totalWinnings.toLocaleString()} coins`, inline: true },
+      { name: "📊 Profit/Loss", value: `${profit >= 0 ? "+" : ""}${profit.toLocaleString()} coins`, inline: true },
+    )
+  }
 
-      if (isGambling) {
-        winEmbed.addFields(
-          { name: "💰 Bet", value: `${betAmount.toLocaleString()} coins`, inline: true },
-          { name: "💎 Winnings", value: `${winnings.toLocaleString()} coins`, inline: true },
-          { name: "📊 Profit", value: `+${(winnings - betAmount).toLocaleString()} coins`, inline: true },
-        )
-      }
+  if (wins > 0) {
+    embed.setDescription(
+      isGambling
+        ? `🎉 **${wins} correct guess${wins === 1 ? "" : "es"}!** You won ${totalWinnings.toLocaleString()} coins!`
+        : `🎉 **${wins} correct guess${wins === 1 ? "" : "es"}!** Well done!`,
+    )
+  } else {
+    embed.setDescription(
+      isGambling
+        ? `😔 **No correct guesses!** You lost ${(betAmount * rounds).toLocaleString()} coins.`
+        : `😔 **No correct guesses!** The numbers were: ${results.map((r) => r.randomNumber).join(", ")}`,
+    )
+  }
 
-      await interaction.followUp({ embeds: [winEmbed] })
-      collector.stop()
-      return
-    }
-
-    // Give hint
-    const hint = guess < randomNumber ? "📈 Too low! Guess higher." : "📉 Too high! Guess lower."
-    const attemptsLeft = maxAttempts - attempts
-
-    if (attemptsLeft > 0) {
-      await interaction.followUp({
-        content: `${hint} (${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left)`,
-        ephemeral: true,
-      })
-    }
-  })
-
-  collector.on("end", async (collected, reason) => {
-    if (reason === "limit" || (collected.size > 0 && guess !== randomNumber)) {
-      // Player lost - ran out of attempts
-      if (isGambling) {
-        // Bet was already deducted when placed
-      }
-
-      // Award XP for playing (but not winning)
-      await awardGamePlayedXp(interaction.user.id, interaction.user.username, false)
-
-      const loseEmbed = new EmbedBuilder()
-        .setTitle("💀 Game Over!")
-        .setDescription(`You ran out of attempts! The number was **${randomNumber}**.`)
-        .setColor(botInfo.colors.error)
-        .addFields(
-          { name: "🎯 Correct Number", value: randomNumber.toString(), inline: true },
-          { name: "🔢 Attempts Used", value: maxAttempts.toString(), inline: true },
-          { name: "🎮 Result", value: "Better luck next time!", inline: true },
-        )
-        .setFooter({ text: `${config.botName} • Try again!` })
-        .setTimestamp()
-
-      if (isGambling) {
-        loseEmbed.addFields({
-          name: "💸 Lost",
-          value: `${betAmount.toLocaleString()} coins`,
-          inline: true,
-        })
-      }
-
-      await interaction.followUp({ embeds: [loseEmbed] })
-    } else if (reason === "time" && guess === null) {
-      // Timeout with no guesses
-      const timeoutEmbed = new EmbedBuilder()
-        .setTitle("⏰ Time's Up!")
-        .setDescription("You didn't make any guesses in time.")
-        .setColor(botInfo.colors.warning)
-        .setFooter({ text: `${config.botName} • Try again when you're ready!` })
-        .setTimestamp()
-
-      await interaction.followUp({ embeds: [timeoutEmbed] })
-    }
-  })
+  await interaction.reply({ embeds: [embed] })
 }
 
-// Helper function to calculate multiplier based on attempts
-function getMultiplierForAttempts(attempts: number): number {
-  switch (attempts) {
-    case 1:
-      return 10 // Perfect guess
-    case 2:
-      return 8
-    case 3:
-      return 6
-    case 4:
-      return 4
-    case 5:
-      return 3
-    case 6:
-      return 2.5
-    case 7:
-      return 2
-    case 8:
-      return 1.8
-    case 9:
-      return 1.5
-    case 10:
-      return 1.2
-    default:
-      return 1
-  }
+function calculateMultiplier(range: number): number {
+  // Higher range = higher multiplier due to lower probability
+  if (range <= 5) return 3
+  if (range <= 10) return 5
+  if (range <= 20) return 10
+  if (range <= 50) return 25
+  return 50
 }
