@@ -22,10 +22,24 @@ export function checkRateLimit(userId: string, commandName: string, config: Rate
   const userCommands = userCooldowns.get(userId)!
   const lastUsed = userCommands.get(commandName) || 0
 
+  // Check if enough time has passed
   if (now - lastUsed < config.windowMs) {
     return false // Rate limited
   }
 
+  // Update the timestamp ONLY when the command is actually executed
+  // This will be called from the interaction handler after rate limit check passes
+  return true // Not rate limited
+}
+
+export function updateRateLimit(userId: string, commandName: string): void {
+  const now = Date.now()
+
+  if (!userCooldowns.has(userId)) {
+    userCooldowns.set(userId, new Map())
+  }
+
+  const userCommands = userCooldowns.get(userId)!
   userCommands.set(commandName, now)
 
   // Clean up old entries periodically
@@ -33,8 +47,6 @@ export function checkRateLimit(userId: string, commandName: string, config: Rate
     // 1% chance to clean up
     cleanupOldEntries()
   }
-
-  return true // Not rate limited
 }
 
 function cleanupOldEntries(): void {
@@ -62,4 +74,16 @@ export function getRemainingCooldown(userId: string, commandName: string, config
   const remaining = config.windowMs - (Date.now() - lastUsed)
 
   return Math.max(0, remaining)
+}
+
+// Clear rate limit for a specific user and command (useful for debugging)
+export function clearRateLimit(userId: string, commandName?: string): void {
+  const userCommands = userCooldowns.get(userId)
+  if (!userCommands) return
+
+  if (commandName) {
+    userCommands.delete(commandName)
+  } else {
+    userCooldowns.delete(userId)
+  }
 }

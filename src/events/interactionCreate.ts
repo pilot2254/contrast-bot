@@ -5,7 +5,7 @@ import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
 import { isDeveloper } from "../utils/permissions"
 import { awardCommandXp } from "../utils/level-manager"
 import { config } from "../utils/config"
-import { checkRateLimit, RATE_LIMITS, getRemainingCooldown } from "../utils/rate-limiter"
+import { checkRateLimit, updateRateLimit, RATE_LIMITS, getRemainingCooldown } from "../utils/rate-limiter"
 
 export const name = Events.InteractionCreate
 export const once = false
@@ -44,45 +44,34 @@ export async function execute(interaction: Interaction): Promise<void> {
     const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette"]
     const rewardCommands = ["daily", "monthly", "yearly"]
 
+    let rateLimitConfig = RATE_LIMITS.GENERAL
     if (gamblingCommands.includes(interaction.commandName)) {
-      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GAMBLING)
-        await interaction.reply({
-          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
-          ephemeral: true,
-        })
-        return
-      }
+      rateLimitConfig = RATE_LIMITS.GAMBLING
     } else if (rewardCommands.includes(interaction.commandName)) {
-      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.REWARD)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.REWARD)
-        await interaction.reply({
-          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
-          ephemeral: true,
-        })
-        return
-      }
-    } else {
-      if (!checkRateLimit(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)) {
-        const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, RATE_LIMITS.GENERAL)
-        await interaction.reply({
-          content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
-          ephemeral: true,
-        })
-        return
-      }
+      rateLimitConfig = RATE_LIMITS.REWARD
+    }
+
+    // Check rate limit
+    if (!checkRateLimit(interaction.user.id, interaction.commandName, rateLimitConfig)) {
+      const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, rateLimitConfig)
+      await interaction.reply({
+        content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
+        ephemeral: true,
+      })
+      return
     }
 
     try {
-      // Track command usage
-      await trackCommand(interaction.commandName)
-
-      // Award XP for using a command
-      await awardCommandXp(interaction.user.id, interaction.user.username)
-
-      // Execute the command
+      // Execute the command first
       if (command.execute) {
         await command.execute(interaction)
+
+        // Only update rate limit timestamp AFTER successful command execution
+        updateRateLimit(interaction.user.id, interaction.commandName)
+
+        // Track command usage and award XP after successful execution
+        await trackCommand(interaction.commandName)
+        await awardCommandXp(interaction.user.id, interaction.user.username)
       } else {
         logger.warn(`Command ${interaction.commandName} has no execute method.`)
         await interaction.reply({
