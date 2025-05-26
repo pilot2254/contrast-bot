@@ -1,47 +1,47 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, PermissionFlagsBits } from "discord.js"
-import { isDeveloper } from "../../utils/permissions"
+import type { Message } from "discord.js"
 import { clearRateLimit } from "../../utils/rate-limiter"
 import { logger } from "../../utils/logger"
 
-export const data = new SlashCommandBuilder()
-  .setName("clear-cooldown")
-  .setDescription("Clear rate limit cooldowns for a user (Developer only)")
-  .addUserOption((option) => option.setName("user").setDescription("The user to clear cooldowns for").setRequired(true))
-  .addStringOption((option) =>
-    option.setName("command").setDescription("Specific command to clear (optional)").setRequired(false),
-  )
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+// Prefix command definition
+export const name = "clear-cooldown"
+export const aliases = ["clearcooldown", "cc"]
+export const description = "Clear rate limit cooldowns for a user"
+export const usage = "<user_id> [command]"
+export const category = "Developer"
 
-export async function execute(interaction: ChatInputCommandInteraction): Promise<void> {
-  if (!isDeveloper(interaction.user)) {
-    await interaction.reply({
-      content: "❌ This command is only available to developers.",
-      ephemeral: true,
-    })
-    return
+// Prefix command execution
+export async function run(message: Message, args: string[]) {
+  if (args.length === 0) {
+    return message.reply(`Usage: \`${name} ${usage}\``)
   }
 
-  const targetUser = interaction.options.getUser("user", true)
-  const command = interaction.options.getString("command")
+  const userId = args[0]
+  const command = args[1]
+
+  // Validate user ID format
+  if (!/^\d{17,19}$/.test(userId)) {
+    return message.reply("❌ Invalid user ID format. Please provide a valid Discord user ID.")
+  }
 
   try {
-    clearRateLimit(targetUser.id, command || undefined)
+    // Try to fetch the user to validate they exist
+    const targetUser = await message.client.users.fetch(userId).catch(() => null)
 
-    const message = command
-      ? `✅ Cleared cooldown for **${command}** command for ${targetUser.tag}`
-      : `✅ Cleared all cooldowns for ${targetUser.tag}`
+    if (!targetUser) {
+      return message.reply("❌ User not found. Please check the user ID.")
+    }
 
-    await interaction.reply({
-      content: message,
-      ephemeral: true,
-    })
+    clearRateLimit(userId, command || undefined)
 
-    logger.info(`${interaction.user.tag} cleared cooldowns for ${targetUser.tag}${command ? ` (${command})` : ""}`)
+    const responseMessage = command
+      ? `✅ Cleared cooldown for **${command}** command for ${targetUser.tag} (${userId})`
+      : `✅ Cleared all cooldowns for ${targetUser.tag} (${userId})`
+
+    await message.reply(responseMessage)
+
+    logger.info(`${message.author.tag} cleared cooldowns for ${targetUser.tag}${command ? ` (${command})` : ""}`)
   } catch (error) {
     logger.error("Error clearing cooldown:", error)
-    await interaction.reply({
-      content: "❌ Failed to clear cooldown.",
-      ephemeral: true,
-    })
+    await message.reply("❌ Failed to clear cooldown.")
   }
 }
