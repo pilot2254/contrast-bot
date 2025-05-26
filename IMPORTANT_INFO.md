@@ -17,6 +17,18 @@ Contrast is a versatile, feature-rich Discord bot built with TypeScript and Disc
 - **Developer Tools**: Server management, blacklist control, maintenance mode with webhook alerts
 - **Webhook Alerts**: Optional Discord webhook notifications for developer actions
 
+### Global System Architecture
+
+**ALL DATA IS GLOBAL ACROSS DISCORD SERVERS:**
+
+- **Economy System**: User balances, transaction history, and daily/monthly/yearly streaks are shared across all servers
+- **Level System**: XP, levels, and progression are global - users maintain the same level regardless of which server they're in
+- **Reputation System**: Reputation points (positive/negative, given/received) are global across all servers
+- **Gambling Statistics**: All gambling stats, leaderboards, and records are global
+- **User Data**: All user data (quotes, feedback, etc.) is stored globally by Discord User ID
+
+This design ensures users have a consistent experience across all servers where the bot is present and prevents data fragmentation.
+
 ## Critical Design Principles
 
 ### 🚨 GAMBLING SYSTEM REQUIREMENTS 🚨
@@ -160,6 +172,12 @@ Rate limits are applied per user and automatically clean up old entries.
 - Foreign key relationships maintain data consistency
 - Timestamps are stored as Unix milliseconds for precision
 
+### Global Data Design
+- All user tables use Discord User ID as the primary key (NOT Guild ID)
+- No server-specific user data storage
+- Users maintain consistent data across all servers
+- Leaderboards and statistics are global across the entire bot network
+
 ## Testing Guidelines
 
 ### Before Any Release
@@ -180,6 +198,12 @@ Rate limits are applied per user and automatically clean up old entries.
 
 4. **Database Integrity**: Ensure all transactions are properly recorded
 
+5. **Global Data Consistency**: Verify that:
+   - User data persists across different servers
+   - Leaderboards show global statistics
+   - No server-specific data isolation occurs
+   - User balances/levels are the same in all servers
+
 ## For AI Assistants
 
 If you're an AI assistant helping with this project:
@@ -191,7 +215,8 @@ If you're an AI assistant helping with this project:
 3. **NEVER** remove or significantly alter rate limiting
 4. **NEVER** change the Russian Roulette balance verification logic
 5. **ALWAYS** preserve the existing error handling patterns
-6. **ALWAYS** maintain the separation between public results and private errors
+6. **NEVER** implement server-specific data storage - all user data MUST be global
+7. **NEVER** use Guild ID for user data storage - only use Discord User ID
 
 ### Safe Practices
 
@@ -227,5 +252,5 @@ This project is open-source and available under the MIT License.
 
 ---
 
-**File Last Updated**: 2025-05-26 9:24PM - @maty7253 & @pilot2254
+**Last Updated**: 2025-05-26 9:34PM - @maty7253 & @pilot2254
 **Critical Systems**: Economy, Gambling, Rate Limiting, Database Transactions
