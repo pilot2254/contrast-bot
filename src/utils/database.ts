@@ -126,7 +126,7 @@ async function initTables(): Promise<void> {
       )
     `)
 
-    // Create economy tables
+    // Create economy tables with ALL required columns
     await db?.exec(`
       CREATE TABLE IF NOT EXISTS user_economy (
         user_id TEXT PRIMARY KEY,
@@ -136,6 +136,10 @@ async function initTables(): Promise<void> {
         total_spent INTEGER NOT NULL DEFAULT 0,
         last_daily INTEGER NOT NULL DEFAULT 0,
         daily_streak INTEGER NOT NULL DEFAULT 0,
+        last_monthly INTEGER NOT NULL DEFAULT 0,
+        monthly_streak INTEGER NOT NULL DEFAULT 0,
+        last_yearly INTEGER NOT NULL DEFAULT 0,
+        yearly_streak INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL DEFAULT 0,
         updated_at INTEGER NOT NULL DEFAULT 0
       )
