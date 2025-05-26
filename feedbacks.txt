@@ -12,3 +12,6 @@ It would be good if we delete all moderation commands, and then some Utility com
 
 @zwaldo2
 Too few gambling possibilities
+
+@unknown
+Remove number-guess, since it's using a lot of bot's resources and absolutely destroying everything with rate limits. But if you really want to keep the command, you can change it to `/number-guess <number> <total numbers> <bet>` (where <number> is the number you are guessing, <total numbers> are all numbers (for example if total numbers equals to 4, it will be a range from 1 to 4 - 4 possible numbers))
