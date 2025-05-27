@@ -14,3 +14,6 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 > However, these numbers should be highly customizable, as mentioned in IMPORTANT_INFO.md. They can be customized to an infinite number.
 > I recommend you to set limit of every transaction, bet, etc to infinite. This way the bot can be more funny
 > Also update IMPORTANT_INFO.md since it's outdated and AI assistants are making the bot even worse...
+
+@unknown5
+> Add a work command where the user can go to work and earn money. There should be a short cooldown period before working again (10 seconds). The salary depends on the user's current balance to maintain balance. There is also a chance to earn more while working (it's also gambling, but you can't lose anything). I hope you know what I mean.
