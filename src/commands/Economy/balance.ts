@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction, EmbedBuilder } from "discord.js"
 import { getOrCreateUserEconomy, transferCurrency, getEconomyLeaderboard } from "../../utils/economy-manager"
+import { getOrCreateUserSafe } from "../../utils/safe-manager"
 import { botInfo } from "../../utils/bot-info"
 import { config } from "../../utils/config"
 
@@ -58,29 +59,29 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       case "check": {
         const targetUser = interaction.options.getUser("user") || interaction.user
         const economy = await getOrCreateUserEconomy(targetUser.id, targetUser.username)
+        const safe = await getOrCreateUserSafe(targetUser.id, targetUser.username)
+
+        const totalWealth = economy.balance + safe.balance
+        const isOwnBalance = targetUser.id === interaction.user.id
 
         const embed = new EmbedBuilder()
-          .setTitle(`💰 ${targetUser.username}'s Balance`)
+          .setTitle(`💰 ${isOwnBalance ? "Your" : `${targetUser.username}'s`} Balance`)
           .setColor(botInfo.colors.primary)
           .setThumbnail(targetUser.displayAvatarURL())
           .addFields(
-            { name: "💵 Current Balance", value: `${economy.balance.toLocaleString()} coins`, inline: true },
+            { name: "💵 Wallet", value: `${economy.balance.toLocaleString()} coins`, inline: true },
+            { name: "🔒 Safe", value: `${safe.balance.toLocaleString()} coins`, inline: true },
+            { name: "💎 Total Wealth", value: `${totalWealth.toLocaleString()} coins`, inline: true },
             { name: "📈 Total Earned", value: `${economy.totalEarned.toLocaleString()} coins`, inline: true },
             { name: "📉 Total Spent", value: `${economy.totalSpent.toLocaleString()} coins`, inline: true },
             { name: "🔥 Daily Streak", value: `${economy.dailyStreak} days`, inline: true },
-            {
-              name: "💎 Net Worth",
-              value: `${(economy.totalEarned - economy.totalSpent).toLocaleString()} coins`,
-              inline: true,
-            },
-            {
-              name: "📊 Profit/Loss",
-              value: `${(economy.balance - (economy.totalEarned - economy.totalSpent)).toLocaleString()} coins`,
-              inline: true,
-            },
           )
           .setFooter({ text: `${config.botName} • Account created` })
           .setTimestamp(economy.createdAt)
+
+        if (isOwnBalance) {
+          embed.setDescription("💡 **Tip:** Use `/safe deposit` to protect coins from gambling losses!")
+        }
 
         await interaction.reply({ embeds: [embed] })
         break

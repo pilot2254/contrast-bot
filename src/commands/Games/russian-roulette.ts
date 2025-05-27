@@ -46,7 +46,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     if (economy.balance <= 0) {
       return interaction.reply({
-        content: "❌ You need coins to play Russian Roulette! Use `/daily claim` to get some coins.",
+        content: "❌ You need coins to play Russian Roulette! Use `/work` to get some coins.",
         ephemeral: true,
       })
     }

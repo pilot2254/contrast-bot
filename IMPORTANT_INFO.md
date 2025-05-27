@@ -7,15 +7,17 @@ Contrast is a highly configurable, feature-rich Discord bot built with TypeScrip
 ### Key Features
 
 - **Command System**: Supports slash commands for regular users and prefix commands exclusively for developers
-- **Economy System**: Virtual currency with **UNLIMITED TRANSACTIONS**, daily/monthly/yearly rewards with streak multipliers, gambling games, work system, and comprehensive transaction tracking
+- **Economy System**: Virtual currency with **UNLIMITED TRANSACTIONS**, daily/weekly/monthly/yearly rewards with streak multipliers, gambling games, work system, and comprehensive transaction tracking
+- **Safe System**: Secure storage that protects coins from all-in gambling losses, with upgradeable capacity
+- **Shop System**: Purchase upgrades and items including safe expansions, XP boosts, and transfer limit upgrades
 - **Reputation System**: Allow users to give and receive reputation points with XP rewards
 - **Level System**: XP-based progression with rewards for various activities including commands, gambling, work, and social interactions
-- **Gambling Games**: Multiple games including slots, coinflip, dice roll, number guess, and Russian Roulette with **BULK PLAY OPTIONS** (up to 50+ repeats) and **PUBLIC RESULTS** for community engagement
+- **Gambling Games**: Multiple games including slots, coinflip, dice roll, number guess, roulette, and Russian Roulette with **BULK PLAY OPTIONS** (up to 50+ repeats) and **PUBLIC RESULTS** for community engagement
 - **Work System**: Balanced earning mechanism with cooldowns, salary scaling based on balance, and bonus chances
 - **Rate Limiting**: Built-in rate limiting to prevent spam (10s for work, 2s for gambling, 10s for rewards, 3/s general)
 - **Utility Commands**: Server info, user info, avatar display, and comprehensive help system
 - **Fun Features**: Jokes, facts, quotes, and mini-games
-- **Developer Tools**: Server management, blacklist control, maintenance mode with webhook alerts
+- **Developer Tools**: Server management, blacklist control, maintenance mode with webhook alerts, shop item management
 - **Webhook Alerts**: Optional Discord webhook notifications for developer actions
 
 ### Command Architecture
@@ -109,7 +111,7 @@ export const ECONOMY_LIMITS = {
 - `src/`: Source code directory
   - `commands/`: Command implementations organized by category
     - `Games/`: Gambling and fun games (SLASH COMMANDS - PUBLIC RESULTS)
-    - `Economy/`: Currency management, rewards, and work system (SLASH COMMANDS)
+    - `Economy/`: Currency management, rewards, safe system, shop system, and work system (SLASH COMMANDS)
     - `Social/`: Reputation and level systems (SLASH COMMANDS)
     - `Utility/`: General bot utilities (SLASH COMMANDS)
     - `Fun/`: Entertainment commands (SLASH COMMANDS)
@@ -346,5 +348,7 @@ This project is open-source and available under the MIT License.
 
 ---
 
-**Last Updated**: 2025-05-27 4:56PM
+**Last Updated**: December 2024
+**Version**: 2.0.0
 **Critical Systems**: Economy (Unlimited), Gambling (Public Results), Work System, Rate Limiting, Database Transactions, Command Architecture, Bulk Play Support
+**Key Features**: Unlimited transactions, 1 billion bet limit (configurable), public results, bulk play support, work system with balance scaling

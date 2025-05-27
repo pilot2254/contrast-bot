@@ -107,9 +107,6 @@ export async function givePositiveRep(
 
       await db.exec("COMMIT")
 
-      // Get updated reputation
-      const receiver = await db.get("SELECT received_positive FROM reputation WHERE user_id = ?", receiverId)
-
       // Award XP to the giver
       await awardReputationGivenXp(giverId, giverUsername)
 
@@ -200,11 +197,11 @@ export async function giveNegativeRep(
       await db.exec("COMMIT")
 
       // Get the updated receiver's reputation for the message
-      const receiver = await db.get("SELECT received_negative FROM reputation WHERE user_id = ?", receiverId)
+      const receiverRep = await db.get("SELECT received_negative FROM reputation WHERE user_id = ?", receiverId)
 
       return {
         success: true,
-        message: `You gave negative reputation to ${receiverName}. They now have ${receiver?.received_negative || 1} negative reputation.`,
+        message: `You gave negative reputation to ${receiverName}. They now have ${receiverRep?.received_negative || 1} negative reputation.`,
       }
     } catch (error) {
       // Rollback on error

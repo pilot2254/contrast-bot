@@ -28,7 +28,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
 async function handleClaim(interaction: ChatInputCommandInteraction) {
   try {
-    const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
     const now = Date.now()
 
     // Check if user has claimed yearly reward recently

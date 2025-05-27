@@ -27,6 +27,7 @@ export const GAME_TYPES = {
   DICE_ROLL: "dice_roll",
   RUSSIAN_ROULETTE: "russian_roulette",
   SLOTS: "slots",
+  ROULETTE: "roulette",
 } as const
 
 export async function initGamblingManager(): Promise<void> {
@@ -127,7 +128,7 @@ export async function updateGamblingStats(
   userId: string,
   betAmount: number,
   wonAmount: number,
-  profit: number,
+  _profit: number,
 ): Promise<void> {
   try {
     const db = getDb()

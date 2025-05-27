@@ -15,7 +15,7 @@ export async function run(message: Message, _args: string[]) {
 
     let response = `🔗 **${config.botName} Server Invites (${guilds.size} servers):**\n\n`
 
-    for (const [_guildId, guild] of guilds) {
+    for (const [, guild] of guilds) {
       try {
         // Try to get an existing invite first
         const invites = await guild.invites.fetch().catch(() => null)

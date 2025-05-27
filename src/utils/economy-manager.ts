@@ -32,6 +32,7 @@ export interface Transaction {
 // Transaction types
 export const TRANSACTION_TYPES = {
   DAILY: "daily",
+  WEEKLY: "weekly",
   MONTHLY: "monthly",
   YEARLY: "yearly",
   WORK: "work",

@@ -40,7 +40,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const betResult = await placeBet(interaction.user.id, interaction.user.username, betAmount, GAME_TYPES.RPS)
 
     if (!betResult.success) {
-      return interaction.reply({ content: `❌ ${betResult.message}`, ephemeral: true })
+      const message = betResult.message.includes("Insufficient funds")
+        ? "❌ Insufficient funds. Try using `/work` to earn more coins!"
+        : `❌ ${betResult.message}`
+      return interaction.reply({ content: message, ephemeral: true })
     }
   }
 

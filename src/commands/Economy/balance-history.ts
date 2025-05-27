@@ -101,7 +101,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
       .setTimestamp()
 
     // Add transaction fields
-    transactions.forEach((transaction, index) => {
+    transactions.forEach((transaction) => {
       const date = new Date(transaction.timestamp).toLocaleDateString()
       const time = new Date(transaction.timestamp).toLocaleTimeString()
       const amount = transaction.amount > 0 ? `+${transaction.amount}` : transaction.amount.toString()

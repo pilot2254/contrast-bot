@@ -233,26 +233,3 @@ function calculateStreakBonus(streak: number) {
 function calculateDailyReward(streak: number) {
   return DAILY_CONFIG.BASE_REWARD + calculateStreakBonus(streak)
 }
-
-async function getDailyStreakLeaderboard(limit: number) {
-  try {
-    const db = getDb()
-    const users = await db.all(
-      `SELECT user_id, username, daily_streak
-       FROM user_economy 
-       WHERE daily_streak > 0
-       ORDER BY daily_streak DESC 
-       LIMIT ?`,
-      limit,
-    )
-
-    return users.map((user: any, index: number) => ({
-      userId: user.user_id,
-      username: user.username,
-      streak: user.daily_streak,
-      rank: index + 1,
-    }))
-  } catch (error) {
-    return []
-  }
-}

@@ -40,7 +40,9 @@ export async function execute(interaction: ChatInputCommandInteraction) {
   const embed = new EmbedBuilder()
     .setTitle("Available Commands")
     .setDescription(
-      `**Slash Commands (/)**: Use \`/help [command]\` for more info on a specific command.\n**Developer Commands**: Developers can use prefix commands with \`${config.prefix}\` for administrative functions.`,
+      `**Slash Commands (/)**: Use \`/help [command]\` for more info on a specific command.\n` +
+        `**New Features**: Safe storage (protects from gambling losses), Shop system, Weekly rewards!\n` +
+        `**Developer Commands**: Developers can use prefix commands with \`${config.prefix}\` for administrative functions.`,
     )
     .setColor(botInfo.colors.primary)
     .setFooter({ text: `${config.botName} • Slash Commands: / • Developer Prefix: ${config.prefix}` })

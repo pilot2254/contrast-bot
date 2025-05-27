@@ -41,7 +41,7 @@ export async function execute(interaction: Interaction): Promise<void> {
     }
 
     // Apply rate limiting for gambling commands
-    const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette"]
+    const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette", "roulette"]
     const rewardCommands = ["daily", "monthly", "yearly"]
 
     let rateLimitConfig = RATE_LIMITS.GENERAL

@@ -198,11 +198,116 @@ async function initTables(): Promise<void> {
       )
     `)
 
+    // Create safe system tables
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS user_safes (
+        user_id TEXT PRIMARY KEY,
+        username TEXT NOT NULL,
+        balance INTEGER NOT NULL DEFAULT 0,
+        capacity INTEGER NOT NULL DEFAULT 10000,
+        created_at INTEGER NOT NULL DEFAULT 0,
+        updated_at INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES user_economy (user_id)
+      )
+    `)
+
+    // Create shop items table
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS shop_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        base_price INTEGER NOT NULL,
+        max_level INTEGER NOT NULL DEFAULT 1,
+        price_multiplier REAL NOT NULL DEFAULT 1.0,
+        effect_value INTEGER NOT NULL DEFAULT 0,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at INTEGER NOT NULL DEFAULT 0
+      )
+    `)
+
+    // Create user purchases table
+    await db?.exec(`
+      CREATE TABLE IF NOT EXISTS user_purchases (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        item_id INTEGER NOT NULL,
+        level INTEGER NOT NULL DEFAULT 1,
+        price_paid INTEGER NOT NULL,
+        purchased_at INTEGER NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES user_economy (user_id),
+        FOREIGN KEY (item_id) REFERENCES shop_items (id),
+        UNIQUE(user_id, item_id)
+      )
+    `)
+
     // Initialize default values
     await initDefaultValues()
+
+    // Initialize shop items if not exists
+    await initShopItems()
   } catch (error) {
     logger.error("Failed to initialize tables:", error)
     throw error
+  }
+}
+
+// Initialize shop items
+async function initShopItems(): Promise<void> {
+  try {
+    const existingItems = await db?.get("SELECT COUNT(*) as count FROM shop_items")
+    if (existingItems?.count > 0) return
+
+    // Insert default shop items
+    const shopItems = [
+      {
+        name: "Safe Expansion",
+        description: "Increase your safe capacity by 10,000 coins per level",
+        category: "safe",
+        base_price: 5000,
+        max_level: 50,
+        price_multiplier: 1.5,
+        effect_value: 10000,
+      },
+      {
+        name: "XP Boost",
+        description: "Instantly gain XP to level up faster",
+        category: "xp",
+        base_price: 1000,
+        max_level: 999,
+        price_multiplier: 1.2,
+        effect_value: 1000,
+      },
+      {
+        name: "Transfer Limit Upgrade",
+        description: "Increase your transfer limit (currently unlimited by default)",
+        category: "transfer",
+        base_price: 50000,
+        max_level: 1,
+        price_multiplier: 1.0,
+        effect_value: 0,
+      },
+    ]
+
+    for (const item of shopItems) {
+      await db?.run(
+        `INSERT INTO shop_items (name, description, category, base_price, max_level, price_multiplier, effect_value, is_active, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)`,
+        item.name,
+        item.description,
+        item.category,
+        item.base_price,
+        item.max_level,
+        item.price_multiplier,
+        item.effect_value,
+        Date.now(),
+      )
+    }
+
+    logger.info("Initialized default shop items")
+  } catch (error) {
+    logger.error("Failed to initialize shop items:", error)
   }
 }
 
@@ -222,6 +327,12 @@ async function initDefaultValues(): Promise<void> {
       await db?.run("INSERT INTO stats (key, value) VALUES ('start_time', ?)", Date.now().toString())
       await db?.run("INSERT INTO stats (key, value) VALUES ('total_commands', '0')")
       await db?.run("INSERT INTO stats (key, value) VALUES ('guild_count', '0')")
+    }
+
+    // Initialize weekly tracking if not exists
+    const weeklyTrackingExists = await db?.get("SELECT 1 FROM bot_settings WHERE key LIKE 'last_weekly_%' LIMIT 1")
+    if (!weeklyTrackingExists) {
+      logger.info("Weekly tracking system initialized")
     }
   } catch (error) {
     logger.error("Failed to initialize default values:", error)

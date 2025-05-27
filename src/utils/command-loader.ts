@@ -4,94 +4,59 @@ import path from "path"
 import { logger } from "./logger"
 import type { Command } from "./types"
 
-/**
- * Loads all commands from the commands directory and its subdirectories
- * @param commandsDir The directory containing command files and category folders
- * @returns Object containing slash commands and prefix commands collections
- */
-export async function loadCommands(commandsDir: string): Promise<{
+export async function loadCommands(commandsPath: string): Promise<{
   commands: Collection<string, Command>
   prefixCommands: Collection<string, Command>
 }> {
   const commands = new Collection<string, Command>()
   const prefixCommands = new Collection<string, Command>()
 
-  // Check if commands directory exists
-  if (!fs.existsSync(commandsDir)) {
-    logger.error(`Commands directory not found: ${commandsDir}`)
+  if (!fs.existsSync(commandsPath)) {
+    logger.error(`Commands directory not found at ${commandsPath}`)
     return { commands, prefixCommands }
   }
 
-  // Get all items in the commands directory
-  const items = fs.readdirSync(commandsDir, { withFileTypes: true })
+  const commandFolders = fs.readdirSync(commandsPath)
 
-  // Process each item (file or directory)
-  for (const item of items) {
-    const itemPath = path.join(commandsDir, item.name)
+  for (const folder of commandFolders) {
+    const folderPath = path.join(commandsPath, folder)
 
-    if (item.isDirectory()) {
-      // This is a category folder
-      const category = item.name
+    if (!fs.statSync(folderPath).isDirectory()) continue
 
-      // Get all command files in this category
-      const categoryFiles = fs.readdirSync(itemPath).filter((file) => file.endsWith(".js") || file.endsWith(".ts"))
+    const commandFiles = fs.readdirSync(folderPath).filter((file) => file.endsWith(".ts") || file.endsWith(".js"))
 
-      // Load each command in this category
-      for (const file of categoryFiles) {
-        const filePath = path.join(itemPath, file)
-        await loadCommandFile(filePath, category, commands, prefixCommands)
+    for (const file of commandFiles) {
+      const filePath = path.join(folderPath, file)
+
+      try {
+        // Clear require cache for hot reloading
+        delete require.cache[require.resolve(filePath)]
+
+        const command = await import(filePath)
+
+        if (!command.data || !command.execute) {
+          logger.warn(`Command at ${filePath} is missing required "data" or "execute" property`)
+          continue
+        }
+
+        // Developer commands are prefix commands
+        if (folder === "Developer") {
+          if (command.data.name) {
+            prefixCommands.set(command.data.name, command)
+            logger.info(`Loaded prefix command: ${command.data.name}`)
+          }
+        } else {
+          // All other commands are slash commands
+          if (command.data.name) {
+            commands.set(command.data.name, command)
+            logger.info(`Loaded slash command: ${command.data.name}`)
+          }
+        }
+      } catch (error) {
+        logger.error(`Error loading command from ${filePath}:`, error)
       }
-    } else if (item.isFile() && (item.name.endsWith(".js") || item.name.endsWith(".ts"))) {
-      // This is a command file in the root directory
-      await loadCommandFile(itemPath, "Miscellaneous", commands, prefixCommands)
     }
   }
 
   return { commands, prefixCommands }
-}
-
-/**
- * Loads a single command file
- * @param filePath Path to the command file
- * @param category Category of the command
- * @param commands Collection to store slash commands
- * @param prefixCommands Collection to store prefix commands
- */
-async function loadCommandFile(
-  filePath: string,
-  category: string,
-  commands: Collection<string, Command>,
-  prefixCommands: Collection<string, Command>,
-): Promise<void> {
-  try {
-    // Import the command module
-    const commandModule = await import(filePath)
-
-    // Set the category based on the folder structure
-    commandModule.category = category
-
-    // Determine if this is a developer command based on category
-    const isDeveloperCommand = category === "Developer"
-    commandModule.isDeveloperCommand = isDeveloperCommand
-
-    if (isDeveloperCommand) {
-      // Developer commands: only register prefix commands
-      if (commandModule.name) {
-        prefixCommands.set(commandModule.name, commandModule)
-        logger.info(`Loaded developer prefix command: ${commandModule.name} (Category: ${category})`)
-      } else {
-        logger.warn(`Developer command file ${filePath} missing name property`)
-      }
-    } else {
-      // Regular commands: only register slash commands
-      if (commandModule.data) {
-        commands.set(commandModule.data.name, commandModule)
-        logger.info(`Loaded slash command: ${commandModule.data.name} (Category: ${category})`)
-      } else {
-        logger.warn(`Regular command file ${filePath} missing data property`)
-      }
-    }
-  } catch (error) {
-    logger.error(`Error loading command from ${filePath}:`, error)
-  }
 }
