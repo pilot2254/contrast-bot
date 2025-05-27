@@ -15,16 +15,12 @@ async function loadCommands(dir: string) {
     return
   }
 
-  logger.info(`Scanning directory: ${dir}`)
   const items = fs.readdirSync(dir, { withFileTypes: true })
-  logger.info(`Found ${items.length} items in ${dir}`)
 
   for (const item of items) {
     const itemPath = path.join(dir, item.name)
 
     if (item.isDirectory()) {
-      logger.info(`Found subdirectory: ${item.name}`)
-
       // Skip Developer directory since those are prefix-only commands
       if (item.name === "Developer") {
         logger.info(`Skipping Developer directory (prefix commands only)`)
@@ -34,37 +30,26 @@ async function loadCommands(dir: string) {
       // Recursively load commands from subdirectories
       await loadCommands(itemPath)
     } else if (item.isFile() && (item.name.endsWith(".js") || item.name.endsWith(".ts"))) {
-      logger.info(`Processing file: ${item.name}`)
       try {
         const command = await import(itemPath)
 
         // Only push slash command data to array (skip developer commands)
         if (command.data) {
           commands.push(command.data.toJSON())
-          logger.info(`✅ Added slash command: ${command.data.name} from ${itemPath}`)
+          logger.info(`Added slash command: ${command.data.name} from ${itemPath}`)
         } else {
-          logger.info(`⚠️ Skipped ${itemPath} (no slash command data - likely a developer command)`)
+          logger.info(`Skipped ${itemPath} (no slash command data - likely a developer command)`)
         }
       } catch (error) {
-        logger.error(`❌ Error loading command from ${itemPath}:`, error)
+        logger.error(`Error loading command from ${itemPath}:`, error)
       }
-    } else {
-      logger.info(`Skipping non-TypeScript file: ${item.name}`)
     }
   }
 }
 // Dynamically import commands
 ;(async () => {
-  logger.info(`Starting command deployment from: ${commandsPath}`)
-
   // Load commands from all directories
   await loadCommands(commandsPath)
-
-  logger.info(`Total commands found: ${commands.length}`)
-
-  // List all command names
-  const commandNames = commands.map((cmd) => cmd.name).sort()
-  logger.info(`Command names: ${commandNames.join(", ")}`)
 
   // Construct and prepare an instance of the REST module
   const rest = new REST().setToken(config.token)
