@@ -20,3 +20,6 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 @verygoodpizzaa
 > There should be more repeat steps (for example 20 or more if possible) for all games that support the repeat system, so the bot won't be so slow
+
+@unknown6
+> Please update IMPORTANT_INFO.md. I gave it to AI to test it how it understands, and I think its outdated and the AI i used made it even buggy and worse (I used v0.dev)
