@@ -97,7 +97,8 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     )
   }
 
-  await interaction.reply({ embeds: [embed] })
+  // Ensure results are always public (not ephemeral)
+  await interaction.reply({ embeds: [embed], ephemeral: false })
 }
 
 // Helper functions

@@ -142,9 +142,11 @@ export async function updateGamblingStats(
       )
     } else {
       // Update existing stats
-      const newBiggestWin = Math.max(currentStats.biggest_win, wonAmount)
+      const newBiggestWin = Math.max(currentStats.biggest_win || 0, wonAmount)
+
+      // Calculate loss more accurately
       const lostThisGame = betAmount > wonAmount ? betAmount - wonAmount : 0
-      const newTotalLost = currentStats.total_lost + lostThisGame
+      const newTotalLost = (currentStats.total_lost || 0) + lostThisGame
 
       await db.run(
         `UPDATE gambling_stats SET

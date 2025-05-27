@@ -82,19 +82,16 @@ export async function execute(interaction: Interaction): Promise<void> {
     } catch (error) {
       logger.error(`Error executing command ${interaction.commandName}:`, error)
 
-      const replyOptions = {
-        content: "There was an error while executing this command!",
-        ephemeral: true,
-      }
+      const errorMessage = "There was an error while executing this command!"
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(replyOptions).catch((e) => {
-          logger.error("Failed to send error followUp:", e)
-        })
-      } else {
-        await interaction.reply(replyOptions).catch((e) => {
-          logger.error("Failed to send error reply:", e)
-        })
+      try {
+        if (interaction.replied || interaction.deferred) {
+          await interaction.followUp({ content: errorMessage, ephemeral: true })
+        } else {
+          await interaction.reply({ content: errorMessage, ephemeral: true })
+        }
+      } catch (followUpError) {
+        logger.error("Failed to send error message:", followUpError)
       }
     }
   }
