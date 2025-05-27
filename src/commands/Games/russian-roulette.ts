@@ -141,6 +141,17 @@ async function playRussianRoulette(interaction: ChatInputCommandInteraction, gam
   const { allInAmount, multiplier, bulletCount } = gameData
 
   // Verify balance and place bet
+  const economy = await getOrCreateUserEconomy(interaction.user.id, interaction.user.username)
+
+  // Double-check balance before proceeding (safety check for race conditions)
+  if (economy.balance < allInAmount) {
+    return interaction.editReply({
+      content: `❌ Insufficient funds. Your current balance is ${economy.balance.toLocaleString()} coins.`,
+      embeds: [],
+      components: [],
+    })
+  }
+
   const betResult = await removeCurrency(
     interaction.user.id,
     interaction.user.username,

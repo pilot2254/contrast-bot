@@ -1,4 +1,5 @@
 // Rate limiter for commands
+import { logger } from "./logger" // Import logger or declare it here
 const userCooldowns = new Map<string, Map<string, number>>()
 
 export interface RateLimitConfig {
@@ -52,17 +53,31 @@ export function updateRateLimit(userId: string, commandName: string): void {
 function cleanupOldEntries(): void {
   const now = Date.now()
   const maxAge = 300000 // 5 minutes
+  let totalEntries = 0
+  let deletedEntries = 0
 
   for (const [userId, commands] of userCooldowns.entries()) {
-    for (const [command, timestamp] of commands.entries()) {
-      if (now - timestamp > maxAge) {
-        commands.delete(command)
-      }
-    }
+    totalEntries += commands.size
+
+    // Use filter to efficiently identify expired entries
+    const expiredCommands = Array.from(commands.entries())
+      .filter(([_, timestamp]) => now - timestamp > maxAge)
+      .map(([command]) => command)
+
+    // Delete expired entries
+    expiredCommands.forEach((command) => {
+      commands.delete(command)
+      deletedEntries++
+    })
 
     if (commands.size === 0) {
       userCooldowns.delete(userId)
     }
+  }
+
+  // Only log if we actually deleted something
+  if (deletedEntries > 0) {
+    logger.debug(`Rate limiter cleanup: removed ${deletedEntries}/${totalEntries} entries`)
   }
 }
 

@@ -122,7 +122,9 @@ export async function addCurrency(
       return false
     }
 
-    if (!skipLimits && amount > 10000000) {
+    // Increase the limit for gambling wins and special cases
+    if (!skipLimits && amount > 100000000) {
+      // Increased from 10000000 to 100000000
       logger.warn(`Attempted to add excessive amount: ${amount}`)
       return false
     }
