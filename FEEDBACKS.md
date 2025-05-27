@@ -23,3 +23,7 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 > - `/shop list` - will list available items in the shop for the user
 > - `/shop buy <item> <id>` -> where `<item>` is the item you want to buy (for example XP pack) and `<id>` is the serial number of the upgrade (for example XP pack upgrade stage 2) -> and it should look like this `/shop buy XP Upgrade 2`
 >   - Note: it doesnt have to be like I have written. Do it as you like
+
+@kayley.skylover
+> Improve the `/blacklist list` command, so it will show everyone who was blacklisted in embed (if possible), and include their username.
+> Remove blacklist reasons.
