@@ -6,5 +6,6 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 ---
 
-## Current Status
-✅ **All feedback has been implemented!**
+@7heKubko
+> Max transaction amount between users should be 1b
+
