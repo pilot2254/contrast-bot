@@ -10,6 +10,7 @@ export const XP_CONFIG = {
   FEEDBACK_XP: 25,
   GAME_PLAYED_XP: 8,
   GAME_WON_XP: 15,
+  WORK_XP_MULTIPLIER: 0.1, // XP per coin earned from work
   BET_XP_MULTIPLIER: 0.01, // 1 XP per 100 coins bet
   DAILY_STREAK_XP: 5, // Per day of streak
 
@@ -378,6 +379,32 @@ export async function awardDailyStreakXp(
     return { xpAwarded: xpAmount, leveledUp: result.leveledUp }
   } catch (error) {
     logger.error(`Failed to award daily streak XP for ${userId}:`, error)
+    return { xpAwarded: 0, leveledUp: false }
+  }
+}
+
+/**
+ * Awards XP for working
+ */
+export async function awardWorkXp(
+  userId: string,
+  username: string,
+  earnedAmount: number,
+): Promise<{ xpAwarded: number; leveledUp: boolean }> {
+  try {
+    // Calculate XP to award based on earnings
+    const xpAmount = Math.floor(earnedAmount * XP_CONFIG.WORK_XP_MULTIPLIER)
+
+    if (xpAmount <= 0) {
+      return { xpAwarded: 0, leveledUp: false }
+    }
+
+    // Award XP
+    const result = await addXp(userId, username, xpAmount)
+
+    return { xpAwarded: xpAmount, leveledUp: result.leveledUp }
+  } catch (error) {
+    logger.error(`Failed to award work XP for ${userId}:`, error)
     return { xpAwarded: 0, leveledUp: false }
   }
 }

@@ -1,6 +1,12 @@
 import { logger } from "./logger"
 import { getDb } from "./database"
-import { getOrCreateUserEconomy, removeCurrency, addCurrency, TRANSACTION_TYPES } from "./economy-manager"
+import {
+  getOrCreateUserEconomy,
+  removeCurrency,
+  addCurrency,
+  TRANSACTION_TYPES,
+  ECONOMY_LIMITS,
+} from "./economy-manager"
 import { awardBetXp } from "./level-manager"
 
 export interface GamblingStats {
@@ -25,7 +31,7 @@ export const GAME_TYPES = {
 
 export async function initGamblingManager(): Promise<void> {
   try {
-    logger.info("Gambling manager initialized")
+    logger.info("Gambling manager initialized with configurable limits")
   } catch (error) {
     logger.error("Failed to initialize gambling manager:", error)
   }
@@ -43,8 +49,12 @@ export async function placeBet(
       return { success: false, message: "Bet amount must be positive" }
     }
 
-    if (amount > 1000000) {
-      return { success: false, message: "Maximum bet is 1,000,000 coins" }
+    // Apply bet limit (1 billion for regular games, unlimited for all-in games like Russian Roulette)
+    if (gameType !== GAME_TYPES.RUSSIAN_ROULETTE && amount > ECONOMY_LIMITS.MAX_BET_AMOUNT) {
+      return {
+        success: false,
+        message: `Maximum bet is ${ECONOMY_LIMITS.MAX_BET_AMOUNT.toLocaleString()} coins for this game`,
+      }
     }
 
     // Check if user has enough balance

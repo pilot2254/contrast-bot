@@ -34,6 +34,7 @@ export const TRANSACTION_TYPES = {
   DAILY: "daily",
   MONTHLY: "monthly",
   YEARLY: "yearly",
+  WORK: "work",
   TRANSFER_SENT: "transfer_sent",
   TRANSFER_RECEIVED: "transfer_received",
   SHOP_PURCHASE: "shop_purchase",
@@ -45,9 +46,17 @@ export const TRANSACTION_TYPES = {
   BONUS: "bonus",
 } as const
 
+// Configurable limits - can be set to Infinity for unlimited transactions
+export const ECONOMY_LIMITS = {
+  MAX_TRANSACTION_AMOUNT: Number.POSITIVE_INFINITY, // No limit on transactions
+  MAX_BET_AMOUNT: 1000000000, // 1 billion for regular bets (not all-in games)
+  MAX_TRANSFER_AMOUNT: Number.POSITIVE_INFINITY, // No limit on transfers
+  MAX_WORK_EARNINGS: Number.POSITIVE_INFINITY, // No limit on work earnings
+} as const
+
 export async function initEconomyManager(): Promise<void> {
   try {
-    logger.info("Economy manager initialized")
+    logger.info("Economy manager initialized with configurable limits")
   } catch (error) {
     logger.error("Failed to initialize economy manager:", error)
   }
@@ -113,18 +122,21 @@ export async function addCurrency(
   type: string,
   description: string,
   relatedUserId?: string,
-  skipLimits = false, // New parameter to skip limits for special cases
+  skipLimits = false,
 ): Promise<boolean> {
   try {
-    // Validate amount (skip limits for admin actions or special cases)
+    // Validate amount
     if (amount <= 0) {
       logger.warn(`Attempted to add non-positive amount: ${amount}`)
       return false
     }
 
-    // Increase the limit for gambling wins and special cases
-    if (!skipLimits && amount > 100000000) {
-      // Increased from 10000000 to 100000000
+    // Apply configurable limits only if not skipping limits
+    if (
+      !skipLimits &&
+      ECONOMY_LIMITS.MAX_TRANSACTION_AMOUNT !== Number.POSITIVE_INFINITY &&
+      amount > ECONOMY_LIMITS.MAX_TRANSACTION_AMOUNT
+    ) {
       logger.warn(`Attempted to add excessive amount: ${amount}`)
       return false
     }
@@ -247,6 +259,17 @@ export async function transferCurrency(
       return { success: false, message: "Transfer amount must be positive" }
     }
 
+    // Apply transfer limit if configured
+    if (
+      ECONOMY_LIMITS.MAX_TRANSFER_AMOUNT !== Number.POSITIVE_INFINITY &&
+      amount > ECONOMY_LIMITS.MAX_TRANSFER_AMOUNT
+    ) {
+      return {
+        success: false,
+        message: `Maximum transfer amount is ${ECONOMY_LIMITS.MAX_TRANSFER_AMOUNT.toLocaleString()} coins`,
+      }
+    }
+
     const db = getDb()
     const now = Date.now()
 
@@ -310,7 +333,7 @@ export async function transferCurrency(
       )
 
       await db.exec("COMMIT")
-      return { success: true, message: `Successfully transferred ${amount} coins to ${toUsername}` }
+      return { success: true, message: `Successfully transferred ${amount.toLocaleString()} coins to ${toUsername}` }
     } catch (error) {
       await db.exec("ROLLBACK")
       throw error
