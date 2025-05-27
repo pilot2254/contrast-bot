@@ -6,4 +6,7 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 ---
 
-Currently no active feature requests.
+@bean_shredding_mexican
+> Add bank commands (`/Bank Deposit/Withdraw/Status`)
+> This way, players will only lose their balance when they go all-in in games, not the balance in their banks.
+> And add regular roulette to the gambling
