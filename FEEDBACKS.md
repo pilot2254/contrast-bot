@@ -17,3 +17,6 @@ You can submit a feedback via the `/feedback` command, opening an Issue on GitHu
 
 @unknown5
 > Add a work command where the user can go to work and earn money. There should be a short cooldown period before working again (10 seconds). The salary depends on the user's current balance to maintain balance. There is also a chance to earn more while working (it's also gambling, but you can't lose anything). I hope you know what I mean.
+
+@verygoodpizzaa
+> There should be more repeat steps (for example 20 or more if possible) for all games that support the repeat system, so the bot won't be so slow
