@@ -68,9 +68,10 @@ export class GamblingService {
       const user = await this.client.database.getUser(userId)
 
       if (isWin) {
-        // Add winnings
-        await this.client.database.updateUser(userId, { balance: user.balance + winnings })
-        await this.client.database.logTransaction(userId, "add", winnings, "Slots win")
+        // Add winnings (net gain, so we add winnings - bet)
+        const netGain = winnings - bet
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Slots win")
       } else {
         // Remove bet
         await this.client.database.updateUser(userId, { balance: user.balance - bet })
@@ -105,9 +106,10 @@ export class GamblingService {
       const user = await this.client.database.getUser(userId)
 
       if (isWin) {
-        // Add winnings
-        await this.client.database.updateUser(userId, { balance: user.balance + winnings })
-        await this.client.database.logTransaction(userId, "add", winnings, "Coinflip win")
+        // Add winnings (net gain)
+        const netGain = winnings - bet
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Coinflip win")
       } else {
         // Remove bet
         await this.client.database.updateUser(userId, { balance: user.balance - bet })
@@ -151,9 +153,10 @@ export class GamblingService {
       const user = await this.client.database.getUser(userId)
 
       if (isWin) {
-        // Add winnings
-        await this.client.database.updateUser(userId, { balance: user.balance + winnings })
-        await this.client.database.logTransaction(userId, "add", winnings, "Number guess win")
+        // Add winnings (net gain)
+        const netGain = winnings - bet
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Number guess win")
       } else {
         // Remove bet
         await this.client.database.updateUser(userId, { balance: user.balance - bet })
@@ -201,9 +204,10 @@ export class GamblingService {
       const user = await this.client.database.getUser(userId)
 
       if (isWin) {
-        // Add winnings
-        await this.client.database.updateUser(userId, { balance: user.balance + winnings })
-        await this.client.database.logTransaction(userId, "add", winnings, "Dice roll win")
+        // Add winnings (net gain)
+        const netGain = winnings - bet
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Dice roll win")
       } else {
         // Remove bet
         await this.client.database.updateUser(userId, { balance: user.balance - bet })
@@ -247,9 +251,10 @@ export class GamblingService {
     // Update balance
     await this.client.database.transaction(async () => {
       if (survived) {
-        // Add winnings
-        await this.client.database.updateUser(userId, { balance: user.balance + winnings })
-        await this.client.database.logTransaction(userId, "add", winnings, "Russian roulette win")
+        // Add winnings (net gain)
+        const netGain = winnings - bet
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Russian roulette win")
       } else {
         // Remove all balance
         await this.client.database.updateUser(userId, { balance: 0 })

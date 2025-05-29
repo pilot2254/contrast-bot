@@ -1,4 +1,4 @@
-import { EmbedBuilder, type TextChannel, type User, type Guild, codeBlock } from "discord.js"
+import { EmbedBuilder, type TextChannel, codeBlock } from "discord.js"
 import { config } from "../config/bot.config"
 import type { ExtendedClient } from "../structures/ExtendedClient"
 
@@ -6,146 +6,236 @@ export class ErrorHandler {
   constructor(private client: ExtendedClient) {}
 
   /**
-   * Handle an error with context
+   * Handle an error with comprehensive context and logging
    */
   async handle(error: Error, context?: any): Promise<void> {
-    // Log the error
-    this.client.logger.error(error.message, error.stack)
+    const errorId = this.generateErrorId()
+    const timestamp = new Date().toISOString()
 
-    // Format context for logging
-    const contextInfo = this.formatErrorContext(context)
+    // Enhanced error logging
+    this.client.logger.error(`[${errorId}] ${error.message}`, {
+      stack: error.stack,
+      context: this.sanitizeContext(context),
+      timestamp,
+    })
 
-    // If there's an interaction context, respond to the user
-    if (context?.interaction) {
-      const embed = this.createUserError("Something went wrong while processing your request.")
-
-      try {
-        if (context.interaction.deferred || context.interaction.replied) {
-          await context.interaction.editReply({ embeds: [embed] }).catch(() => {})
-        } else {
-          await context.interaction.reply({ embeds: [embed], ephemeral: true }).catch(() => {})
-        }
-      } catch (replyError) {
-        this.client.logger.error("Failed to send error message:", replyError)
-      }
+    // Respond to user if interaction context exists
+    if (context?.interaction && !context.interaction.replied && !context.interaction.deferred) {
+      await this.sendUserErrorResponse(context.interaction, errorId)
     }
 
     // Log to error channel if configured
-    if (process.env.ERROR_LOG_CHANNEL) {
-      try {
-        const channel = (await this.client.channels.fetch(process.env.ERROR_LOG_CHANNEL)) as TextChannel
-        if (channel) {
-          const errorEmbed = new EmbedBuilder()
-            .setColor(config.embeds.colors.error)
-            .setTitle("Error Report")
-            .setDescription(`**Error:** ${error.message}`)
-            .addFields({
-              name: "Stack Trace",
-              value: codeBlock("js", error.stack?.substring(0, 1000) || "No stack trace available"),
-            })
-
-          if (contextInfo) {
-            errorEmbed.addFields({
-              name: "Context",
-              value: codeBlock("json", contextInfo.substring(0, 1000)),
-            })
-          }
-
-          errorEmbed.setTimestamp()
-
-          await channel.send({ embeds: [errorEmbed] }).catch(() => {})
-        }
-      } catch (logError) {
-        this.client.logger.error("Failed to log error to channel:", logError)
-      }
+    if (config.logging.logErrors && process.env.ERROR_LOG_CHANNEL) {
+      await this.logToErrorChannel(error, context, errorId, timestamp)
     }
+
+    // Store error in database for analytics
+    await this.storeErrorInDatabase(error, context, errorId, timestamp)
   }
 
   /**
-   * Format error context for logging
+   * Generate a unique error ID for tracking
    */
-  private formatErrorContext(context: any): string {
-    if (!context) return "No context provided"
+  private generateErrorId(): string {
+    return `ERR_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  }
 
+  /**
+   * Sanitize context to remove sensitive information
+   */
+  private sanitizeContext(context: any): any {
+    if (!context) return null
+
+    const sanitized: any = {}
+
+    // Safe properties to include
+    const safeProperties = ["commandName", "interactionType", "guildId", "channelId", "userId", "options", "timestamp"]
+
+    safeProperties.forEach((prop) => {
+      if (context[prop] !== undefined) {
+        sanitized[prop] = context[prop]
+      }
+    })
+
+    // Extract interaction data safely
+    if (context.interaction) {
+      sanitized.interaction = {
+        commandName: context.interaction.commandName,
+        type: context.interaction.type,
+        user: context.interaction.user?.id,
+        guild: context.interaction.guild?.id,
+        channel: context.interaction.channel?.id,
+      }
+
+      if (context.interaction.options?.data) {
+        sanitized.interaction.options = context.interaction.options.data.map((opt: any) => ({
+          name: opt.name,
+          type: opt.type,
+          value: typeof opt.value === "string" && opt.value.length > 100 ? "[TRUNCATED]" : opt.value,
+        }))
+      }
+    }
+
+    return sanitized
+  }
+
+  /**
+   * Send error response to user
+   */
+  private async sendUserErrorResponse(interaction: any, errorId: string): Promise<void> {
     try {
-      const formattedContext: Record<string, any> = {}
+      const embed = this.createUserError(
+        "An unexpected error occurred while processing your request.",
+        `Error ID: \`${errorId}\`\nPlease report this to the developers if the issue persists.`,
+      )
 
-      // Extract useful information from context
-      if (context.interaction) {
-        const interaction = context.interaction
-        formattedContext.interactionType = interaction.type
-        formattedContext.commandName = interaction.commandName
+      await interaction.reply({
+        embeds: [embed],
+        ephemeral: true,
+      })
+    } catch (replyError) {
+      this.client.logger.error("Failed to send error response to user:", replyError)
+    }
+  }
 
-        if (interaction.options) {
-          formattedContext.options = {}
-          interaction.options.data.forEach((opt: any) => {
-            formattedContext.options[opt.name] = opt.value
-          })
-        }
+  /**
+   * Log error to designated error channel
+   */
+  private async logToErrorChannel(error: Error, context: any, errorId: string, timestamp: string): Promise<void> {
+    try {
+      const channel = (await this.client.channels.fetch(process.env.ERROR_LOG_CHANNEL!)) as TextChannel
+      if (!channel) return
 
-        if (interaction.user) {
-          formattedContext.user = this.formatUser(interaction.user)
-        }
+      const embed = new EmbedBuilder()
+        .setColor(config.embeds.colors.error)
+        .setTitle(`🚨 Error Report - ${errorId}`)
+        .setDescription(`**Error:** ${error.message}`)
+        .addFields(
+          {
+            name: "Stack Trace",
+            value: codeBlock("js", this.truncateText(error.stack || "No stack trace", 1000)),
+          },
+          {
+            name: "Timestamp",
+            value: timestamp,
+            inline: true,
+          },
+        )
 
-        if (interaction.guild) {
-          formattedContext.guild = this.formatGuild(interaction.guild)
-        }
+      if (context) {
+        const contextString = JSON.stringify(this.sanitizeContext(context), null, 2)
+        embed.addFields({
+          name: "Context",
+          value: codeBlock("json", this.truncateText(contextString, 1000)),
+        })
       }
 
-      // Add any other context properties
-      Object.keys(context).forEach((key) => {
-        if (key !== "interaction" && key !== "client") {
-          formattedContext[key] = context[key]
-        }
-      })
-
-      return JSON.stringify(formattedContext, null, 2)
-    } catch (err) {
-      return "Error formatting context"
+      await channel.send({ embeds: [embed] })
+    } catch (logError) {
+      this.client.logger.error("Failed to log error to channel:", logError)
     }
   }
 
   /**
-   * Format user information for error logs
+   * Store error in database for analytics
    */
-  private formatUser(user: User): Record<string, any> {
-    return {
-      id: user.id,
-      tag: user.tag,
-      bot: user.bot,
+  private async storeErrorInDatabase(error: Error, context: any, errorId: string, timestamp: string): Promise<void> {
+    try {
+      await this.client.database.run(
+        `INSERT INTO error_logs (error_id, message, stack, context, timestamp) 
+         VALUES (?, ?, ?, ?, ?)`,
+        [errorId, error.message, error.stack, JSON.stringify(this.sanitizeContext(context)), timestamp],
+      )
+    } catch (dbError) {
+      this.client.logger.error("Failed to store error in database:", dbError)
     }
   }
 
   /**
-   * Format guild information for error logs
+   * Truncate text to specified length
    */
-  private formatGuild(guild: Guild): Record<string, any> {
-    return {
-      id: guild.id,
-      name: guild.name,
-      memberCount: guild.memberCount,
-    }
+  private truncateText(text: string, maxLength: number): string {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength - 3) + "..."
   }
 
   /**
    * Create a user-facing error embed
    */
-  createUserError(message: string): EmbedBuilder {
-    return new EmbedBuilder()
-      .setColor(config.embeds.colors.error)
-      .setTitle("❌ Error")
-      .setDescription(message)
-      .setTimestamp()
+  createUserError(title: string, description?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(config.embeds.colors.error).setTitle(`❌ ${title}`).setTimestamp()
+
+    if (description) {
+      embed.setDescription(description)
+    }
+
+    if (config.embeds.footer.text) {
+      embed.setFooter({
+        text: config.embeds.footer.text,
+        iconURL: config.embeds.footer.iconURL || undefined,
+      })
+    }
+
+    return embed
   }
 
   /**
    * Create a warning embed
    */
-  createWarning(message: string): EmbedBuilder {
-    return new EmbedBuilder()
-      .setColor(config.embeds.colors.warning)
-      .setTitle("⚠️ Warning")
-      .setDescription(message)
-      .setTimestamp()
+  createWarning(title: string, description?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(config.embeds.colors.warning).setTitle(`⚠️ ${title}`).setTimestamp()
+
+    if (description) {
+      embed.setDescription(description)
+    }
+
+    if (config.embeds.footer.text) {
+      embed.setFooter({
+        text: config.embeds.footer.text,
+        iconURL: config.embeds.footer.iconURL || undefined,
+      })
+    }
+
+    return embed
+  }
+
+  /**
+   * Create an info embed
+   */
+  createInfo(title: string, description?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(config.embeds.colors.info).setTitle(`ℹ️ ${title}`).setTimestamp()
+
+    if (description) {
+      embed.setDescription(description)
+    }
+
+    if (config.embeds.footer.text) {
+      embed.setFooter({
+        text: config.embeds.footer.text,
+        iconURL: config.embeds.footer.iconURL || undefined,
+      })
+    }
+
+    return embed
+  }
+
+  /**
+   * Create a success embed
+   */
+  createSuccess(title: string, description?: string): EmbedBuilder {
+    const embed = new EmbedBuilder().setColor(config.embeds.colors.success).setTitle(`✅ ${title}`).setTimestamp()
+
+    if (description) {
+      embed.setDescription(description)
+    }
+
+    if (config.embeds.footer.text) {
+      embed.setFooter({
+        text: config.embeds.footer.text,
+        iconURL: config.embeds.footer.iconURL || undefined,
+      })
+    }
+
+    return embed
   }
 }

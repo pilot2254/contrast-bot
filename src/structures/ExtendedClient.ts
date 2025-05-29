@@ -23,6 +23,7 @@ export class ExtendedClient extends Client {
   public errorHandler: ErrorHandler
   private commandHandler: CommandHandler
   private eventHandler: EventHandler
+  private currentActivityIndex = 0
 
   constructor(options: ClientOptions) {
     super(options)
@@ -67,6 +68,11 @@ export class ExtendedClient extends Client {
       // Login to Discord
       this.logger.info("Logging in to Discord...")
       await this.login(token)
+
+      // Start presence rotation if enabled
+      if (config.presence.enabled && config.presence.activities.length > 0) {
+        this.startPresenceRotation()
+      }
     } catch (error) {
       this.logger.error("Failed to initialize bot:", error)
       process.exit(1)
@@ -119,6 +125,29 @@ export class ExtendedClient extends Client {
     }
   }
 
+  private startPresenceRotation(): void {
+    if (!config.presence.enabled || config.presence.activities.length === 0) {
+      return
+    }
+
+    setInterval(() => {
+      const activityConfig = config.presence.activities[this.currentActivityIndex]
+      this.user?.setPresence({
+        activities: [
+          {
+            name: activityConfig.name,
+            type: ActivityType[activityConfig.type as keyof typeof ActivityType],
+            url: activityConfig.url || undefined,
+          },
+        ],
+        status: config.presence.status as PresenceStatusData,
+      })
+
+      this.currentActivityIndex = (this.currentActivityIndex + 1) % config.presence.activities.length
+      this.logger.debug(`Presence updated to: ${activityConfig.name} (${activityConfig.type})`)
+    }, config.presence.rotationInterval)
+  }
+
   /**
    * Create a new client instance with default configuration
    */
@@ -131,12 +160,16 @@ export class ExtendedClient extends Client {
         GatewayIntentBits.GuildMembers,
       ],
       presence: {
-        activities: [
-          {
-            name: config.presence.name,
-            type: ActivityType[config.presence.type as keyof typeof ActivityType],
-          },
-        ],
+        activities:
+          config.presence.enabled && config.presence.activities.length > 0
+            ? [
+                {
+                  name: config.presence.activities[0].name,
+                  type: ActivityType[config.presence.activities[0].type as keyof typeof ActivityType],
+                  url: config.presence.activities[0].url || undefined,
+                },
+              ]
+            : [],
         status: config.presence.status as PresenceStatusData,
       },
       // Add more reliability options

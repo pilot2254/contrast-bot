@@ -1,18 +1,35 @@
 import type { ExtendedClient } from "../structures/ExtendedClient"
 import { config } from "../config/bot.config"
+import { LevelingService } from "./LevelingService"
 
 export class ShopService {
   constructor(private client: ExtendedClient) {}
 
-  // Get all shop items
-  getShopItems(category?: string): any[] {
+  // Get all shop items with dynamic pricing
+  async getShopItems(category?: string, userId?: string): Promise<any[]> {
     const items = Object.values(config.shop.items)
+    let processedItems = items
 
     if (category) {
-      return items.filter((item) => item.category === category)
+      processedItems = items.filter((item) => item.category === category)
     }
 
-    return items
+    // Add dynamic pricing for upgrades
+    const itemsWithDynamicPricing = await Promise.all(
+      processedItems.map(async (item) => {
+        if (item.id === "safe_upgrade" && userId) {
+          // Calculate dynamic price for safe upgrade
+          const user = await this.client.database.getUser(userId)
+          const upgradeCost = Math.floor(
+            config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1),
+          )
+          return { ...item, price: upgradeCost }
+        }
+        return item
+      }),
+    )
+
+    return itemsWithDynamicPricing
   }
 
   // Get item by ID
@@ -20,9 +37,26 @@ export class ShopService {
     return config.shop.items[itemId as keyof typeof config.shop.items]
   }
 
+  // Get item by ID with dynamic pricing
+  async getItemByIdWithPricing(itemId: string, userId: string): Promise<any> {
+    const item = this.getItemById(itemId)
+    if (!item) return null
+
+    if (item.id === "safe_upgrade") {
+      // Calculate dynamic price for safe upgrade
+      const user = await this.client.database.getUser(userId)
+      const upgradeCost = Math.floor(
+        config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1),
+      )
+      return { ...item, price: upgradeCost }
+    }
+
+    return item
+  }
+
   // Buy an item
   async buyItem(userId: string, itemId: string): Promise<{ success: boolean; item: any }> {
-    const item = this.getItemById(itemId)
+    const item = await this.getItemByIdWithPricing(itemId, userId)
 
     if (!item) {
       throw new Error("Item not found")
@@ -40,7 +74,7 @@ export class ShopService {
       if (itemId === "safe_upgrade") {
         // Safe upgrade is handled separately
         const economyService = await import("./EconomyService").then((m) => new m.EconomyService(this.client))
-        const result = await economyService.upgradeSafe(userId)
+        await economyService.upgradeSafe(userId)
         return { success: true, item }
       }
     } else if (item.category === "boosts") {
@@ -55,7 +89,7 @@ export class ShopService {
           await this.client.database.logTransaction(userId, "remove", item.price, `Purchased ${item.name}`)
 
           // Add XP
-          const levelingService = await import("./LevelingService").then((m) => new m.LevelingService(this.client))
+          const levelingService = new LevelingService(this.client)
           await levelingService.addXP(userId, item.xpAmount, "XP Boost item")
         })
 
@@ -106,13 +140,16 @@ export class ShopService {
     )
 
     // Enrich with item details
-    return inventoryItems.map((invItem) => {
-      const itemDetails = this.getItemById(invItem.item_id)
-      return {
-        ...invItem,
-        ...itemDetails,
-      }
-    })
+    return inventoryItems
+      .map((invItem) => {
+        const itemDetails = this.getItemById(invItem.item_id)
+        if (!itemDetails) return null // Skip items that no longer exist in config
+        return {
+          ...invItem,
+          ...itemDetails,
+        }
+      })
+      .filter(Boolean) // Remove null entries
   }
 
   // Get user's upgrades

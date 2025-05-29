@@ -55,7 +55,9 @@ async function handleShopList(
   shopService: ShopService,
 ) {
   const category = interaction.options.getString("category")
-  const items = shopService.getShopItems(category || undefined)
+
+  // Pass user ID for dynamic pricing
+  const items = await shopService.getShopItems(category || undefined, interaction.user.id)
 
   if (items.length === 0) {
     const embed = CustomEmbedBuilder.info().setDescription("No items found in the shop.")
@@ -86,8 +88,11 @@ async function handleShopList(
       .setDescription("Use `/shop buy <id>` to purchase an item")
 
     catItems.forEach((item) => {
+      const priceText =
+        item.price > 0 ? `${item.price.toLocaleString()} ${config.economy.currency.symbol}` : "Dynamic pricing"
+
       embed.addFields({
-        name: `${item.name} - ${item.price.toLocaleString()} ${config.economy.currency.symbol}`,
+        name: `${item.name} - ${priceText}`,
         value: `${item.description}\nID: \`${item.id}\``,
         inline: false,
       })
@@ -114,32 +119,7 @@ async function handleShopBuy(
   const itemId = interaction.options.getString("id")!
 
   try {
-    // Special handling for safe upgrade
-    if (itemId === "safe_upgrade") {
-      const economyService = await import("../../services/EconomyService").then((m) => new m.EconomyService(client))
-      const result = await economyService.upgradeSafe(interaction.user.id)
-
-      const embed = CustomEmbedBuilder.success()
-        .setTitle("Safe Upgraded!")
-        .setDescription(`You upgraded your safe to Tier ${result.tier}!`)
-        .addFields(
-          {
-            name: "🔒 New Capacity",
-            value: `${result.capacity.toLocaleString()} ${config.economy.currency.symbol}`,
-            inline: true,
-          },
-          {
-            name: "💰 Cost",
-            value: `${result.cost.toLocaleString()} ${config.economy.currency.symbol}`,
-            inline: true,
-          },
-        )
-
-      await interaction.reply({ embeds: [embed] })
-      return
-    }
-
-    // Buy regular item
+    // Buy item
     const { success, item } = await shopService.buyItem(interaction.user.id, itemId)
 
     if (success) {
@@ -153,6 +133,14 @@ async function handleShopBuy(
         embed.addFields({
           name: "✨ XP Gained",
           value: `+${item.xpAmount} XP`,
+          inline: true,
+        })
+      }
+
+      if (item.category === "upgrades" && item.id === "safe_upgrade") {
+        embed.addFields({
+          name: "🔒 Safe Upgraded",
+          value: "Your safe capacity has been increased!",
           inline: true,
         })
       }

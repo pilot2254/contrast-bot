@@ -1,5 +1,6 @@
 import type { ExtendedClient } from "../structures/ExtendedClient"
 import { config } from "../config/bot.config"
+import { EconomyService } from "./EconomyService"
 
 export class LevelingService {
   constructor(private client: ExtendedClient) {}
@@ -63,58 +64,70 @@ export class LevelingService {
     xp: number
     requiredXP: number
     leveledUp: boolean
-    newLevel?: number
+    newLevel?: number // Represents the final new level if leveledUp is true
   }> {
-    // Get current level data
-    const user = await this.client.database.getUser(userId)
-    const currentLevel = user.level
-    const currentXP = user.xp
-    const requiredXP = this.calculateRequiredXP(currentLevel)
+    const userBeforeXP = await this.client.database.getUser(userId)
+    let currentLevel = userBeforeXP.level
+    let currentXP = userBeforeXP.xp + amount // Total XP after adding new amount
 
-    // Add XP
-    const newXP = currentXP + amount
-    let newLevel = currentLevel
-    let leveledUp = false
+    let leveledUpThisTime = false
+    const originalLevel = userBeforeXP.level
 
-    // Check for level up
-    if (newXP >= requiredXP && currentLevel < config.leveling.maxLevel) {
-      newLevel = currentLevel + 1
-      leveledUp = true
+    // Loop to handle multiple level-ups
+    let requiredXPForLevelUp = this.calculateRequiredXP(currentLevel)
+    while (currentXP >= requiredXPForLevelUp && currentLevel < config.leveling.maxLevel) {
+      currentXP -= requiredXPForLevelUp // Subtract XP used for this level up
+      currentLevel++ // Increment level
+      leveledUpThisTime = true
 
-      // Award level up bonus - we'll handle this directly here
-      await this.client.database.transaction(async () => {
-        // Get current balance
-        const user = await this.client.database.getUser(userId)
-        const newBalance = user.balance + config.leveling.levelUpBonus
-
-        // Update balance
-        await this.client.database.updateUser(userId, { balance: newBalance })
-
-        // Log transaction
-        await this.client.database.logTransaction(
+      // Award level up bonus - NO new transaction here
+      // We instantiate EconomyService to use its internal _addBalanceInternal method
+      const economyService = new EconomyService(this.client)
+      try {
+        // Using _addBalanceInternal which is designed to be called within an existing transaction
+        await economyService._addBalanceInternal(
           userId,
-          "add",
           config.leveling.levelUpBonus,
-          `Level up bonus (Level ${newLevel})`,
+          `Level up bonus (Level ${currentLevel})`,
         )
-      })
+      } catch (e) {
+        this.client.logger.error(
+          `Failed to add level up bonus for user ${userId} (Level ${currentLevel}) during addXP:`,
+          e,
+        )
+        // If _addBalanceInternal fails, the outer transaction (e.g., from shop buy) should roll back.
+        // Re-throw the error to ensure the calling transaction is aware and can roll back.
+        throw e
+      }
+      requiredXPForLevelUp = this.calculateRequiredXP(currentLevel) // XP needed for the *new* current level
     }
 
-    // Update user
-    await this.client.database.updateUser(userId, {
-      level: newLevel,
-      xp: newXP,
-    })
+    // Update user's final level and XP
+    // Only update if level or XP actually changed to avoid unnecessary writes
+    if (currentLevel !== userBeforeXP.level || currentXP !== userBeforeXP.xp + amount) {
+      // The comparison for currentXP should be against userBeforeXP.xp if we are setting currentXP as remainder
+      // Or, if currentXP is total XP, then it's fine.
+      // Given currentXP is remainder, let's adjust the condition or ensure it's always updated.
+      // For simplicity, we'll update if level changed or if the original XP added (amount) was > 0
+      if (currentLevel !== userBeforeXP.level || amount > 0) {
+        await this.client.database.updateUser(userId, {
+          level: currentLevel,
+          xp: currentXP, // This is the XP towards the next level
+        })
+      }
+    }
 
-    // Log XP gain
-    await this.client.database.logTransaction(userId, "xp", amount, `XP from ${source}`)
+    // Log the total XP gain event, only if amount > 0 to avoid logging 0 XP gains
+    if (amount > 0) {
+      await this.client.database.logTransaction(userId, "xp", amount, `XP from ${source}`)
+    }
 
     return {
-      level: newLevel,
-      xp: newXP,
-      requiredXP: this.calculateRequiredXP(newLevel),
-      leveledUp,
-      newLevel: leveledUp ? newLevel : undefined,
+      level: currentLevel,
+      xp: currentXP,
+      requiredXP: this.calculateRequiredXP(currentLevel), // XP required for the current newLevel
+      leveledUp: leveledUpThisTime,
+      newLevel: leveledUpThisTime ? currentLevel : undefined,
     }
   }
 

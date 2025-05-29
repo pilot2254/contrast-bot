@@ -28,7 +28,7 @@ export class EconomyService {
   }
 
   // Internal method that doesn't start a transaction
-  private async _addBalanceInternal(userId: string, amount: number, reason: string): Promise<number> {
+  public async _addBalanceInternal(userId: string, amount: number, reason: string): Promise<number> {
     // Ensure user exists
     await this.client.database.createUser(userId)
 
@@ -324,7 +324,7 @@ export class EconomyService {
   }
 
   // Internal XP method that doesn't start a transaction
-  private async _addXPInternal(
+  public async _addXPInternal(
     userId: string,
     amount: number,
     source: string,
