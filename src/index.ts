@@ -1,11 +1,11 @@
-import { ExtendedClient } from "./structures/ExtendedClient"
-import * as dotenv from "dotenv"
+import { ExtendedClient } from "./structures/ExtendedClient";
+import * as dotenv from "dotenv";
 
 // Load environment variables
-dotenv.config()
+dotenv.config();
 
 // Create and start the client
-const client = ExtendedClient.createClient()
+const client = ExtendedClient.createClient();
 
 // Start the bot
-client.start(process.env.DISCORD_TOKEN || "")
+client.start(process.env.DISCORD_TOKEN || "");

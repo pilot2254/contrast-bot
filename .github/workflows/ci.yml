@@ -46,6 +46,9 @@ jobs:
       - name: Run build
         run: npm run build
 
+      - name: Run Prettier Check
+        run: npm run format:check # This will now use the updated script from package.json
+
       # If you add tests, uncomment the following lines:
       # - name: Run tests
       #   run: npm test

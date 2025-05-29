@@ -1,9 +1,12 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
-import { EconomyService } from "../../services/EconomyService"
-import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
-import { config } from "../../config/bot.config"
-import type { ExtendedClient } from "../../structures/ExtendedClient"
-import type { Command } from "../../types/Command"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js";
+import { EconomyService } from "../../services/EconomyService";
+import { CustomEmbedBuilder } from "../../utils/EmbedBuilder";
+import { config } from "../../config/bot.config";
+import type { ExtendedClient } from "../../structures/ExtendedClient";
+import type { Command } from "../../types/Command";
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -13,37 +16,58 @@ const command: Command = {
       subcommand
         .setName("check")
         .setDescription("Check your balance or another user's balance")
-        .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(false)),
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to check")
+            .setRequired(false),
+        ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("transfer")
         .setDescription("Transfer coins to another user")
-        .addUserOption((option) => option.setName("user").setDescription("The user to transfer to").setRequired(true))
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to transfer to")
+            .setRequired(true),
+        )
         .addIntegerOption((option) =>
-          option.setName("amount").setDescription("The amount to transfer").setRequired(true).setMinValue(1),
+          option
+            .setName("amount")
+            .setDescription("The amount to transfer")
+            .setRequired(true)
+            .setMinValue(1),
         ),
     )
-    .addSubcommand((subcommand) => subcommand.setName("leaderboard").setDescription("View the richest users")),
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("leaderboard")
+        .setDescription("View the richest users"),
+    ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
-    const subcommand = interaction.options.getSubcommand()
-    const economyService = new EconomyService(client)
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient,
+  ) {
+    const subcommand = interaction.options.getSubcommand();
+    const economyService = new EconomyService(client);
 
     switch (subcommand) {
       case "check":
-        await handleBalanceCheck(interaction, client, economyService)
-        break
+        await handleBalanceCheck(interaction, client, economyService);
+        break;
       case "transfer":
-        await handleBalanceTransfer(interaction, client, economyService)
-        break
+        await handleBalanceTransfer(interaction, client, economyService);
+        break;
       case "leaderboard":
-        await handleBalanceLeaderboard(interaction, client)
-        break
+        await handleBalanceLeaderboard(interaction, client);
+        break;
     }
   },
-}
+};
 
 // Handle balance check subcommand
 async function handleBalanceCheck(
@@ -51,11 +75,15 @@ async function handleBalanceCheck(
   client: ExtendedClient,
   economyService: EconomyService,
 ) {
-  const targetUser = interaction.options.getUser("user") || interaction.user
-  const { wallet, safe, safeCapacity } = await economyService.getBalance(targetUser.id)
+  const targetUser = interaction.options.getUser("user") || interaction.user;
+  const { wallet, safe, safeCapacity } = await economyService.getBalance(
+    targetUser.id,
+  );
 
   const embed = CustomEmbedBuilder.economy()
-    .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Balance`)
+    .setTitle(
+      `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Balance`,
+    )
     .setThumbnail(targetUser.displayAvatarURL())
     .addFields(
       {
@@ -73,9 +101,9 @@ async function handleBalanceCheck(
         value: `${(wallet + safe).toLocaleString()} ${config.economy.currency.symbol}`,
         inline: true,
       },
-    )
+    );
 
-  await interaction.reply({ embeds: [embed] })
+  await interaction.reply({ embeds: [embed] });
 }
 
 // Handle balance transfer subcommand
@@ -84,26 +112,34 @@ async function handleBalanceTransfer(
   client: ExtendedClient,
   economyService: EconomyService,
 ) {
-  const targetUser = interaction.options.getUser("user")!
-  const amount = interaction.options.getInteger("amount")!
+  const targetUser = interaction.options.getUser("user")!;
+  const amount = interaction.options.getInteger("amount")!;
 
   // Check if user is trying to transfer to themselves
   if (targetUser.id === interaction.user.id) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot transfer coins to yourself.")
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-    return
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot transfer coins to yourself.",
+    );
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    return;
   }
 
   // Check if user is trying to transfer to a bot
   if (targetUser.bot) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot transfer coins to a bot.")
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-    return
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot transfer coins to a bot.",
+    );
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    return;
   }
 
   try {
     // Attempt to transfer
-    const { senderBalance } = await economyService.transferBalance(interaction.user.id, targetUser.id, amount)
+    const { senderBalance } = await economyService.transferBalance(
+      interaction.user.id,
+      targetUser.id,
+      amount,
+    );
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Transfer Successful")
@@ -113,56 +149,61 @@ async function handleBalanceTransfer(
       .addFields({
         name: "💰 Your New Balance",
         value: `${senderBalance.toLocaleString()} ${config.economy.currency.symbol}`,
-      })
+      });
 
-    await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] });
   } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+    const errorEmbed = client.errorHandler.createUserError(error.message);
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
   }
 }
 
 // Handle balance leaderboard subcommand
-async function handleBalanceLeaderboard(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+async function handleBalanceLeaderboard(
+  interaction: ChatInputCommandInteraction,
+  client: ExtendedClient,
+) {
   // Get top 10 users by total balance (wallet + safe)
   const topUsers = await client.database.all(
     "SELECT user_id, balance + safe_balance as total FROM users ORDER BY total DESC LIMIT 10",
-  )
+  );
 
   if (topUsers.length === 0) {
-    const embed = CustomEmbedBuilder.info().setDescription("No users found in the leaderboard yet.")
-    await interaction.reply({ embeds: [embed] })
-    return
+    const embed = CustomEmbedBuilder.info().setDescription(
+      "No users found in the leaderboard yet.",
+    );
+    await interaction.reply({ embeds: [embed] });
+    return;
   }
 
   const embed = CustomEmbedBuilder.economy()
     .setTitle("💰 Richest Users")
-    .setDescription("The wealthiest users on the server")
+    .setDescription("The wealthiest users on the server");
 
   // Build leaderboard
-  let description = ""
+  let description = "";
   for (let i = 0; i < topUsers.length; i++) {
     try {
-      const userId = topUsers[i].user_id
-      const total = topUsers[i].total
+      const userId = topUsers[i].user_id;
+      const total = topUsers[i].total;
 
       // Try to fetch user, use ID if not found
-      let username
+      let username;
       try {
-        const user = await client.users.fetch(userId)
-        username = user.username
+        const user = await client.users.fetch(userId);
+        username = user.username;
       } catch {
-        username = `User ${userId}`
+        username = `User ${userId}`;
       }
 
-      description += `**${i + 1}.** ${username}: ${total.toLocaleString()} ${config.economy.currency.symbol}\n`
+      description += `**${i + 1}.** ${username}: ${total.toLocaleString()} ${config.economy.currency.symbol}\n`;
     } catch (error) {
-      client.logger.error(`Error fetching user for leaderboard: ${error}`)
+      client.logger.error(`Error fetching user for leaderboard: ${error}`);
     }
   }
 
-  embed.setDescription(description)
-  await interaction.reply({ embeds: [embed] })
+  embed.setDescription(description);
+  await interaction.reply({ embeds: [embed] });
 }
 
-export default command
+export default command;

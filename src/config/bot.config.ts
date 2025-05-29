@@ -3,7 +3,8 @@ export const config = {
   bot: {
     name: "Contrast Bot",
     version: "2.0.0",
-    description: "A feature-rich Discord bot with economy, gambling, and leveling systems",
+    description:
+      "A feature-rich Discord bot with economy, gambling, and leveling systems",
     prefix: "?", // For developer commands only
     developers: ["171395713064894465", "806496372093616128"], // Add your Discord IDs here
     supportServer: "https://discord.gg/your-server",
@@ -333,4 +334,4 @@ export const config = {
     allowedUsers: [], // Users who can use bot during maintenance
     estimatedDuration: "30 minutes",
   },
-}
+};

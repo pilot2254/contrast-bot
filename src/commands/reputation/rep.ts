@@ -1,8 +1,11 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
-import { ReputationService } from "../../services/ReputationService"
-import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
-import type { ExtendedClient } from "../../structures/ExtendedClient"
-import type { Command } from "../../types/Command"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js";
+import { ReputationService } from "../../services/ReputationService";
+import { CustomEmbedBuilder } from "../../utils/EmbedBuilder";
+import type { ExtendedClient } from "../../structures/ExtendedClient";
+import type { Command } from "../../types/Command";
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -13,7 +16,10 @@ const command: Command = {
         .setName("give")
         .setDescription("Give reputation to a user")
         .addUserOption((option) =>
-          option.setName("user").setDescription("The user to give reputation to").setRequired(true),
+          option
+            .setName("user")
+            .setDescription("The user to give reputation to")
+            .setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
@@ -21,34 +27,45 @@ const command: Command = {
         .setName("take")
         .setDescription("Take reputation from a user")
         .addUserOption((option) =>
-          option.setName("user").setDescription("The user to take reputation from").setRequired(true),
+          option
+            .setName("user")
+            .setDescription("The user to take reputation from")
+            .setRequired(true),
         ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("check")
         .setDescription("Check reputation points")
-        .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(false)),
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to check")
+            .setRequired(false),
+        ),
     ),
   category: "social",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
-    const subcommand = interaction.options.getSubcommand()
-    const reputationService = new ReputationService(client)
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient,
+  ) {
+    const subcommand = interaction.options.getSubcommand();
+    const reputationService = new ReputationService(client);
 
     switch (subcommand) {
       case "give":
-        await handleRepGive(interaction, client, reputationService)
-        break
+        await handleRepGive(interaction, client, reputationService);
+        break;
       case "take":
-        await handleRepTake(interaction, client, reputationService)
-        break
+        await handleRepTake(interaction, client, reputationService);
+        break;
       case "check":
-        await handleRepCheck(interaction, client, reputationService)
-        break
+        await handleRepCheck(interaction, client, reputationService);
+        break;
     }
   },
-}
+};
 
 // Handle rep give
 async function handleRepGive(
@@ -56,26 +73,30 @@ async function handleRepGive(
   client: ExtendedClient,
   reputationService: ReputationService,
 ) {
-  const targetUser = interaction.options.getUser("user")!
+  const targetUser = interaction.options.getUser("user")!;
 
   if (targetUser.bot) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot give reputation to a bot.")
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-    return
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot give reputation to a bot.",
+    );
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    return;
   }
 
   try {
-    await reputationService.giveReputation(interaction.user.id, targetUser.id)
+    await reputationService.giveReputation(interaction.user.id, targetUser.id);
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Reputation Given")
       .setDescription(`You gave reputation to ${targetUser.toString()}!`)
-      .setFooter({ text: "You can give reputation to this user again in 24 hours" })
+      .setFooter({
+        text: "You can give reputation to this user again in 24 hours",
+      });
 
-    await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] });
   } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+    const errorEmbed = client.errorHandler.createUserError(error.message);
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
   }
 }
 
@@ -85,26 +106,30 @@ async function handleRepTake(
   client: ExtendedClient,
   reputationService: ReputationService,
 ) {
-  const targetUser = interaction.options.getUser("user")!
+  const targetUser = interaction.options.getUser("user")!;
 
   if (targetUser.bot) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot take reputation from a bot.")
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
-    return
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot take reputation from a bot.",
+    );
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+    return;
   }
 
   try {
-    await reputationService.takeReputation(interaction.user.id, targetUser.id)
+    await reputationService.takeReputation(interaction.user.id, targetUser.id);
 
     const embed = CustomEmbedBuilder.warning()
       .setTitle("Reputation Taken")
       .setDescription(`You took reputation from ${targetUser.toString()}.`)
-      .setFooter({ text: "You can affect this user's reputation again in 24 hours" })
+      .setFooter({
+        text: "You can affect this user's reputation again in 24 hours",
+      });
 
-    await interaction.reply({ embeds: [embed] })
+    await interaction.reply({ embeds: [embed] });
   } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
-    await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
+    const errorEmbed = client.errorHandler.createUserError(error.message);
+    await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
   }
 }
 
@@ -114,11 +139,13 @@ async function handleRepCheck(
   client: ExtendedClient,
   reputationService: ReputationService,
 ) {
-  const targetUser = interaction.options.getUser("user") || interaction.user
-  const reputation = await reputationService.getUserReputation(targetUser.id)
+  const targetUser = interaction.options.getUser("user") || interaction.user;
+  const reputation = await reputationService.getUserReputation(targetUser.id);
 
   const embed = CustomEmbedBuilder.info()
-    .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Reputation`)
+    .setTitle(
+      `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Reputation`,
+    )
     .setThumbnail(targetUser.displayAvatarURL())
     .addFields(
       {
@@ -136,9 +163,9 @@ async function handleRepCheck(
         value: (reputation.received - reputation.given).toString(),
         inline: true,
       },
-    )
+    );
 
-  await interaction.reply({ embeds: [embed] })
+  await interaction.reply({ embeds: [embed] });
 }
 
-export default command
+export default command;
