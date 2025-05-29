@@ -1,12 +1,9 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js";
-import { GamblingService } from "../../services/GamblingService";
-import { CustomEmbedBuilder } from "../../utils/EmbedBuilder";
-import { config } from "../../config/bot.config";
-import type { ExtendedClient } from "../../structures/ExtendedClient";
-import type { Command } from "../../types/Command";
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { GamblingService } from "../../services/GamblingService"
+import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
+import { config } from "../../config/bot.config"
+import type { ExtendedClient } from "../../structures/ExtendedClient"
+import type { Command } from "../../types/Command"
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -17,17 +14,10 @@ const command: Command = {
         .setName("selection")
         .setDescription("Your choice")
         .setRequired(true)
-        .addChoices(
-          { name: "Heads", value: "heads" },
-          { name: "Tails", value: "tails" },
-        ),
+        .addChoices({ name: "Heads", value: "heads" }, { name: "Tails", value: "tails" }),
     )
     .addIntegerOption((option) =>
-      option
-        .setName("bet")
-        .setDescription("Amount to bet")
-        .setRequired(true)
-        .setMinValue(config.gambling.minBet),
+      option.setName("bet").setDescription("Amount to bet").setRequired(true).setMinValue(config.gambling.minBet),
     )
     .addIntegerOption((option) =>
       option
@@ -39,52 +29,43 @@ const command: Command = {
     ),
   category: "gambling",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient,
-  ) {
-    const selection = interaction.options.getString("selection")! as
-      | "heads"
-      | "tails";
-    const bet = interaction.options.getInteger("bet")!;
-    const repeats = interaction.options.getInteger("repeats") || 1;
-    const gamblingService = new GamblingService(client);
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+    const selection = interaction.options.getString("selection")! as "heads" | "tails"
+    const bet = interaction.options.getInteger("bet")!
+    const repeats = interaction.options.getInteger("repeats") || 1
+    const gamblingService = new GamblingService(client)
 
     // Defer reply for multiple plays
     if (repeats > 1) {
-      await interaction.deferReply();
+      await interaction.deferReply()
     }
 
     try {
-      let totalWinnings = 0;
-      let totalLost = 0;
-      let wins = 0;
-      const results: string[] = [];
+      let totalWinnings = 0
+      let totalLost = 0
+      let wins = 0
+      const results: string[] = []
 
       // Play multiple times
       for (let i = 0; i < repeats; i++) {
-        const result = await gamblingService.playCoinflip(
-          interaction.user.id,
-          bet,
-          selection,
-        );
+        const result = await gamblingService.playCoinflip(interaction.user.id, bet, selection)
 
         if (result.isWin) {
-          totalWinnings += result.winnings;
-          wins++;
+          totalWinnings += result.winnings
+          wins++
         } else {
-          totalLost += bet;
+          totalLost += bet
         }
 
         // Format result for display
-        const emoji = result.result === "heads" ? "👑" : "🪙";
+        const emoji = result.result === "heads" ? "👑" : "🪙"
         results.push(
           `**${i + 1}.** ${emoji} ${result.result.charAt(0).toUpperCase() + result.result.slice(1)} - ${
             result.isWin
               ? `Won ${result.winnings.toLocaleString()} ${config.economy.currency.symbol}`
               : `Lost ${bet.toLocaleString()} ${config.economy.currency.symbol}`
           }`,
-        );
+        )
       }
 
       // Create embed
@@ -107,28 +88,28 @@ const command: Command = {
             value: `${(totalWinnings - totalLost).toLocaleString()} ${config.economy.currency.symbol}`,
             inline: true,
           },
-        );
+        )
 
       if (totalWinnings > totalLost) {
-        embed.setColor(config.embeds.colors.success);
+        embed.setColor(config.embeds.colors.success)
       } else if (totalWinnings < totalLost) {
-        embed.setColor(config.embeds.colors.error);
+        embed.setColor(config.embeds.colors.error)
       }
 
       if (repeats > 1) {
-        await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] })
       } else {
-        await interaction.reply({ embeds: [embed] });
+        await interaction.reply({ embeds: [embed] })
       }
     } catch (error: any) {
-      const errorEmbed = client.errorHandler.createUserError(error.message);
+      const errorEmbed = client.errorHandler.createUserError(error.message)
       if (interaction.deferred) {
-        await interaction.editReply({ embeds: [errorEmbed] });
+        await interaction.editReply({ embeds: [errorEmbed] })
       } else {
-        await interaction.reply({ embeds: [errorEmbed], ephemeral: true });
+        await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
       }
     }
   },
-};
+}
 
-export default command;
+export default command

@@ -1,19 +1,27 @@
 import type {
   ChatInputCommandInteraction,
   SlashCommandBuilder,
-} from "discord.js";
-import type { ExtendedClient } from "../structures/ExtendedClient";
+  ContextMenuCommandBuilder,
+  SlashCommandSubcommandsOnlyBuilder,
+  AutocompleteInteraction,
+} from "discord.js"
+import type { ExtendedClient } from "../structures/ExtendedClient"
+
+// Define a more specific type for command data
+export type CommandData =
+  | SlashCommandBuilder
+  | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
+  | SlashCommandSubcommandsOnlyBuilder
+  | ContextMenuCommandBuilder
 
 export interface Command {
-  data:
-    | SlashCommandBuilder
-    | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
-    | any;
-  category: string;
-  cooldown?: number;
-  developerOnly?: boolean;
+  data: CommandData
+  category: string
+  cooldown?: number
+  developerOnly?: boolean
   execute: (
-    interaction: ChatInputCommandInteraction,
+    interaction: ChatInputCommandInteraction, // Or a union type if you have context menu commands, etc.
     client: ExtendedClient,
-  ) => Promise<void>;
+  ) => Promise<void>
+  autocomplete?: (interaction: AutocompleteInteraction, client: ExtendedClient) => Promise<void>
 }

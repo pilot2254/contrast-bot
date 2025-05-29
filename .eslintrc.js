@@ -1,15 +1,13 @@
 module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
-  plugins: [
-    "@typescript-eslint/eslint-plugin",
-    // "prettier" // plugin:prettier/recommended already enables this
-  ],
+  plugins: ["@typescript-eslint/eslint-plugin"],
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    // 'plugin:@typescript-eslint/recommended-requiring-type-checking', // Optional: for type-aware linting
-    "plugin:prettier/recommended", // Enables eslint-plugin-prettier, eslint-config-prettier, and sets prettier/prettier rule to "error"
+    // Consider enabling this for stricter type checking if your project setup allows.
+    // 'plugin:@typescript-eslint/recommended-requiring-type-checking',
+    "plugin:prettier/recommended",
   ],
   env: {
     node: true,
@@ -18,14 +16,16 @@ module.exports = {
   parserOptions: {
     ecmaVersion: "latest",
     sourceType: "module",
-    // project: './tsconfig.json', // Uncomment if using type-aware linting
+    // project: './tsconfig.json', // Required for 'recommended-requiring-type-checking'
   },
   rules: {
-    // "prettier/prettier": "error", // This is already set by plugin:prettier/recommended
+    "prettier/prettier": ["error", { endOfLine: "auto" }], // Let Prettier handle line endings, but ESLint can warn if they are inconsistent before Prettier runs.
     "linebreak-style": ["error", "unix"], // Enforce LF line endings
 
-    // Your existing rules (or customize as needed)
-    "no-unused-vars": "off", // Handled by @typescript-eslint/no-unused-vars
+    // Stricter 'any' rule - we'll fix these, but for now, it's a warning.
+    // Change to "error" for a zero-tolerance policy once all 'any' types are resolved.
+    "@typescript-eslint/no-explicit-any": "warn",
+
     "@typescript-eslint/no-unused-vars": [
       "warn",
       {
@@ -34,8 +34,8 @@ module.exports = {
         caughtErrorsIgnorePattern: "^_",
       },
     ],
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/explicit-module-boundary-types": "off", // Can be enabled for more explicitness if desired.
+    "@typescript-eslint/no-var-requires": "error", // Ensure this remains an error.
   },
   ignorePatterns: [
     "dist/",
@@ -45,9 +45,9 @@ module.exports = {
     "logs/",
     "backups/",
     "*.log",
-    "data/bot.db", // Ignore the SQLite database file itself
-    "data/bot.db-journal", // Ignore SQLite journal files
-    "data/bot.db-wal", // Ignore SQLite WAL files
-    "data/bot.db-shm", // Ignore SQLite SHM files
+    "data/bot.db",
+    "data/bot.db-journal",
+    "data/bot.db-wal",
+    "data/bot.db-shm",
   ],
 };
