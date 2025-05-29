@@ -1,0 +1,44 @@
+name: Create Main Release
+
+on:
+  push:
+    branches:
+      - main # Trigger when code is pushed/merged to main
+
+# Permissions needed to create releases and tags
+permissions:
+  contents: write
+
+jobs:
+  create_release:
+    name: Create Main Release
+    runs-on: ubuntu-latest
+    # This job assumes that the code pushed to 'main' has already passed CI checks.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for potential changelog generation
+
+      - name: Get version from package.json
+        id: package_version
+        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create Main Release
+        uses: ncipollo/release-action@v1
+        with:
+          # GITHUB_TOKEN is automatically provided
+          # Assumes package.json version is updated before merging to main for a new release.
+          # If not, this tag might conflict on subsequent pushes with the same version.
+          # Consider using 'allowUpdates: true' or a more unique tag like v${{ steps.package_version.outputs.version }}.${{ github.run_number }}
+          tag: v${{ steps.package_version.outputs.version }}
+          name: Release v${{ steps.package_version.outputs.version }}
+          body: |
+            Automated main release.
+            Version: ${{ steps.package_version.outputs.version }}
+            Branch: main
+            Refer to commit history for detailed changes.
+          prerelease: false
+          draft: false
+          # allowUpdates: true # Use if you might re-release the same version number to main.
