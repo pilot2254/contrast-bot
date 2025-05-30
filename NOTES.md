@@ -11,21 +11,28 @@ We use a three-branch workflow:
 ## Development Workflow
 
 1. **Daily Development**:
-   ```bash
+   \`\`\`bash
    git checkout canary
    git pull origin canary
    # Make your changes
    git add .
    git commit -m "feat: add new feature"
    git push origin canary
-   ```
+   \`\`\`
 
-2. **Create PR to Beta**:
+2. **Create Release**:
+   \`\`\`bash
+   npm version patch    # or minor/major
+   git push origin --tags
+   git push origin canary
+   \`\`\`
+
+3. **Promote to Beta**:
    - Create PR from `canary` → `beta`
    - Test thoroughly on beta branch
    - Merge when ready for testing
 
-3. **Promote to Main**:
+4. **Promote to Main**:
    - Create PR from `beta` → `main`
    - Merge when everything is stable and ready for production
 
@@ -38,44 +45,31 @@ We use `npm version` commands to create releases, which automatically:
 - Creates a git tag
 - Triggers GitHub Actions to create releases
 
-### Beta Releases (Pre-releases)
+### Simple Versioning
 
-```bash
-# For beta releases (from beta branch)
-git checkout beta
-npm version prerelease --preid=beta
-git push origin --tags
-```
-
-This creates tags like: `v2.0.1-beta.1`, `v2.0.1-beta.2`, etc.
-
-### Production Releases
-
-```bash
-# For production releases (from main branch)
-git checkout main
+\`\`\`bash
+# For bug fixes and small changes
 npm version patch    # 2.0.0 → 2.0.1
-npm version minor    # 2.0.1 → 2.1.0  
+
+# For new features  
+npm version minor    # 2.0.1 → 2.1.0
+
+# For breaking changes
 npm version major    # 2.1.0 → 3.0.0
-git push origin --tags
-```
+\`\`\`
 
-This creates tags like: `v2.0.1`, `v2.1.0`, `v3.0.0`, etc.
+### Quick Release Command
 
-## Version Types
-
-- **patch** (`npm version patch`): Bug fixes, small changes (2.0.0 → 2.0.1)
-- **minor** (`npm version minor`): New features, backwards compatible (2.0.0 → 2.1.0)
-- **major** (`npm version major`): Breaking changes (2.0.0 → 3.0.0)
-- **prerelease** (`npm version prerelease --preid=beta`): Beta versions (2.0.0 → 2.0.1-beta.1)
+\`\`\`bash
+# Most common: patch release
+npm version patch && git push origin --tags && git push origin canary
+\`\`\`
 
 ## Automatic Release Creation
 
 When you push tags, GitHub Actions automatically:
-
-- **Beta tags** (`v*-beta.*`): Creates pre-release on GitHub
-- **Production tags** (`v*.*.*`): Creates full release on GitHub
-- **Generates changelog**: Automatically from PR labels since last release
+- Creates a release on GitHub
+- Generates changelog from PR labels since last release
 
 ## PR Labeling for Changelogs
 
@@ -87,30 +81,25 @@ Label your PRs to get organized changelogs:
 
 ## Example Workflow
 
-```bash
+\`\`\`bash
 # 1. Develop on canary
 git checkout canary
 # ... make changes ...
 git push origin canary
 
-# 2. Create PR: canary → beta
-# 3. Test on beta, then create beta release
-git checkout beta
-npm version prerelease --preid=beta  # Creates v2.0.1-beta.1
+# 2. Create release
+npm version patch  # Creates v2.0.1
 git push origin --tags
+git push origin canary
 
-# 4. When stable, create PR: beta → main
-# 5. Create production release
-git checkout main  
-npm version minor  # Creates v2.1.0
-git push origin --tags
-```
+# 3. Create PR: canary → beta (when ready for testing)
+# 4. Create PR: beta → main (when ready for production)
+\`\`\`
 
 ## Important Notes
 
-- **Never push directly** to `main` or `beta` branches
-- **Always use PRs** for code changes
-- **Test thoroughly** on beta before promoting to main
+- **All releases are created from canary** - Simple and straightforward
+- **Use PRs to promote** stable code through beta → main
 - **Use semantic versioning** for clear version history
 - **Label PRs properly** for automatic changelog generation
 

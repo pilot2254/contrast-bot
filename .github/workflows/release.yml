@@ -1,16 +1,16 @@
-name: Create Beta Pre-release
+name: Create Release
 
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-beta.*' # Match beta tags (v1.2.3-beta.1)
+      - 'v[0-9]+.[0-9]+.[0-9]+' # Match standard version tags (v1.2.3)
 
 permissions:
   contents: write
 
 jobs:
-  create_prerelease:
-    name: Create Beta Pre-release
+  create_release:
+    name: Create Release
     runs-on: ubuntu-latest
 
     steps:
@@ -32,19 +32,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create Beta Pre-release
+      - name: Create Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
-          name: Pre-release v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
           body: |
-            ## Beta Release
-            
-            This is a beta release for testing purposes. Please report any issues.
-            
             ## What's Changed
             ${{ steps.changelog.outputs.changelog }}
             
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.fromTag }}...${{ github.ref_name }}
-          prerelease: true
+          prerelease: false
           draft: false
+          makeLatest: true
