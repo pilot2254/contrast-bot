@@ -4,7 +4,7 @@ module.exports = {
   plugins: ["@typescript-eslint", "prettier"],
   extends: [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended", // Fixed: added 'plugin:' prefix
+    "plugin:@typescript-eslint/recommended",
     "prettier", // This disables ESLint rules that conflict with Prettier
   ],
   env: {
