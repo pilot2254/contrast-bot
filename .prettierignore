@@ -28,6 +28,9 @@ backups/
 # GitHub directory (usually not formatted by project Prettier)
 .github/
 
+# Markdown files (exclude from formatting)
+*.md
+
 # Other
 .DS_Store
 Thumbs.db

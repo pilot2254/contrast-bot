@@ -10,16 +10,11 @@
     "dev": "cross-env NODE_ENV=development ts-node-dev --respawn src/index.ts",
     "lint": "eslint src/**/*.{ts,js} --fix",
     "lint:check": "eslint src/**/*.{ts,js}",
-    "format": "prettier --write \"**/*.{ts,js,json,md,yml}\"",
-    "format:check": "prettier --check \"**/*.{ts,js,json,md,yml}\"",
+    "format": "prettier --write \"**/*.{ts,js,json,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,js,json,yml}\"",
     "type-check": "tsc --noEmit"
   },
-  "keywords": [
-    "discord",
-    "bot",
-    "economy",
-    "gambling"
-  ],
+  "keywords": ["discord", "bot", "economy", "gambling"],
   "author": "pilot2254",
   "dependencies": {
     "discord.js": "^14.14.1",
