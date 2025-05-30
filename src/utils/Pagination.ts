@@ -14,7 +14,11 @@ export class Pagination {
   private currentPage: number
   private timeout: number
 
-  constructor(interaction: ChatInputCommandInteraction, pages: EmbedBuilder[], timeout = 60000) {
+  constructor(
+    interaction: ChatInputCommandInteraction,
+    pages: EmbedBuilder[],
+    timeout = 60000
+  ) {
     this.interaction = interaction
     this.pages = pages
     this.currentPage = 0
@@ -56,7 +60,10 @@ export class Pagination {
           this.currentPage = Math.max(0, this.currentPage - 1)
           break
         case "next":
-          this.currentPage = Math.min(this.pages.length - 1, this.currentPage + 1)
+          this.currentPage = Math.min(
+            this.pages.length - 1,
+            this.currentPage + 1
+          )
           break
         case "last":
           this.currentPage = this.pages.length - 1
@@ -104,6 +111,11 @@ export class Pagination {
       .setStyle(ButtonStyle.Secondary)
       .setDisabled(disabled || this.currentPage === this.pages.length - 1)
 
-    return new ActionRowBuilder<ButtonBuilder>().addComponents(first, previous, next, last)
+    return new ActionRowBuilder<ButtonBuilder>().addComponents(
+      first,
+      previous,
+      next,
+      last
+    )
   }
 }

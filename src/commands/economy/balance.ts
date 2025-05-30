@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { EconomyService } from "../../services/EconomyService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -13,21 +16,40 @@ const command: Command = {
       subcommand
         .setName("check")
         .setDescription("Check your balance or another user's balance")
-        .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(false)),
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to check")
+            .setRequired(false)
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("transfer")
         .setDescription("Transfer coins to another user")
-        .addUserOption((option) => option.setName("user").setDescription("The user to transfer to").setRequired(true))
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to transfer to")
+            .setRequired(true)
+        )
         .addIntegerOption((option) =>
-          option.setName("amount").setDescription("The amount to transfer").setRequired(true).setMinValue(1),
-        ),
+          option
+            .setName("amount")
+            .setDescription("The amount to transfer")
+            .setRequired(true)
+            .setMinValue(1)
+        )
     )
-    .addSubcommand((subcommand) => subcommand.setName("leaderboard").setDescription("View the richest users")),
+    .addSubcommand((subcommand) =>
+      subcommand.setName("leaderboard").setDescription("View the richest users")
+    ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const subcommand = interaction.options.getSubcommand()
     const economyService = new EconomyService(client)
 
@@ -49,13 +71,17 @@ const command: Command = {
 async function handleBalanceCheck(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   const targetUser = interaction.options.getUser("user") || interaction.user
-  const { wallet, safe, safeCapacity } = await economyService.getBalance(targetUser.id)
+  const { wallet, safe, safeCapacity } = await economyService.getBalance(
+    targetUser.id
+  )
 
   const embed = CustomEmbedBuilder.economy()
-    .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Balance`)
+    .setTitle(
+      `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Balance`
+    )
     .setThumbnail(targetUser.displayAvatarURL())
     .addFields(
       {
@@ -72,7 +98,7 @@ async function handleBalanceCheck(
         name: "💵 Total",
         value: `${(wallet + safe).toLocaleString()} ${config.economy.currency.symbol}`,
         inline: true,
-      },
+      }
     )
 
   await interaction.reply({ embeds: [embed] })
@@ -82,33 +108,41 @@ async function handleBalanceCheck(
 async function handleBalanceTransfer(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   const targetUser = interaction.options.getUser("user")!
   const amount = interaction.options.getInteger("amount")!
 
   // Check if user is trying to transfer to themselves
   if (targetUser.id === interaction.user.id) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot transfer coins to yourself.")
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot transfer coins to yourself."
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     return
   }
 
   // Check if user is trying to transfer to a bot
   if (targetUser.bot) {
-    const errorEmbed = client.errorHandler.createUserError("You cannot transfer coins to a bot.")
+    const errorEmbed = client.errorHandler.createUserError(
+      "You cannot transfer coins to a bot."
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     return
   }
 
   try {
     // Attempt to transfer
-    const { senderBalance } = await economyService.transferBalance(interaction.user.id, targetUser.id, amount)
+    const { senderBalance } = await economyService.transferBalance(
+      interaction.user.id,
+      targetUser.id,
+      amount
+    )
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Transfer Successful")
       .setDescription(
-        `You transferred ${amount.toLocaleString()} ${config.economy.currency.symbol} to ${targetUser.toString()}.`,
+        `You transferred ${amount.toLocaleString()} ${config.economy.currency.symbol} to ${targetUser.toString()}.`
       )
       .addFields({
         name: "💰 Your New Balance",
@@ -117,20 +151,27 @@ async function handleBalanceTransfer(
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError((error as Error).message)
+    const errorEmbed = client.errorHandler.createUserError(
+      (error as Error).message
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
 
 // Handle balance leaderboard subcommand
-async function handleBalanceLeaderboard(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+async function handleBalanceLeaderboard(
+  interaction: ChatInputCommandInteraction,
+  client: ExtendedClient
+) {
   // Get top 10 users by total balance (wallet + safe)
   const topUsers = await client.database.all(
-    "SELECT user_id, balance + safe_balance as total FROM users ORDER BY total DESC LIMIT 10",
+    "SELECT user_id, balance + safe_balance as total FROM users ORDER BY total DESC LIMIT 10"
   )
 
   if (topUsers.length === 0) {
-    const embed = CustomEmbedBuilder.info().setDescription("No users found in the leaderboard yet.")
+    const embed = CustomEmbedBuilder.info().setDescription(
+      "No users found in the leaderboard yet."
+    )
     await interaction.reply({ embeds: [embed] })
     return
   }

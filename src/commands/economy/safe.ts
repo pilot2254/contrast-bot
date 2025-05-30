@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { EconomyService } from "../../services/EconomyService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -9,26 +12,41 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("safe")
     .setDescription("Manage your safe")
-    .addSubcommand((subcommand) => subcommand.setName("check").setDescription("Check your safe balance and capacity"))
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("check")
+        .setDescription("Check your safe balance and capacity")
+    )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("deposit")
         .setDescription("Deposit coins into your safe")
         .addIntegerOption((option) =>
-          option.setName("amount").setDescription("The amount to deposit").setRequired(true).setMinValue(1),
-        ),
+          option
+            .setName("amount")
+            .setDescription("The amount to deposit")
+            .setRequired(true)
+            .setMinValue(1)
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("withdraw")
         .setDescription("Withdraw coins from your safe")
         .addIntegerOption((option) =>
-          option.setName("amount").setDescription("The amount to withdraw").setRequired(true).setMinValue(1),
-        ),
+          option
+            .setName("amount")
+            .setDescription("The amount to withdraw")
+            .setRequired(true)
+            .setMinValue(1)
+        )
     ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const subcommand = interaction.options.getSubcommand()
     const economyService = new EconomyService(client)
 
@@ -50,14 +68,17 @@ const command: Command = {
 async function handleSafeCheck(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
-  const { wallet, safe, safeCapacity } = await economyService.getBalance(interaction.user.id)
+  const { wallet, safe, safeCapacity } = await economyService.getBalance(
+    interaction.user.id
+  )
   const user = await client.database.getUser(interaction.user.id)
 
   // Calculate next upgrade cost
   const nextUpgradeCost = Math.floor(
-    config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1),
+    config.economy.safe.baseCost *
+      Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1)
   )
 
   const embed = CustomEmbedBuilder.economy()
@@ -93,7 +114,7 @@ async function handleSafeCheck(
         name: "Available Space",
         value: `${(safeCapacity - safe).toLocaleString()} ${config.economy.currency.symbol}`,
         inline: true,
-      },
+      }
     )
     .setFooter({ text: "Upgrade your safe in the shop to increase capacity" })
 
@@ -104,16 +125,21 @@ async function handleSafeCheck(
 async function handleSafeDeposit(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   const amount = interaction.options.getInteger("amount")!
 
   try {
-    const { wallet, safe } = await economyService.depositToSafe(interaction.user.id, amount)
+    const { wallet, safe } = await economyService.depositToSafe(
+      interaction.user.id,
+      amount
+    )
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Deposit Successful")
-      .setDescription(`You deposited ${amount.toLocaleString()} ${config.economy.currency.symbol} into your safe.`)
+      .setDescription(
+        `You deposited ${amount.toLocaleString()} ${config.economy.currency.symbol} into your safe.`
+      )
       .addFields(
         {
           name: "💰 Wallet Balance",
@@ -124,12 +150,14 @@ async function handleSafeDeposit(
           name: "🔒 Safe Balance",
           value: `${safe.toLocaleString()} ${config.economy.currency.symbol}`,
           inline: true,
-        },
+        }
       )
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError((error as any).message)
+    const errorEmbed = client.errorHandler.createUserError(
+      (error as any).message
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -138,16 +166,21 @@ async function handleSafeDeposit(
 async function handleSafeWithdraw(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   const amount = interaction.options.getInteger("amount")!
 
   try {
-    const { wallet, safe } = await economyService.withdrawFromSafe(interaction.user.id, amount)
+    const { wallet, safe } = await economyService.withdrawFromSafe(
+      interaction.user.id,
+      amount
+    )
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Withdrawal Successful")
-      .setDescription(`You withdrew ${amount.toLocaleString()} ${config.economy.currency.symbol} from your safe.`)
+      .setDescription(
+        `You withdrew ${amount.toLocaleString()} ${config.economy.currency.symbol} from your safe.`
+      )
       .addFields(
         {
           name: "💰 Wallet Balance",
@@ -158,12 +191,14 @@ async function handleSafeWithdraw(
           name: "🔒 Safe Balance",
           value: `${safe.toLocaleString()} ${config.economy.currency.symbol}`,
           inline: true,
-        },
+        }
       )
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError((error as any).message)
+    const errorEmbed = client.errorHandler.createUserError(
+      (error as any).message
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }

@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { ShopService } from "../../services/ShopService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import type { ExtendedClient } from "../../structures/ExtendedClient"
@@ -8,10 +11,18 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("inventory")
     .setDescription("View your inventory or another user's inventory")
-    .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(false)),
+    .addUserOption((option) =>
+      option
+        .setName("user")
+        .setDescription("The user to check")
+        .setRequired(false)
+    ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const targetUser = interaction.options.getUser("user") || interaction.user
     const shopService = new ShopService(client)
 
@@ -20,7 +31,9 @@ const command: Command = {
 
       if (inventory.length === 0) {
         const embed = CustomEmbedBuilder.info()
-          .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Inventory`)
+          .setTitle(
+            `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Inventory`
+          )
           .setDescription("No items in inventory.")
 
         await interaction.reply({ embeds: [embed] })
@@ -28,7 +41,9 @@ const command: Command = {
       }
 
       const embed = CustomEmbedBuilder.economy()
-        .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Inventory`)
+        .setTitle(
+          `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Inventory`
+        )
         .setThumbnail(targetUser.displayAvatarURL())
 
       inventory.forEach((item) => {
@@ -41,7 +56,9 @@ const command: Command = {
 
       await interaction.reply({ embeds: [embed] })
     } catch (error: unknown) {
-      const errorEmbed = client.errorHandler.createUserError((error as any).message)
+      const errorEmbed = client.errorHandler.createUserError(
+        (error as any).message
+      )
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     }
   },

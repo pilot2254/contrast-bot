@@ -54,11 +54,14 @@ export class ErrorHandler {
           try {
             const embed = this.createUserError(
               "An unexpected error occurred.",
-              `Error ID: \`${errorId}\`\nPlease report this if the issue persists.`,
+              `Error ID: \`${errorId}\`\nPlease report this if the issue persists.`
             )
             await interaction.followUp({ embeds: [embed], ephemeral: true })
           } catch (followUpError) {
-            this.client.logger.error("Failed to send follow-up error response to user:", followUpError)
+            this.client.logger.error(
+              "Failed to send follow-up error response to user:",
+              followUpError
+            )
           }
         }
       }
@@ -74,10 +77,19 @@ export class ErrorHandler {
     return `ERR_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   }
 
-  private sanitizeContext(context?: ErrorContext): Record<string, unknown> | null {
+  private sanitizeContext(
+    context?: ErrorContext
+  ): Record<string, unknown> | null {
     if (!context) return null
     const sanitized: Record<string, unknown> = {}
-    const safeProperties = ["commandName", "interactionType", "guildId", "channelId", "userId", "timestamp"]
+    const safeProperties = [
+      "commandName",
+      "interactionType",
+      "guildId",
+      "channelId",
+      "userId",
+      "timestamp",
+    ]
 
     safeProperties.forEach((prop) => {
       if (context[prop] !== undefined) {
@@ -93,21 +105,30 @@ export class ErrorHandler {
         user: interaction.user?.id,
         guild: interaction.guild?.id,
         channel: interaction.channel?.id,
-        commandName: "commandName" in interaction ? interaction.commandName : undefined,
+        commandName:
+          "commandName" in interaction ? interaction.commandName : undefined,
       }
 
       // Handle command options safely
       if ("options" in interaction && interaction.options) {
         // For ChatInputCommandInteraction
-        if ("data" in interaction.options && Array.isArray(interaction.options.data)) {
-          sanitized.interaction_options = interaction.options.data.map((opt: CommandInteractionOption) => {
-            const value = opt.value !== undefined ? opt.value : null
-            return {
-              name: opt.name,
-              type: opt.type,
-              value: typeof value === "string" && value.length > 100 ? "[TRUNCATED]" : value,
+        if (
+          "data" in interaction.options &&
+          Array.isArray(interaction.options.data)
+        ) {
+          sanitized.interaction_options = interaction.options.data.map(
+            (opt: CommandInteractionOption) => {
+              const value = opt.value !== undefined ? opt.value : null
+              return {
+                name: opt.name,
+                type: opt.type,
+                value:
+                  typeof value === "string" && value.length > 100
+                    ? "[TRUNCATED]"
+                    : value,
+              }
             }
-          })
+          )
         }
       }
     }
@@ -120,7 +141,10 @@ export class ErrorHandler {
         Object.prototype.hasOwnProperty.call(context, key)
       ) {
         // Basic check for sensitive data patterns (customize as needed)
-        if (typeof context[key] === "string" && /(token|secret|password)/i.test(key)) {
+        if (
+          typeof context[key] === "string" &&
+          /(token|secret|password)/i.test(key)
+        ) {
           sanitized[key] = "[REDACTED]"
         } else {
           sanitized[key] = context[key]
@@ -130,22 +154,31 @@ export class ErrorHandler {
     return sanitized
   }
 
-  private async sendUserErrorResponse(interaction: HandledInteraction, errorId: string): Promise<void> {
+  private async sendUserErrorResponse(
+    interaction: HandledInteraction,
+    errorId: string
+  ): Promise<void> {
     try {
       const embed = this.createUserError(
         "An unexpected error occurred while processing your request.",
-        `Error ID: \`${errorId}\`\nPlease report this to the developers if the issue persists.`,
+        `Error ID: \`${errorId}\`\nPlease report this to the developers if the issue persists.`
       )
       if ("reply" in interaction) {
         // Check if interaction is repliable
-        if ("replied" in interaction && (interaction.replied || interaction.deferred)) {
+        if (
+          "replied" in interaction &&
+          (interaction.replied || interaction.deferred)
+        ) {
           await interaction.followUp({ embeds: [embed], ephemeral: true })
         } else {
           await interaction.reply({ embeds: [embed], ephemeral: true })
         }
       }
     } catch (replyError: unknown) {
-      this.client.logger.error("Failed to send error response to user:", replyError)
+      this.client.logger.error(
+        "Failed to send error response to user:",
+        replyError
+      )
     }
   }
 
@@ -153,12 +186,14 @@ export class ErrorHandler {
     error: Error,
     context: ErrorContext | undefined,
     errorId: string,
-    timestamp: string,
+    timestamp: string
   ): Promise<void> {
     try {
       if (!process.env.ERROR_LOG_CHANNEL) return
 
-      const channel = (await this.client.channels.fetch(process.env.ERROR_LOG_CHANNEL)) as TextChannel | null
+      const channel = (await this.client.channels.fetch(
+        process.env.ERROR_LOG_CHANNEL
+      )) as TextChannel | null
       if (!channel || !channel.isTextBased()) return
 
       const embed = new EmbedBuilder()
@@ -166,12 +201,25 @@ export class ErrorHandler {
         .setTitle(`🚨 Error Report - ${errorId}`)
         .setDescription(`**Error:** ${error.message}`)
         .addFields(
-          { name: "Stack Trace", value: codeBlock("js", this.truncateText(error.stack || "No stack trace", 1000)) },
-          { name: "Timestamp", value: timestamp, inline: true },
+          {
+            name: "Stack Trace",
+            value: codeBlock(
+              "js",
+              this.truncateText(error.stack || "No stack trace", 1000)
+            ),
+          },
+          { name: "Timestamp", value: timestamp, inline: true }
         )
       if (context) {
-        const contextString = JSON.stringify(this.sanitizeContext(context), null, 2)
-        embed.addFields({ name: "Context", value: codeBlock("json", this.truncateText(contextString, 1000)) })
+        const contextString = JSON.stringify(
+          this.sanitizeContext(context),
+          null,
+          2
+        )
+        embed.addFields({
+          name: "Context",
+          value: codeBlock("json", this.truncateText(contextString, 1000)),
+        })
       }
       await channel.send({ embeds: [embed] })
     } catch (logError: unknown) {
@@ -183,12 +231,18 @@ export class ErrorHandler {
     error: Error,
     context: ErrorContext | undefined,
     errorId: string,
-    timestamp: string,
+    timestamp: string
   ): Promise<void> {
     try {
       await this.client.database.run(
         `INSERT INTO error_logs (error_id, message, stack, context, timestamp) VALUES (?, ?, ?, ?, ?)`,
-        [errorId, error.message, error.stack || null, JSON.stringify(this.sanitizeContext(context)), timestamp],
+        [
+          errorId,
+          error.message,
+          error.stack || null,
+          JSON.stringify(this.sanitizeContext(context)),
+          timestamp,
+        ]
       )
     } catch (dbError: unknown) {
       this.client.logger.error("Failed to store error in database:", dbError)
@@ -201,7 +255,10 @@ export class ErrorHandler {
   }
 
   createUserError(title: string, description?: string): EmbedBuilder {
-    const embed = new EmbedBuilder().setColor(config.embeds.colors.error).setTitle(`❌ ${title}`).setTimestamp()
+    const embed = new EmbedBuilder()
+      .setColor(config.embeds.colors.error)
+      .setTitle(`❌ ${title}`)
+      .setTimestamp()
 
     if (description) {
       embed.setDescription(description)
@@ -218,7 +275,10 @@ export class ErrorHandler {
   }
 
   createWarning(title: string, description?: string): EmbedBuilder {
-    const embed = new EmbedBuilder().setColor(config.embeds.colors.warning).setTitle(`⚠️ ${title}`).setTimestamp()
+    const embed = new EmbedBuilder()
+      .setColor(config.embeds.colors.warning)
+      .setTitle(`⚠️ ${title}`)
+      .setTimestamp()
 
     if (description) {
       embed.setDescription(description)
@@ -235,7 +295,10 @@ export class ErrorHandler {
   }
 
   createInfo(title: string, description?: string): EmbedBuilder {
-    const embed = new EmbedBuilder().setColor(config.embeds.colors.info).setTitle(`ℹ️ ${title}`).setTimestamp()
+    const embed = new EmbedBuilder()
+      .setColor(config.embeds.colors.info)
+      .setTitle(`ℹ️ ${title}`)
+      .setTimestamp()
 
     if (description) {
       embed.setDescription(description)
@@ -252,7 +315,10 @@ export class ErrorHandler {
   }
 
   createSuccess(title: string, description?: string): EmbedBuilder {
-    const embed = new EmbedBuilder().setColor(config.embeds.colors.success).setTitle(`✅ ${title}`).setTimestamp()
+    const embed = new EmbedBuilder()
+      .setColor(config.embeds.colors.success)
+      .setTitle(`✅ ${title}`)
+      .setTimestamp()
 
     if (description) {
       embed.setDescription(description)

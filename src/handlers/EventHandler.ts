@@ -15,13 +15,17 @@ export class EventHandler {
 
   async loadEvents(): Promise<void> {
     const eventsPath = join(__dirname, "..", "events")
-    const eventFiles = readdirSync(eventsPath).filter((file) => file.endsWith(".ts") || file.endsWith(".js"))
+    const eventFiles = readdirSync(eventsPath).filter(
+      (file) => file.endsWith(".ts") || file.endsWith(".js")
+    )
 
     for (const file of eventFiles) {
       const filePath = join(eventsPath, file)
 
       try {
-        const { default: event } = (await import(filePath)) as { default: EventModule }
+        const { default: event } = (await import(filePath)) as {
+          default: EventModule
+        }
 
         if (event.once) {
           this.client.once(event.name, (...args) => event.execute(...args))

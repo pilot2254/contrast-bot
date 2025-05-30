@@ -55,22 +55,31 @@ export class ShopService {
           if (item.id === "safe_upgrade") {
             const user = await this.client.database.getUser(userId)
             const upgradeCost = Math.floor(
-              config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1),
+              config.economy.safe.baseCost *
+                Math.pow(
+                  config.economy.safe.upgradeMultiplier,
+                  user.safe_tier - 1
+                )
             )
             return { ...item, price: upgradeCost }
           }
           return item
-        }),
+        })
       )
     }
     return processedItems
   }
 
   getItemById(itemId: string): ShopItem | undefined {
-    return config.shop.items[itemId as keyof typeof config.shop.items] as ShopItem | undefined
+    return config.shop.items[itemId as keyof typeof config.shop.items] as
+      | ShopItem
+      | undefined
   }
 
-  async getItemByIdWithPricing(itemId: string, userId: string): Promise<ShopItem | null> {
+  async getItemByIdWithPricing(
+    itemId: string,
+    userId: string
+  ): Promise<ShopItem | null> {
     const item = this.getItemById(itemId)
     if (!item) return null
 
@@ -78,27 +87,38 @@ export class ShopService {
       const user = await this.client.database.getUser(userId)
       const currentTier = user.safe_tier || 1
       const upgradeCost = Math.floor(
-        config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1),
+        config.economy.safe.baseCost *
+          Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1)
       )
       return { ...item, price: upgradeCost }
     }
     return item
   }
 
-  async buyItem(userId: string, itemId: string): Promise<{ success: boolean; item: ShopItem }> {
+  async buyItem(
+    userId: string,
+    itemId: string
+  ): Promise<{ success: boolean; item: ShopItem }> {
     const item = await this.getItemByIdWithPricing(itemId, userId)
     if (!item) throw new Error("Item not found")
 
     const user = await this.client.database.getUser(userId)
     if (user.balance < item.price) {
-      throw new Error(`You don't have enough ${config.economy.currency.name} to buy this item`)
+      throw new Error(
+        `You don't have enough ${config.economy.currency.name} to buy this item`
+      )
     }
     if (item.requiredLevel && user.level < item.requiredLevel) {
-      throw new Error(`You need to be level ${item.requiredLevel} to buy this item.`)
+      throw new Error(
+        `You need to be level ${item.requiredLevel} to buy this item.`
+      )
     }
 
     // Check if safe is already at max tier
-    if (item.id === "safe_upgrade" && user.safe_tier >= config.economy.safe.maxTier) {
+    if (
+      item.id === "safe_upgrade" &&
+      user.safe_tier >= config.economy.safe.maxTier
+    ) {
       throw new Error("Your safe is already at maximum tier!")
     }
 
@@ -108,9 +128,17 @@ export class ShopService {
     if (item.category === "upgrades" && itemId === "safe_upgrade") {
       // For safe upgrades, use the dedicated upgrade method which handles its own transaction
       await economyService.upgradeSafe(userId)
-    } else if (item.category === "boosts" && itemId === "xp_boost" && item.xpAmount) {
+    } else if (
+      item.category === "boosts" &&
+      itemId === "xp_boost" &&
+      item.xpAmount
+    ) {
       // For XP boosts, remove balance and add XP
-      await economyService.removeBalance(userId, item.price, `Purchased ${item.name}`)
+      await economyService.removeBalance(
+        userId,
+        item.price,
+        `Purchased ${item.name}`
+      )
       const levelingService = new LevelingService(this.client)
       await levelingService.addXP(userId, item.xpAmount, "XP Boost item")
     } else {
@@ -130,24 +158,30 @@ export class ShopService {
         })
 
         // Log transaction
-        await this.client.database.logTransaction(userId, "remove", item.price, `Purchased ${item.name}`)
+        await this.client.database.logTransaction(
+          userId,
+          "remove",
+          item.price,
+          `Purchased ${item.name}`
+        )
 
         // Add to inventory
-        const existingItem = await this.client.database.get<InventoryItemRecord>(
-          "SELECT quantity FROM inventory WHERE user_id = ? AND item_id = ?",
-          [userId, itemId],
-        )
+        const existingItem =
+          await this.client.database.get<InventoryItemRecord>(
+            "SELECT quantity FROM inventory WHERE user_id = ? AND item_id = ?",
+            [userId, itemId]
+          )
 
         if (existingItem && item.stackable) {
           await this.client.database.run(
             "UPDATE inventory SET quantity = quantity + 1 WHERE user_id = ? AND item_id = ?",
-            [userId, itemId],
+            [userId, itemId]
           )
         } else if (!existingItem) {
-          await this.client.database.run("INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, 1)", [
-            userId,
-            itemId,
-          ])
+          await this.client.database.run(
+            "INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, 1)",
+            [userId, itemId]
+          )
         } else {
           throw new Error("You already own this item and it cannot be stacked.")
         }
@@ -158,10 +192,11 @@ export class ShopService {
   }
 
   async getUserInventory(userId: string): Promise<UserInventoryItem[]> {
-    const inventoryRecords = await this.client.database.all<InventoryItemRecord>(
-      "SELECT item_id, quantity, purchased_at FROM inventory WHERE user_id = ?",
-      [userId],
-    )
+    const inventoryRecords =
+      await this.client.database.all<InventoryItemRecord>(
+        "SELECT item_id, quantity, purchased_at FROM inventory WHERE user_id = ?",
+        [userId]
+      )
     return inventoryRecords
       .map((invRec) => {
         const itemDetails = this.getItemById(invRec.item_id)
@@ -178,7 +213,10 @@ export class ShopService {
     const canUpgrade = currentTier < maxTier
 
     const nextUpgradeCost = canUpgrade
-      ? Math.floor(config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1))
+      ? Math.floor(
+          config.economy.safe.baseCost *
+            Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1)
+        )
       : 0
 
     return {

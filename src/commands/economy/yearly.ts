@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { EconomyService } from "../../services/EconomyService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -9,13 +12,20 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("yearly")
     .setDescription("Claim your yearly reward or check its status")
-    .addSubcommand((subcommand) => subcommand.setName("claim").setDescription("Claim your yearly reward"))
     .addSubcommand((subcommand) =>
-      subcommand.setName("status").setDescription("Check the status of your yearly reward"),
+      subcommand.setName("claim").setDescription("Claim your yearly reward")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("status")
+        .setDescription("Check the status of your yearly reward")
     ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const subcommand = interaction.options.getSubcommand()
     const economyService = new EconomyService(client)
 
@@ -34,14 +44,16 @@ const command: Command = {
 async function handleYearlyClaim(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   try {
     const { amount } = await economyService.claimYearly(interaction.user.id)
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("🎉 Yearly Reward Claimed")
-      .setDescription(`You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your yearly reward!`)
+      .setDescription(
+        `You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your yearly reward!`
+      )
       .addFields({
         name: "✨ XP Gained",
         value: `+${config.economy.yearly.xpReward} XP`,
@@ -50,7 +62,9 @@ async function handleYearlyClaim(
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError((error as any).message)
+    const errorEmbed = client.errorHandler.createUserError(
+      (error as any).message
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -59,7 +73,7 @@ async function handleYearlyClaim(
 async function handleYearlyStatus(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   try {
     const status = await economyService.getYearlyStatus(interaction.user.id)
@@ -94,7 +108,8 @@ async function handleYearlyStatus(
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
     const errorEmbed = client.errorHandler.createUserError(
-      (error as any).message || "An error occurred while checking your yearly reward status.",
+      (error as any).message ||
+        "An error occurred while checking your yearly reward status."
     )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }

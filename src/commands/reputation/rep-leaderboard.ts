@@ -1,4 +1,8 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type EmbedBuilder,
+} from "discord.js"
 import { ReputationService } from "../../services/ReputationService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { Pagination } from "../../utils/Pagination"
@@ -14,18 +18,26 @@ const command: Command = {
         .setName("type")
         .setDescription("Leaderboard type")
         .setRequired(true)
-        .addChoices({ name: "Given", value: "given" }, { name: "Received", value: "received" }),
+        .addChoices(
+          { name: "Given", value: "given" },
+          { name: "Received", value: "received" }
+        )
     ),
   category: "social",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const type = interaction.options.getString("type")! as "given" | "received"
     const reputationService = new ReputationService(client)
 
     const topUsers = await reputationService.getReputationLeaderboard(type, 50)
 
     if (topUsers.length === 0) {
-      const embed = CustomEmbedBuilder.info().setDescription("No users found in the leaderboard yet.")
+      const embed = CustomEmbedBuilder.info().setDescription(
+        "No users found in the leaderboard yet."
+      )
       await interaction.reply({ embeds: [embed] })
       return
     }
@@ -37,7 +49,9 @@ const command: Command = {
     for (let i = 0; i < topUsers.length; i += usersPerPage) {
       const pageUsers = topUsers.slice(i, i + usersPerPage)
       const embed = CustomEmbedBuilder.info()
-        .setTitle(`📊 Reputation Leaderboard - ${type.charAt(0).toUpperCase() + type.slice(1)}`)
+        .setTitle(
+          `📊 Reputation Leaderboard - ${type.charAt(0).toUpperCase() + type.slice(1)}`
+        )
         .setDescription(`Top users by reputation ${type}`)
 
       let description = ""
