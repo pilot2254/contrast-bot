@@ -3,15 +3,16 @@ import type {
   SlashCommandBuilder,
   ContextMenuCommandBuilder,
   SlashCommandSubcommandsOnlyBuilder,
+  SlashCommandOptionsOnlyBuilder,
   AutocompleteInteraction,
 } from "discord.js"
 import type { ExtendedClient } from "../structures/ExtendedClient"
 
-// Define a more specific type for command data
+// More flexible command data type that accepts all valid command builders
 export type CommandData =
   | SlashCommandBuilder
-  | Omit<SlashCommandBuilder, "addSubcommand" | "addSubcommandGroup">
   | SlashCommandSubcommandsOnlyBuilder
+  | SlashCommandOptionsOnlyBuilder
   | ContextMenuCommandBuilder
 
 export interface Command {
@@ -19,9 +20,6 @@ export interface Command {
   category: string
   cooldown?: number
   developerOnly?: boolean
-  execute: (
-    interaction: ChatInputCommandInteraction, // Or a union type if you have context menu commands, etc.
-    client: ExtendedClient,
-  ) => Promise<void>
+  execute: (interaction: ChatInputCommandInteraction, client: ExtendedClient) => Promise<void>
   autocomplete?: (interaction: AutocompleteInteraction, client: ExtendedClient) => Promise<void>
 }

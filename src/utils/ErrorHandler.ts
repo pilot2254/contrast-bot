@@ -6,6 +6,7 @@ import {
   type MessageComponentInteraction,
   type ModalSubmitInteraction,
   type AutocompleteInteraction,
+  type CommandInteractionOption,
 } from "discord.js"
 import { config } from "../config/bot.config"
 import type { ExtendedClient } from "../structures/ExtendedClient"
@@ -24,7 +25,7 @@ interface ErrorContext {
   guildId?: string | null
   channelId?: string | null
   userId?: string | null
-  options?: unknown // Can be more specific if options structure is known
+  options?: unknown
   timestamp?: string
   [key: string]: unknown // For other custom context properties
 }
@@ -94,17 +95,23 @@ export class ErrorHandler {
         channel: interaction.channel?.id,
         commandName: "commandName" in interaction ? interaction.commandName : undefined,
       }
-      if ("options" in interaction && interaction.options && "data" in interaction.options) {
-        // @ts-expect-error options.data is not on all interaction types, but we check above
-        sanitized.interaction_options = interaction.options.data.map(
-          (opt: { name: string; type: unknown; value: unknown }) => ({
-            name: opt.name,
-            type: opt.type,
-            value: typeof opt.value === "string" && opt.value.length > 100 ? "[TRUNCATED]" : opt.value,
-          }),
-        )
+
+      // Handle command options safely
+      if ("options" in interaction && interaction.options) {
+        // For ChatInputCommandInteraction
+        if ("data" in interaction.options && Array.isArray(interaction.options.data)) {
+          sanitized.interaction_options = interaction.options.data.map((opt: CommandInteractionOption) => {
+            const value = opt.value !== undefined ? opt.value : null
+            return {
+              name: opt.name,
+              type: opt.type,
+              value: typeof value === "string" && value.length > 100 ? "[TRUNCATED]" : value,
+            }
+          })
+        }
       }
     }
+
     // Include other custom properties from context if they are not sensitive
     for (const key in context) {
       if (
@@ -129,9 +136,9 @@ export class ErrorHandler {
         "An unexpected error occurred while processing your request.",
         `Error ID: \`${errorId}\`\nPlease report this to the developers if the issue persists.`,
       )
-      if (interaction.isRepliable()) {
+      if ("reply" in interaction) {
         // Check if interaction is repliable
-        if (interaction.replied || interaction.deferred) {
+        if ("replied" in interaction && (interaction.replied || interaction.deferred)) {
           await interaction.followUp({ embeds: [embed], ephemeral: true })
         } else {
           await interaction.reply({ embeds: [embed], ephemeral: true })
@@ -149,7 +156,9 @@ export class ErrorHandler {
     timestamp: string,
   ): Promise<void> {
     try {
-      const channel = (await this.client.channels.fetch(process.env.ERROR_LOG_CHANNEL!)) as TextChannel
+      if (!process.env.ERROR_LOG_CHANNEL) return
+
+      const channel = (await this.client.channels.fetch(process.env.ERROR_LOG_CHANNEL)) as TextChannel | null
       if (!channel || !channel.isTextBased()) return
 
       const embed = new EmbedBuilder()

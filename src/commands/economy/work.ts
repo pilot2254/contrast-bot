@@ -55,9 +55,9 @@ const command: Command = {
       }
 
       await interaction.reply({ embeds: [embed] })
-    } catch (error: any) {
+    } catch (error: unknown) {
       client.logger.error("Error in work command:", error)
-      const errorEmbed = client.errorHandler.createUserError(error.message)
+      const errorEmbed = client.errorHandler.createUserError((error as Error).message)
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     }
   },

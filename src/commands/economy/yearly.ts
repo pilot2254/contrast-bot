@@ -49,8 +49,8 @@ async function handleYearlyClaim(
       })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as any).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -92,9 +92,9 @@ async function handleYearlyStatus(
       })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorEmbed = client.errorHandler.createUserError(
-      error.message || "An error occurred while checking your yearly reward status.",
+      (error as any).message || "An error occurred while checking your yearly reward status.",
     )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }

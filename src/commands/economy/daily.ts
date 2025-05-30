@@ -68,8 +68,8 @@ async function handleDailyClaim(
     }
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as Error).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }

@@ -101,8 +101,8 @@ const command: Command = {
       } else {
         await interaction.reply({ embeds: [embed] })
       }
-    } catch (error: any) {
-      const errorEmbed = client.errorHandler.createUserError(error.message)
+    } catch (error: unknown) {
+      const errorEmbed = client.errorHandler.createUserError((error as any).message)
       if (interaction.deferred) {
         await interaction.editReply({ embeds: [errorEmbed] })
       } else {

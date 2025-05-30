@@ -32,8 +32,15 @@ export class CommandHandler {
 
           if (command && "data" in command && "execute" in command) {
             this.client.commands.set(command.data.name, command)
-            // Assuming command.data.toJSON() is compatible; SlashCommandBuilder's toJSON is.
-            commandsToRegister.push(command.data.toJSON() as RESTPostAPIChatInputApplicationCommandsJSONBody)
+
+            // Convert command data to JSON safely
+            let commandJson: RESTPostAPIChatInputApplicationCommandsJSONBody
+            try {
+              commandJson = command.data.toJSON() as RESTPostAPIChatInputApplicationCommandsJSONBody
+              commandsToRegister.push(commandJson)
+            } catch (error) {
+              this.client.logger.warn(`Failed to convert command ${command.data.name} to JSON:`, error)
+            }
           } else {
             this.client.logger.warn(`Command at ${filePath} is missing required 'data' or 'execute' properties`)
           }

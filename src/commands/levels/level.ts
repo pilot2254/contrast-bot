@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
 import { LevelingService } from "../../services/LevelingService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { Pagination } from "../../utils/Pagination"
@@ -85,7 +85,7 @@ async function handleLevelLeaderboard(
   }
 
   // Create pages (10 users per page)
-  const pages: any[] = []
+  const pages: EmbedBuilder[] = []
   const usersPerPage = 10
 
   for (let i = 0; i < topUsers.length; i += usersPerPage) {

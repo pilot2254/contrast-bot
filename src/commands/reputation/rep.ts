@@ -73,8 +73,8 @@ async function handleRepGive(
       .setFooter({ text: "You can give reputation to this user again in 24 hours" })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as Error).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -102,8 +102,8 @@ async function handleRepTake(
       .setFooter({ text: "You can affect this user's reputation again in 24 hours" })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as Error).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }

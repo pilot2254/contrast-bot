@@ -14,10 +14,10 @@ import { CommandHandler } from "../handlers/CommandHandler"
 import { EventHandler } from "../handlers/EventHandler"
 import path from "path"
 import fs from "fs/promises"
-import type { Command } from "../types/Command" // Import the Command type
+import type { Command } from "../types/Command"
 
 export class ExtendedClient extends Client {
-  public commands: Collection<string, Command> // Use the specific Command type
+  public commands: Collection<string, Command>
   public cooldowns: Collection<string, Collection<string, number>>
   public database: Database
   public logger: Logger
@@ -31,7 +31,7 @@ export class ExtendedClient extends Client {
 
     this.commands = new Collection()
     this.cooldowns = new Collection()
-    this.logger = new Logger()
+    this.logger = new Logger("ExtendedClient")
     this.database = new Database(config.database.path)
     this.errorHandler = new ErrorHandler(this)
     this.commandHandler = new CommandHandler(this)
@@ -50,11 +50,11 @@ export class ExtendedClient extends Client {
       this.logger.success("Database initialized successfully")
 
       this.logger.info("Loading commands...")
-      await this.commandHandler.loadCommands() // This now uses dynamic import
+      await this.commandHandler.loadCommands()
       this.logger.success(`Loaded ${this.commands.size} commands`)
 
       this.logger.info("Loading events...")
-      await this.eventHandler.loadEvents() // This now uses dynamic import
+      await this.eventHandler.loadEvents()
       this.logger.success("Events loaded successfully")
 
       this.logger.info("Logging in to Discord...")
@@ -125,11 +125,10 @@ export class ExtendedClient extends Client {
     if (!config.presence.enabled || config.presence.activities.length === 0) {
       return
     }
-    // Start rotation with the second activity if more than one, or keep first if only one.
     this.currentActivityIndex = config.presence.activities.length > 1 ? 1 : 0
 
     setInterval(() => {
-      if (!this.user) return // Guard against user not being available
+      if (!this.user) return
 
       const activityConfig = config.presence.activities[this.currentActivityIndex]
       this.user.setPresence({
@@ -155,10 +154,8 @@ export class ExtendedClient extends Client {
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildPresences, // Often needed for full member data or presence updates
+        GatewayIntentBits.GuildPresences,
       ],
-      // Presence is set dynamically after login by startPresenceRotation
-      // So, initial presence here can be minimal or omitted if handled by rotation.
       presence:
         config.presence.enabled && config.presence.activities.length > 0
           ? {

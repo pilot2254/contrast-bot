@@ -59,7 +59,7 @@ const command: Command = {
       }
 
       await interaction.reply({ embeds: [embed] })
-    } catch (error: any) {
+    } catch (error: unknown) {
       client.logger.error("Error in bot-stats command:", error)
       const errorEmbed = client.errorHandler.createUserError("An error occurred while fetching bot statistics.")
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })

@@ -1,33 +1,27 @@
 import type { ExtendedClient } from "../structures/ExtendedClient"
 import { config } from "../config/bot.config"
 import { LevelingService } from "./LevelingService"
-import { EconomyService } from "./EconomyService" // Import directly
+import { EconomyService } from "./EconomyService"
 
 // Define interfaces for shop items and inventory
-interface ShopItemBase {
+export interface ShopItemBase {
   id: string
   name: string
   description: string
-  category: "upgrades" | "boosts" | "general" | string // Allow other categories
-  price: number // Base price, can be overridden for dynamic items
+  category: "upgrades" | "boosts" | "items" | string
+  price: number
   emoji?: string
   stackable?: boolean
   requiredLevel?: number
-  xpAmount?: number // For XP boosts
+  xpAmount?: number
 }
 
-// Specific item types can extend ShopItemBase if needed
-// interface XpBoostItem extends ShopItemBase {
-//   category: "boosts";
-//   xpAmount: number;
-// }
-
-type ShopItem = ShopItemBase // For now, ShopItemBase is sufficient
+export type ShopItem = ShopItemBase
 
 interface InventoryItemRecord {
   item_id: string
   quantity: number
-  purchased_at: string // ISO Date string
+  purchased_at: string
 }
 
 interface UserInventoryItem extends InventoryItemRecord, ShopItem {}
@@ -36,11 +30,12 @@ interface UserSafeUpgradeInfo {
   tier: number
   capacity: number
   nextUpgradeCost: number
+  maxTier: number
+  canUpgrade: boolean
 }
 
 interface UserUpgrades {
   safe: UserSafeUpgradeInfo
-  // other upgrades...
 }
 
 export class ShopService {
@@ -60,7 +55,7 @@ export class ShopService {
           if (item.id === "safe_upgrade") {
             const user = await this.client.database.getUser(userId)
             const upgradeCost = Math.floor(
-              config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1), // safe_tier is 1-based
+              config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, user.safe_tier - 1),
             )
             return { ...item, price: upgradeCost }
           }
@@ -81,7 +76,7 @@ export class ShopService {
 
     if (item.id === "safe_upgrade") {
       const user = await this.client.database.getUser(userId)
-      const currentTier = user.safe_tier || 1 // Default to tier 1 if not set
+      const currentTier = user.safe_tier || 1
       const upgradeCost = Math.floor(
         config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1),
       )
@@ -102,19 +97,42 @@ export class ShopService {
       throw new Error(`You need to be level ${item.requiredLevel} to buy this item.`)
     }
 
-    // Use a transaction for the entire buy operation
-    return this.client.database.transaction(async () => {
-      // Deduct balance (use EconomyService for consistency if it handles transactions)
-      const economyService = new EconomyService(this.client)
-      await economyService._removeBalanceInternal(userId, item.price, `Purchased ${item.name}`)
+    // Check if safe is already at max tier
+    if (item.id === "safe_upgrade" && user.safe_tier >= config.economy.safe.maxTier) {
+      throw new Error("Your safe is already at maximum tier!")
+    }
 
-      if (item.category === "upgrades" && itemId === "safe_upgrade") {
-        await economyService.upgradeSafe(userId) // This should handle its own DB updates for user's safe
-      } else if (item.category === "boosts" && itemId === "xp_boost" && item.xpAmount) {
-        const levelingService = new LevelingService(this.client)
-        await levelingService.addXP(userId, item.xpAmount, "XP Boost item")
-      } else {
-        // Regular inventory item
+    // Use EconomyService for the purchase
+    const economyService = new EconomyService(this.client)
+
+    if (item.category === "upgrades" && itemId === "safe_upgrade") {
+      // For safe upgrades, use the dedicated upgrade method which handles its own transaction
+      await economyService.upgradeSafe(userId)
+    } else if (item.category === "boosts" && itemId === "xp_boost" && item.xpAmount) {
+      // For XP boosts, remove balance and add XP
+      await economyService.removeBalance(userId, item.price, `Purchased ${item.name}`)
+      const levelingService = new LevelingService(this.client)
+      await levelingService.addXP(userId, item.xpAmount, "XP Boost item")
+    } else {
+      // For regular inventory items, handle the purchase and inventory update
+      await this.client.database.transaction(async () => {
+        // Remove balance using the database directly since we're in a transaction
+        const currentUser = await this.client.database.getUser(userId)
+
+        // Check balance again within transaction
+        if (currentUser.balance < item.price) {
+          throw new Error(`Insufficient balance`)
+        }
+
+        // Update balance
+        await this.client.database.updateUser(userId, {
+          balance: currentUser.balance - item.price,
+        })
+
+        // Log transaction
+        await this.client.database.logTransaction(userId, "remove", item.price, `Purchased ${item.name}`)
+
+        // Add to inventory
         const existingItem = await this.client.database.get<InventoryItemRecord>(
           "SELECT quantity FROM inventory WHERE user_id = ? AND item_id = ?",
           [userId, itemId],
@@ -122,8 +140,8 @@ export class ShopService {
 
         if (existingItem && item.stackable) {
           await this.client.database.run(
-            "UPDATE inventory SET quantity = quantity + ? WHERE user_id = ? AND item_id = ?",
-            [existingItem.quantity + 1, userId, itemId], // Correctly increment
+            "UPDATE inventory SET quantity = quantity + 1 WHERE user_id = ? AND item_id = ?",
+            [userId, itemId],
           )
         } else if (!existingItem) {
           await this.client.database.run("INSERT INTO inventory (user_id, item_id, quantity) VALUES (?, ?, 1)", [
@@ -131,12 +149,12 @@ export class ShopService {
             itemId,
           ])
         } else {
-          // Item exists but is not stackable
           throw new Error("You already own this item and it cannot be stacked.")
         }
-      }
-      return { success: true, item }
-    })
+      })
+    }
+
+    return { success: true, item }
   }
 
   async getUserInventory(userId: string): Promise<UserInventoryItem[]> {
@@ -156,14 +174,23 @@ export class ShopService {
   async getUserUpgrades(userId: string): Promise<UserUpgrades> {
     const user = await this.client.database.getUser(userId)
     const currentTier = user.safe_tier || 1
+    const maxTier = config.economy.safe.maxTier || Number.POSITIVE_INFINITY
+    const canUpgrade = currentTier < maxTier
+
+    const nextUpgradeCost = canUpgrade
+      ? Math.floor(config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1))
+      : 0
+
     return {
       safe: {
         tier: currentTier,
         capacity: user.safe_capacity,
-        nextUpgradeCost: Math.floor(
-          config.economy.safe.baseCost * Math.pow(config.economy.safe.upgradeMultiplier, currentTier - 1),
-        ),
+        nextUpgradeCost,
+        maxTier: maxTier === Number.POSITIVE_INFINITY ? 999 : maxTier,
+        canUpgrade,
       },
     }
   }
 }
+
+export type { ShopItem as ShopItemType }

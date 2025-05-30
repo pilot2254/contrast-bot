@@ -51,8 +51,8 @@ async function handleMonthlyClaim(
       })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as any).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -95,9 +95,9 @@ async function handleMonthlyStatus(
       })
 
     await interaction.reply({ embeds: [embed] })
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorEmbed = client.errorHandler.createUserError(
-      error.message || "An error occurred while checking your monthly reward status.",
+      (error as any).message || "An error occurred while checking your monthly reward status.",
     )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }

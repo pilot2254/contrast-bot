@@ -1,10 +1,11 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
 import { ShopService } from "../../services/ShopService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
 import { Pagination } from "../../utils/Pagination"
 import type { ExtendedClient } from "../../structures/ExtendedClient"
 import type { Command } from "../../types/Command"
+import type { ShopItemType as ShopItem } from "../../services/ShopService"
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -66,7 +67,7 @@ async function handleShopList(
   }
 
   // Group items by category if no category filter
-  const itemsByCategory: Record<string, any[]> = {}
+  const itemsByCategory: Record<string, ShopItem[]> = {}
 
   if (!category) {
     items.forEach((item) => {
@@ -80,7 +81,7 @@ async function handleShopList(
   }
 
   // Create pages
-  const pages: any[] = []
+  const pages: EmbedBuilder[] = []
 
   Object.entries(itemsByCategory).forEach(([cat, catItems]) => {
     const embed = CustomEmbedBuilder.economy()
@@ -147,8 +148,8 @@ async function handleShopBuy(
 
       await interaction.reply({ embeds: [embed] })
     }
-  } catch (error: any) {
-    const errorEmbed = client.errorHandler.createUserError(error.message)
+  } catch (error: unknown) {
+    const errorEmbed = client.errorHandler.createUserError((error as any).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }

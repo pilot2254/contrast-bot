@@ -45,8 +45,12 @@ async function handleSpecificCommandHelp(
   // Create embed
   const embed = CustomEmbedBuilder.info()
     .setTitle(`Command: /${data.name}`)
-    .setDescription(data.description)
     .addFields({ name: "Category", value: category.charAt(0).toUpperCase() + category.slice(1), inline: true })
+
+  // Safely access description
+  if ("description" in data && data.description) {
+    embed.setDescription(data.description)
+  }
 
   if (cooldown) {
     embed.addFields({ name: "Cooldown", value: `${cooldown} seconds`, inline: true })
@@ -56,8 +60,8 @@ async function handleSpecificCommandHelp(
     embed.addFields({ name: "Developer Only", value: "Yes", inline: true })
   }
 
-  // Add options if any
-  if (data.options && data.options.length > 0) {
+  // Add options if any (only for slash commands)
+  if ("options" in data && data.options && data.options.length > 0) {
     let optionsText = ""
 
     // Handle subcommands
@@ -115,7 +119,8 @@ async function handleGeneralHelp(interaction: ChatInputCommandInteraction, clien
 
     let commandList = ""
     commands.forEach((cmd) => {
-      commandList += `\`/${cmd.data.name}\` - ${cmd.data.description}\n`
+      const description = "description" in cmd.data ? cmd.data.description : "No description"
+      commandList += `\`/${cmd.data.name}\` - ${description}\n`
     })
 
     embed.addFields({ name: "Available Commands", value: commandList })

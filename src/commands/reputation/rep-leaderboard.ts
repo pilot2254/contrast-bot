@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
 import { ReputationService } from "../../services/ReputationService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { Pagination } from "../../utils/Pagination"
@@ -31,7 +31,7 @@ const command: Command = {
     }
 
     // Create pages (10 users per page)
-    const pages: any[] = []
+    const pages: EmbedBuilder[] = []
     const usersPerPage = 10
 
     for (let i = 0; i < topUsers.length; i += usersPerPage) {

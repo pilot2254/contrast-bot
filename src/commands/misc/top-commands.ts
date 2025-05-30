@@ -31,7 +31,7 @@ const command: Command = {
 
       embed.setDescription(description)
       await interaction.reply({ embeds: [embed] })
-    } catch (error: any) {
+    } catch (error: unknown) {
       client.logger.error("Error in top-commands:", error)
       const errorEmbed = client.errorHandler.createUserError("An error occurred while fetching command statistics.")
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
