@@ -1,6 +1,6 @@
 {
   "name": "contrast-bot",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "A feature-rich Discord bot with economy, gambling, and leveling systems",
   "main": "dist/index.js",
   "type": "commonjs",
