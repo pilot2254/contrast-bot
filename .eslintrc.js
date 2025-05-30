@@ -5,7 +5,7 @@ module.exports = {
   extends: [
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
-    "prettier", // This disables ESLint rules that conflict with Prettier
+    "prettier",
   ],
   env: {
     node: true,
@@ -17,10 +17,7 @@ module.exports = {
     project: "./tsconfig.json",
   },
   rules: {
-    // Prettier integration
     "prettier/prettier": ["error", { endOfLine: "auto" }],
-
-    // TypeScript specific rules
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": [
       "warn",
@@ -33,11 +30,18 @@ module.exports = {
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off",
     "@typescript-eslint/no-var-requires": "error",
-
-    // General rules
-    "no-console": "off", // Allow console.log for logging
+    "no-console": "off",
     "prefer-const": "error",
     "no-var": "error",
   },
-  ignorePatterns: ["dist/", "node_modules/", "coverage/", "logs/", "backups/", "*.log", "data/bot.db*", ".github/"],
+  ignorePatterns: [
+    "dist/",
+    "node_modules/",
+    "coverage/",
+    "logs/",
+    "backups/",
+    "*.log",
+    "data/bot.db*",
+    ".github/",
+  ],
 }

@@ -27,8 +27,10 @@ export class CommandHandler {
 
     for (const folder of commandFolders) {
       const folderPath = join(commandsPath, folder)
-      const commandFiles = readdirSync(folderPath).filter(
-        (file) => file.endsWith(".ts") || file.endsWith(".js")
+      const commandFiles = readdirSync(folderPath).filter((file) =>
+        process.env.NODE_ENV === "production"
+          ? file.endsWith(".js")
+          : file.endsWith(".ts") || file.endsWith(".js")
       )
 
       for (const file of commandFiles) {

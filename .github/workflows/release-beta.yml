@@ -2,10 +2,9 @@ name: Create Beta Pre-release
 
 on:
   push:
-    branches:
-      - beta # Trigger when code is pushed/merged to beta
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-*' # Match pre-release tags (v1.2.3-beta.1)
 
-# Permissions needed to create releases and tags
 permissions:
   contents: write
 
@@ -13,31 +12,35 @@ jobs:
   create_prerelease:
     name: Create Beta Pre-release
     runs-on: ubuntu-latest
-    # This job assumes that the code pushed to 'beta' has already passed CI checks
-    # (e.g., via the ci.yml workflow on a PR or the push itself).
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for potential changelog generation
+          fetch-depth: 0 # Fetch all history for changelog generation
 
-      - name: Get version from package.json
-        id: package_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: ".github/changelog-config.json"
+          toTag: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Beta Pre-release
         uses: ncipollo/release-action@v1
         with:
-          # GITHUB_TOKEN is automatically provided
-          tag: v${{ steps.package_version.outputs.version }}-beta.${{ github.run_number }}
-          name: Pre-release v${{ steps.package_version.outputs.version }}-beta (Build ${{ github.run_number }})
+          tag: ${{ github.ref_name }}
+          name: Pre-release v${{ steps.get_version.outputs.version }}
           body: |
-            Automated beta pre-release.
-            Version: ${{ steps.package_version.outputs.version }}
-            Branch: beta
-            Build: ${{ github.run_number }}
-            Refer to commit history for detailed changes.
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.fromTag }}...${{ github.ref_name }}
           prerelease: true
           draft: false
-          # allowUpdates: true # Consider if you might push multiple times for the same version to beta

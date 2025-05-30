@@ -2,10 +2,10 @@ name: Create Main Release
 
 on:
   push:
-    branches:
-      - main # Trigger when code is pushed/merged to main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # Match standard version tags (v1.2.3)
+      - '!v*-*' # Exclude pre-release tags (v1.2.3-beta.1)
 
-# Permissions needed to create releases and tags
 permissions:
   contents: write
 
@@ -13,32 +13,36 @@ jobs:
   create_release:
     name: Create Main Release
     runs-on: ubuntu-latest
-    # This job assumes that the code pushed to 'main' has already passed CI checks.
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history for potential changelog generation
+          fetch-depth: 0 # Fetch all history for changelog generation
 
-      - name: Get version from package.json
-        id: package_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Generate changelog
+        id: changelog
+        uses: mikepenz/release-changelog-builder-action@v4
+        with:
+          configuration: ".github/changelog-config.json"
+          toTag: ${{ github.ref }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Main Release
         uses: ncipollo/release-action@v1
         with:
-          # GITHUB_TOKEN is automatically provided
-          # Assumes package.json version is updated before merging to main for a new release.
-          # If not, this tag might conflict on subsequent pushes with the same version.
-          # Consider using 'allowUpdates: true' or a more unique tag like v${{ steps.package_version.outputs.version }}.${{ github.run_number }}
-          tag: v${{ steps.package_version.outputs.version }}
-          name: Release v${{ steps.package_version.outputs.version }}
+          tag: ${{ github.ref_name }}
+          name: Release v${{ steps.get_version.outputs.version }}
           body: |
-            Automated main release.
-            Version: ${{ steps.package_version.outputs.version }}
-            Branch: main
-            Refer to commit history for detailed changes.
+            ## What's Changed
+            ${{ steps.changelog.outputs.changelog }}
+            
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.changelog.outputs.fromTag }}...${{ github.ref_name }}
           prerelease: false
           draft: false
-          # allowUpdates: true # Use if you might re-release the same version number to main.
+          makeLatest: true

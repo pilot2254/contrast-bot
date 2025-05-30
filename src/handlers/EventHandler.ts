@@ -15,8 +15,10 @@ export class EventHandler {
 
   async loadEvents(): Promise<void> {
     const eventsPath = join(__dirname, "..", "events")
-    const eventFiles = readdirSync(eventsPath).filter(
-      (file) => file.endsWith(".ts") || file.endsWith(".js")
+    const eventFiles = readdirSync(eventsPath).filter((file) =>
+      process.env.NODE_ENV === "production"
+        ? file.endsWith(".js")
+        : file.endsWith(".ts") || file.endsWith(".js")
     )
 
     for (const file of eventFiles) {
