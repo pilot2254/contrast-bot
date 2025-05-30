@@ -10,98 +10,110 @@ We use a three-branch workflow:
 
 ## Development Workflow
 
-1. **Daily Development**:
-   \`\`\`bash
+1. **Daily Development on Canary**:
+   ```bash
    git checkout canary
    git pull origin canary
    # Make your changes
    git add .
    git commit -m "feat: add new feature"
    git push origin canary
-   \`\`\`
-
-2. **Create Release**:
-   \`\`\`bash
-   npm version patch    # or minor/major
-   git push origin --tags
+   
+   # Optional: Update version for tracking
+   npm version patch
    git push origin canary
-   \`\`\`
+   ```
 
-3. **Promote to Beta**:
+2. **Promote to Beta**:
    - Create PR from `canary` → `beta`
    - Test thoroughly on beta branch
    - Merge when ready for testing
 
-4. **Promote to Main**:
+3. **Promote to Main & Release**:
    - Create PR from `beta` → `main`
-   - Merge when everything is stable and ready for production
+   - Merge when everything is stable
+   - Create official release:
+   ```bash
+   git checkout main
+   git pull origin main
+   npm version patch    # Creates official release
+   git push origin --tags
+   git push origin main
+   ```
 
 ## Release Process
 
-### Creating Releases
+### Manual Releases Only
+- No automated release creation
+- Create releases manually when needed
+- Full control over release timing and content
 
-We use `npm version` commands to create releases, which automatically:
-- Updates `package.json` version
-- Creates a git tag
-- Triggers GitHub Actions to create releases
+### Creating a Manual Release
 
-### Simple Versioning
+**Option 1: GitHub Web Interface**
+1. Go to repository → Releases → "Create a new release"
+2. Choose or create a tag (e.g., `v2.0.1`)
+3. Write release notes
+4. Publish when ready
 
-\`\`\`bash
-# For bug fixes and small changes
-npm version patch    # 2.0.0 → 2.0.1
+**Option 2: Command Line + GitHub**
+```bash
+# Create and push tag
+git checkout main
+git pull origin main
+git tag v2.0.1
+git push origin v2.0.1
 
-# For new features  
-npm version minor    # 2.0.1 → 2.1.0
+# Then create release on GitHub using the tag
+```
 
-# For breaking changes
-npm version major    # 2.1.0 → 3.0.0
-\`\`\`
+### Version Updates
 
-### Quick Release Command
+```bash
+# Update package.json version (optional)
+npm version patch    # Updates version number
+git push origin main
 
-\`\`\`bash
-# Most common: patch release
-npm version patch && git push origin --tags && git push origin canary
-\`\`\`
+# Create release manually when you want to
+```
 
-## Automatic Release Creation
+## Manual Release Creation
 
-When you push tags, GitHub Actions automatically:
-- Creates a release on GitHub
-- Generates changelog from PR labels since last release
-
-## PR Labeling for Changelogs
-
-Label your PRs to get organized changelogs:
-
-- `feature` or `enhancement` → 🚀 Features section
-- `fix` or `bug` → 🐛 Bug Fixes section  
-- `chore`, `dependencies`, `documentation` → 🧰 Maintenance section
+**No automatic releases** - you have full control:
+- Create releases when you decide
+- Write custom release notes
+- Choose which commits/features to highlight
+- Release on your schedule
 
 ## Example Workflow
 
-\`\`\`bash
+```bash
 # 1. Develop on canary
 git checkout canary
-# ... make changes ...
+git commit -m "feat: add new feature"
 git push origin canary
 
-# 2. Create release
-npm version patch  # Creates v2.0.1
+# 2. Optional version tracking
+npm version patch  # Just updates package.json
+git push origin canary
+
+# 3. Create PR: canary → beta (test)
+# 4. Create PR: beta → main (when stable)
+
+# 5. Official release from main
+git checkout main
+git pull origin main
+npm version patch  # Creates v2.0.1 and GitHub release
 git push origin --tags
-git push origin canary
-
-# 3. Create PR: canary → beta (when ready for testing)
-# 4. Create PR: beta → main (when ready for production)
-\`\`\`
+git push origin main
+```
 
 ## Important Notes
 
-- **All releases are created from canary** - Simple and straightforward
+- **Canary versions**: For tracking only, no releases
+- **Main versions**: Create official GitHub releases
+- **Only main branch releases are marked as "latest"**
 - **Use PRs to promote** stable code through beta → main
-- **Use semantic versioning** for clear version history
-- **Label PRs properly** for automatic changelog generation
 
 ## Environment Variables
 

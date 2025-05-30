@@ -1,6 +1,6 @@
-# Simple Release Workflow
+# Manual Release Workflow
 
-This document outlines the simplified release workflow using standard semantic versioning.
+This document outlines the manual release workflow without automated GitHub releases.
 
 ## Branch Structure
 
@@ -8,55 +8,12 @@ This document outlines the simplified release workflow using standard semantic v
 - **`beta`** - Testing/staging branch (PRs from canary go here)
 - **`main`** - Production branch (PRs from beta go here when stable)
 
-## Release Process
+## Development Workflow
 
-### When working on canary and want to create a release:
+### When working on canary (daily development):
 
-\`\`\`bash
+```bash
 # Make sure you're on canary with latest changes
-git checkout canary
-git pull origin canary
-
-# Create a new version (choose one):
-npm version patch    # 2.0.0 → 2.0.1 (bug fixes)
-npm version minor    # 2.0.0 → 2.1.0 (new features)
-npm version major    # 2.0.0 → 3.0.0 (breaking changes)
-
-# Push the tag and changes
-git push origin --tags
-git push origin canary
-\`\`\`
-
-### That's it! 
-
-The GitHub Action will automatically:
-- Detect the new tag
-- Generate a changelog
-- Create a release on GitHub
-
-## Version Types
-
-- **patch** (`npm version patch`): Bug fixes, small changes
-- **minor** (`npm version minor`): New features, backwards compatible  
-- **major** (`npm version major`): Breaking changes
-
-## Quick Commands
-
-\`\`\`bash
-# For most updates (bug fixes, small features)
-npm version patch && git push origin --tags && git push origin canary
-
-# For new features
-npm version minor && git push origin --tags && git push origin canary
-
-# For breaking changes
-npm version major && git push origin --tags && git push origin canary
-\`\`\`
-
-## Example Workflow
-
-\`\`\`bash
-# Start development on canary
 git checkout canary
 git pull origin canary
 
@@ -64,18 +21,54 @@ git pull origin canary
 git add .
 git commit -m "feat: add new feature"
 git push origin canary
+```
 
-# Create release
-npm version minor  # Creates v2.1.0
-git push origin --tags
-git push origin canary
+### When ready for testing:
 
-# Later, create PRs to promote through beta → main when ready
-\`\`\`
+```bash
+# 1. Create PR: canary → beta (test thoroughly)
+# 2. Create PR: beta → main (when stable)
+```
 
-## Notes
+## Manual Release Process
 
-- All releases are created from the canary branch
-- Use PRs to promote stable releases through beta → main
-- The release workflow automatically generates changelogs from PR labels
-- Label your PRs with `feature`, `fix`, `bug`, `chore`, etc. for better changelogs
+When you want to create a release manually:
+
+### Option 1: GitHub Web Interface
+1. Go to your repository on GitHub
+2. Click "Releases" → "Create a new release"
+3. Choose a tag (e.g., `v2.0.1`) or create new one
+4. Write release notes manually
+5. Publish release
+
+### Option 2: Command Line + GitHub
+```bash
+# Create and push a tag
+git checkout main
+git pull origin main
+git tag v2.0.1
+git push origin v2.0.1
+
+# Then create release on GitHub web interface using the tag
+```
+
+## Version Management
+
+You can still use npm version commands for package.json updates:
+
+```bash
+# Update package.json version
+npm version patch    # 2.0.0 → 2.0.1
+npm version minor    # 2.0.0 → 2.1.0  
+npm version major    # 2.0.0 → 3.0.0
+
+# Push the changes
+git push origin main
+```
+
+## No Automated Releases
+
+- No automatic release creation
+- No automatic changelog generation
+- Manual control over when and how releases are created
+- Create releases only when you decide to
