@@ -3,7 +3,7 @@ name: Create Beta Pre-release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-*' # Match pre-release tags (v1.2.3-beta.1)
+      - 'v[0-9]+.[0-9]+.[0-9]+-beta.*' # Match beta tags (v1.2.3-beta.1)
 
 permissions:
   contents: write
@@ -38,6 +38,10 @@ jobs:
           tag: ${{ github.ref_name }}
           name: Pre-release v${{ steps.get_version.outputs.version }}
           body: |
+            ## Beta Release
+            
+            This is a beta release for testing purposes. Please report any issues.
+            
             ## What's Changed
             ${{ steps.changelog.outputs.changelog }}
             

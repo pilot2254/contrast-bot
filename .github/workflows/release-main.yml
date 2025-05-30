@@ -39,6 +39,8 @@ jobs:
           tag: ${{ github.ref_name }}
           name: Release v${{ steps.get_version.outputs.version }}
           body: |
+            ## Stable Release
+            
             ## What's Changed
             ${{ steps.changelog.outputs.changelog }}
             

@@ -1,0 +1,60 @@
+name: Release Workflow Guide
+
+# This is a documentation-only workflow file to guide developers
+# It doesn't actually run any actions
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Type of release (documentation only)'
+        required: true
+        default: 'beta'
+        type: choice
+        options:
+          - beta
+          - production
+
+jobs:
+  documentation:
+    name: Release Process Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Process Guide
+        run: |
+          echo "# Release Process Guide"
+          echo ""
+          echo "This is a documentation-only workflow to guide the release process."
+          echo ""
+          echo "## Beta Release Process"
+          echo ""
+          echo "1. Develop on canary branch"
+          echo "   git checkout canary"
+          echo "   # Make changes, commit, push"
+          echo ""
+          echo "2. Create beta release tag"
+          echo "   git checkout canary"
+          echo "   git pull origin canary"
+          echo "   npm version prerelease --preid=beta  # Creates v2.1.3-beta.0"
+          echo "   git push origin --tags"
+          echo ""
+          echo "3. Create PR: canary → beta"
+          echo "   # Test thoroughly on beta branch"
+          echo ""
+          echo "## Production Release Process"
+          echo ""
+          echo "1. Create PR: beta → main"
+          echo "   # Review and merge when ready"
+          echo ""
+          echo "2. Create production release tag"
+          echo "   git checkout main"
+          echo "   git pull origin main"
+          echo "   npm version patch  # Creates v2.1.3 (or minor/major as needed)"
+          echo "   git push origin --tags"
+          echo ""
+          echo "## Important Notes"
+          echo ""
+          echo "- Beta releases are created from the canary branch"
+          echo "- Production releases are created from the main branch"
+          echo "- Always create tags after code is finalized but before merging PRs"
+          echo "- Use semantic versioning (patch/minor/major) appropriately"
