@@ -1,113 +1,114 @@
-import { Events, type Interaction } from "discord.js"
-import { logger } from "../utils/logger"
-import { trackCommand } from "../utils/stats-manager"
-import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
-import { isDeveloper } from "../utils/permissions"
-import { awardCommandXp } from "../utils/level-manager"
-import { config } from "../utils/config"
-import { checkRateLimit, updateRateLimit, RATE_LIMITS, getRemainingCooldown } from "../utils/rate-limiter"
+import { Events, type Interaction, Collection } from "discord.js"
+import { config } from "../config/bot.config"
+import type { ExtendedClient } from "../structures/ExtendedClient"
 
-export const name = Events.InteractionCreate
-export const once = false
+export default {
+  name: Events.InteractionCreate,
+  async execute(interaction: Interaction) {
+    // Skip if not a command interaction
+    if (!interaction.isChatInputCommand()) return
 
-export async function execute(interaction: Interaction): Promise<void> {
-  // Handle slash commands
-  if (interaction.isChatInputCommand()) {
-    const command = interaction.client.commands.get(interaction.commandName)
+    const client = interaction.client as ExtendedClient
+    const command = client.commands.get(interaction.commandName)
 
+    // Log command usage
+    client.logger.command(
+      interaction.user.id,
+      interaction.commandName,
+      interaction.guild?.id
+    )
+
+    // Check if command exists
     if (!command) {
-      logger.warn(`No command matching ${interaction.commandName} was found.`)
+      client.logger.warn(`Command ${interaction.commandName} not found`)
+      return
+    }
+
+    // Check for developer-only commands
+    if (
+      command.developerOnly &&
+      !config.bot.developers.includes(interaction.user.id)
+    ) {
+      const errorEmbed = client.errorHandler.createUserError(
+        "This command is only available to bot developers."
+      )
+      await interaction.reply({ embeds: [errorEmbed], flags: [64] }) // EPHEMERAL flag
       return
     }
 
     // Check if user is blacklisted
-    const blacklisted = await isBlacklisted(interaction.user.id)
-    if (blacklisted) {
-      await interaction.reply({
-        content: `You have been blacklisted from using ${config.botName}.`,
-        ephemeral: true,
-      })
-      return
-    }
-
-    // Check if maintenance mode is enabled (allow developers to bypass)
-    const maintenanceMode = await isMaintenanceMode()
-    if (maintenanceMode && !isDeveloper(interaction.user)) {
-      await interaction.reply({
-        content: `${config.botName} is currently in maintenance mode. Please try again later.`,
-        ephemeral: true,
-      })
-      return
-    }
-
-    // Apply rate limiting for gambling commands
-    const gamblingCommands = ["coinflip", "dice-roll", "rps", "number-guess", "slots", "russian-roulette", "roulette"]
-    const rewardCommands = ["daily", "monthly", "yearly"]
-
-    let rateLimitConfig = RATE_LIMITS.GENERAL
-    if (gamblingCommands.includes(interaction.commandName)) {
-      rateLimitConfig = RATE_LIMITS.GAMBLING
-    } else if (rewardCommands.includes(interaction.commandName)) {
-      rateLimitConfig = RATE_LIMITS.REWARD
-    }
-
-    // Check rate limit
-    if (!checkRateLimit(interaction.user.id, interaction.commandName, rateLimitConfig)) {
-      const remaining = getRemainingCooldown(interaction.user.id, interaction.commandName, rateLimitConfig)
-      await interaction.reply({
-        content: `⏰ You're doing that too fast! Try again in ${Math.ceil(remaining / 1000)} seconds.`,
-        ephemeral: true,
-      })
-      return
-    }
-
     try {
-      // Execute the command first
-      if (command.execute) {
-        await command.execute(interaction)
+      const blacklisted = await client.database.get(
+        "SELECT * FROM blacklist WHERE user_id = ?",
+        [interaction.user.id]
+      )
 
-        // Only update rate limit timestamp AFTER successful command execution
-        updateRateLimit(interaction.user.id, interaction.commandName)
-
-        // Track command usage and award XP after successful execution
-        await trackCommand(interaction.commandName)
-        await awardCommandXp(interaction.user.id, interaction.user.username)
-      } else {
-        logger.warn(`Command ${interaction.commandName} has no execute method.`)
-        await interaction.reply({
-          content: "This command is not properly implemented.",
-          ephemeral: true,
-        })
+      if (blacklisted) {
+        const errorEmbed = client.errorHandler.createUserError(
+          "You have been blacklisted from using this bot."
+        )
+        await interaction.reply({ embeds: [errorEmbed], flags: [64] }) // EPHEMERAL flag
+        return
       }
     } catch (error) {
-      logger.error(`Error executing command ${interaction.commandName}:`, error)
+      client.errorHandler.handle(error as Error, {
+        interaction,
+        command: interaction.commandName,
+      })
+      return
+    }
 
-      const errorMessage = "There was an error while executing this command!"
+    // Handle command cooldowns
+    if (command.cooldown) {
+      const cooldowns = client.cooldowns
 
-      try {
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({ content: errorMessage, ephemeral: true })
-        } else {
-          await interaction.reply({ content: errorMessage, ephemeral: true })
+      if (!cooldowns.has(interaction.commandName)) {
+        cooldowns.set(interaction.commandName, new Collection())
+      }
+
+      const now = Date.now()
+      const timestamps = cooldowns.get(interaction.commandName)
+      const cooldownAmount = command.cooldown * 1000
+
+      if (timestamps?.has(interaction.user.id)) {
+        const expirationTime =
+          timestamps.get(interaction.user.id)! + cooldownAmount
+
+        if (now < expirationTime) {
+          const timeLeft = (expirationTime - now) / 1000
+          const warningEmbed = client.errorHandler.createWarning(
+            `Please wait ${timeLeft.toFixed(1)} more second(s) before using the \`${interaction.commandName}\` command again.`
+          )
+          await interaction.reply({ embeds: [warningEmbed], flags: [64] }) // EPHEMERAL flag
+          return
         }
-      } catch (followUpError) {
-        logger.error("Failed to send error message:", followUpError)
       }
-    }
-  }
 
-  // Handle autocomplete interactions
-  else if (interaction.isAutocomplete()) {
-    const command = interaction.client.commands.get(interaction.commandName)
-
-    if (!command || !command.autocomplete) {
-      return
+      timestamps?.set(interaction.user.id, now)
+      setTimeout(() => timestamps?.delete(interaction.user.id), cooldownAmount)
     }
 
+    // Increment command usage in database
     try {
-      await command.autocomplete(interaction)
+      await client.database.incrementCommandUsage(interaction.commandName)
+
+      // Also increment user's total commands
+      await client.database.run(
+        "UPDATE users SET total_commands = total_commands + 1 WHERE user_id = ?",
+        [interaction.user.id]
+      )
     } catch (error) {
-      logger.error(`Error handling autocomplete for ${interaction.commandName}:`, error)
+      client.logger.error("Failed to update command statistics:", error)
     }
-  }
+
+    // Execute the command
+    try {
+      await command.execute(interaction, client)
+    } catch (error) {
+      client.errorHandler.handle(error as Error, {
+        interaction,
+        command: interaction.commandName,
+      })
+    }
+  },
 }

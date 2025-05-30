@@ -1,82 +1,134 @@
 import { Events, type Message } from "discord.js"
-import { config } from "../utils/config"
-import { logger } from "../utils/logger"
-import { trackCommand } from "../utils/stats-manager"
-import { isBlacklisted, isMaintenanceMode } from "../utils/blacklist-manager"
-import { isDeveloper } from "../utils/permissions"
+import { config } from "../config/bot.config"
+import { BlacklistManager } from "../utils/BlacklistManager"
+import { StatsManager } from "../utils/StatsManager"
+import type { ExtendedClient } from "../structures/ExtendedClient"
 
-export const name = Events.MessageCreate
-export const once = false
+export default {
+  name: Events.MessageCreate,
+  async execute(message: Message) {
+    if (message.author.bot) return
 
-export async function execute(message: Message): Promise<void> {
-  // Handle bot mention (in servers, DMs, and group chats)
-  try {
-    // Import the mention handler dynamically to avoid circular dependencies
-    const { handleBotMention } = await import("../utils/mention-response")
-    const wasMention = await handleBotMention(message)
-    if (wasMention) return
-  } catch (error) {
-    logger.error("Error importing or using mention handler:", error)
-  }
+    const client = message.client as ExtendedClient
 
-  // Ignore messages from bots or without the prefix
-  if (message.author.bot || !message.content.startsWith(config.prefix)) return
+    if (message.content.startsWith(config.bot.prefix)) {
+      if (!config.bot.developers.includes(message.author.id)) {
+        return
+      }
 
-  // Parse command and arguments
-  const args = message.content.slice(config.prefix.length).trim().split(/ +/)
-  const commandName = args.shift()?.toLowerCase()
+      const args = message.content
+        .slice(config.bot.prefix.length)
+        .trim()
+        .split(/ +/)
+      const commandName = args.shift()?.toLowerCase()
 
-  if (!commandName) return
-
-  // Find command by name or alias (only developer commands use prefix now)
-  const command =
-    message.client.prefixCommands.get(commandName) ||
-    [...message.client.prefixCommands.values()].find((cmd) => cmd.aliases?.includes(commandName))
-
-  if (!command) {
-    // If it's not a developer command, suggest using slash commands
-    if (!isDeveloper(message.author)) {
-      await message.reply(`This bot uses slash commands! Try \`/help\` to see available ${config.botName} commands.`)
+      switch (commandName) {
+        case "data":
+          await handleDataCommand(message, client)
+          break
+        case "blacklist":
+          await handleBlacklistCommand(message, args, client)
+          break
+      }
     }
-    return
-  }
+  },
+}
 
-  // Check if user is a developer (since all prefix commands are now developer-only)
-  if (!isDeveloper(message.author)) {
-    await message.reply(`${config.botName} developer commands can only be used by bot developers.`)
-    return
-  }
-
-  // Check if user is blacklisted
-  const blacklisted = await isBlacklisted(message.author.id)
-  if (blacklisted) {
-    await message.reply(`You have been blacklisted from using ${config.botName}.`)
-    return
-  }
-
-  // Check if maintenance mode is enabled (developers can bypass)
-  const maintenanceMode = await isMaintenanceMode()
-  if (maintenanceMode && !isDeveloper(message.author)) {
-    await message.reply(`${config.botName} is currently in maintenance mode. Please try again later.`)
-    return
-  }
-
-  // Execute command
+async function handleDataCommand(message: Message, client: ExtendedClient) {
+  const statsManager = new StatsManager(client)
   try {
-    // Track command usage
-    await trackCommand(command.name || commandName)
+    const dbSize = await statsManager.getDatabaseSize()
+    const totalCommands = await statsManager.getTotalCommandsUsed()
+    const userCount = await statsManager.getUserCount()
+    const economyStats = await statsManager.getEconomyStats()
+    const response = `\`\`\`
+📊 Database Information
+━━━━━━━━━━━━━━━━━━━━━
+Database Size: ${dbSize} MB
+Total Users: ${userCount.toLocaleString()}
+Total Commands Used: ${totalCommands.toLocaleString()}
+Total Coins in Economy: ${economyStats.totalCoins.toLocaleString()}
+Average User Balance: ${Math.floor(economyStats.averageBalance).toLocaleString()}
+━━━━━━━━━━━━━━━━━━━━━
+\`\`\``
+    await message.reply(response)
+  } catch (error: unknown) {
+    client.logger.error("Error in data command:", error)
+    await message.reply("❌ An error occurred while fetching data.")
+  }
+}
 
-    // Execute the command
-    if (command.run) {
-      await command.run(message, args)
-    } else {
-      logger.warn(`Developer command ${commandName} has no run method.`)
-      await message.reply("This command is not properly implemented.")
+async function handleBlacklistCommand(
+  message: Message,
+  args: string[],
+  client: ExtendedClient
+) {
+  const blacklistManager = new BlacklistManager(client)
+  const subcommand = args[0]?.toLowerCase()
+
+  if (!subcommand || !["add", "remove", "list"].includes(subcommand)) {
+    await message.reply(
+      "Usage: `?blacklist <add/remove/list> [user_id] [reason]`"
+    )
+    return
+  }
+
+  try {
+    switch (subcommand) {
+      case "add": {
+        const userId = args[1]
+        const reason = args.slice(2).join(" ") || "No reason provided"
+        if (!userId) {
+          await message.reply("Please provide a user ID to blacklist.")
+          return
+        }
+        await blacklistManager.addToBlacklist(userId, reason, message.author.id)
+        await message.reply(`✅ User \`${userId}\` has been blacklisted.`)
+        break
+      }
+      case "remove": {
+        const userId = args[1]
+        if (!userId) {
+          await message.reply(
+            "Please provide a user ID to remove from blacklist."
+          )
+          return
+        }
+        await blacklistManager.removeFromBlacklist(userId)
+        await message.reply(
+          `✅ User \`${userId}\` has been removed from the blacklist.`
+        )
+        break
+      }
+      case "list": {
+        const blacklist = await blacklistManager.getBlacklist()
+        if (blacklist.length === 0) {
+          await message.reply("The blacklist is empty.")
+          return
+        }
+        let response = "```\n📋 Blacklisted Users\n━━━━━━━━━━━━━━━━━━━━━\n"
+        for (const entry of blacklist) {
+          const date = new Date(entry.blacklisted_at).toLocaleDateString()
+          response += `ID: ${entry.user_id}\nReason: ${entry.reason}\nBy: ${entry.blacklisted_by}\nDate: ${date}\n━━━━━━━━━━━━━━━━━━━━━\n`
+        }
+        response += "```"
+        if (response.length > 2000) {
+          const chunks = response.match(/[\s\S]{1,1900}/g) || []
+          for (const chunk of chunks) {
+            await message.reply(chunk)
+          }
+        } else {
+          await message.reply(response)
+        }
+        break
+      }
     }
-  } catch (error) {
-    logger.error(`Error executing developer command ${commandName}:`, error)
-    await message.reply("There was an error while executing this command!").catch((e) => {
-      logger.error("Failed to send error reply:", e)
-    })
+  } catch (error: unknown) {
+    let errorMessage = "An unexpected error occurred."
+    if (error instanceof Error) {
+      errorMessage = error.message
+    }
+    client.logger.error("Error in blacklist command:", error)
+    await message.reply(`❌ Error: ${errorMessage}`)
   }
 }

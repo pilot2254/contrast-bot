@@ -1,10 +1,5 @@
-# Data Directory
+# README
 
-This directory is for storing data.
+## Project Overview
 
-This is how it should look like after using certain commands for the first time:
-```
-data/
-├── README.md       # This File
-└── bot.db  # SQLite database
-```
+This directory contains the database files for the `contrast-bot` project. It serves as the central location for storing and managing data used by the bot.
