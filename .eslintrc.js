@@ -2,7 +2,11 @@ module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
   plugins: ["@typescript-eslint", "prettier"],
-  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
+  extends: [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier",
+  ],
   env: {
     node: true,
     es2022: true,
@@ -13,7 +17,7 @@ module.exports = {
     project: "./tsconfig.json",
   },
   rules: {
-    "prettier/prettier": ["error", { endOfLine: "lf" }], // Align with .prettierrc.js
+    "prettier/prettier": ["error", { endOfLine: "lf" }],
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": [
       "warn",
@@ -30,5 +34,14 @@ module.exports = {
     "prefer-const": "error",
     "no-var": "error",
   },
-  ignorePatterns: ["dist/", "node_modules/", "coverage/", "logs/", "backups/", "*.log", "data/bot.db*", ".github/"],
+  ignorePatterns: [
+    "dist/",
+    "node_modules/",
+    "coverage/",
+    "logs/",
+    "backups/",
+    "*.log",
+    "data/bot.db*",
+    ".github/",
+  ],
 }

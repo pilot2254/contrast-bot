@@ -14,7 +14,12 @@
     "format:check": "prettier --check \"**/*.{ts,js,json,yml}\"",
     "type-check": "tsc --noEmit"
   },
-  "keywords": ["discord", "bot", "economy", "gambling"],
+  "keywords": [
+    "discord",
+    "bot",
+    "economy",
+    "gambling"
+  ],
   "author": "pilot2254",
   "dependencies": {
     "discord.js": "^14.14.1",
