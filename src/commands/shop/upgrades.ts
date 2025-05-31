@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { ShopService } from "../../services/ShopService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -13,17 +10,11 @@ const command: Command = {
     .setName("upgrades")
     .setDescription("View your current upgrades and available upgrade options")
     .addUserOption((option) =>
-      option
-        .setName("user")
-        .setDescription("View another user's upgrades")
-        .setRequired(false)
+      option.setName("user").setDescription("View another user's upgrades").setRequired(false),
     ),
   category: "economy",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const targetUser = interaction.options.getUser("user") || interaction.user
     const shopService = new ShopService(client)
 
@@ -33,9 +24,7 @@ const command: Command = {
       const user = await client.database.getUser(targetUser.id)
 
       const embed = CustomEmbedBuilder.economy()
-        .setTitle(
-          `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Upgrades`
-        )
+        .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Upgrades`)
         .setThumbnail(targetUser.displayAvatarURL())
         .setDescription("Current upgrade levels and next upgrade costs")
 
@@ -53,10 +42,7 @@ const command: Command = {
       const canAffordSafe = user.balance >= upgrades.safe.nextUpgradeCost
       const safeStatus = canAffordSafe ? "✅ Can afford" : "❌ Cannot afford"
 
-      if (
-        upgrades.safe.tier <
-        (config.economy.safe.maxTier || Number.POSITIVE_INFINITY)
-      ) {
+      if (upgrades.safe.tier < (config.economy.safe.maxTier || Number.POSITIVE_INFINITY)) {
         embed.addFields({
           name: "💰 Upgrade Status",
           value: `Safe: ${safeStatus}`,
@@ -86,9 +72,7 @@ const command: Command = {
 
       await interaction.reply({ embeds: [embed] })
     } catch (error: unknown) {
-      const errorEmbed = client.errorHandler.createUserError(
-        (error as any).message
-      )
+      const errorEmbed = client.errorHandler.createUserError((error as any).message)
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     }
   },

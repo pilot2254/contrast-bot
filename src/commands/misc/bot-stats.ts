@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { StatsManager } from "../../utils/StatsManager"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -9,15 +6,10 @@ import type { ExtendedClient } from "../../structures/ExtendedClient"
 import type { Command } from "../../types/Command"
 
 const command: Command = {
-  data: new SlashCommandBuilder()
-    .setName("bot-stats")
-    .setDescription("View bot statistics"),
+  data: new SlashCommandBuilder().setName("bot-stats").setDescription("View bot statistics"),
   category: "misc",
   cooldown: 5,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const statsManager = new StatsManager(client)
 
     try {
@@ -47,17 +39,15 @@ const command: Command = {
           {
             name: "💰 Economy",
             value: `Total Coins: ${economyStats.totalCoins.toLocaleString()}\nAverage Balance: ${Math.floor(
-              economyStats.averageBalance
+              economyStats.averageBalance,
             ).toLocaleString()}`,
             inline: true,
-          }
+          },
         )
 
       if (economyStats.richestUser.userId !== "none") {
         try {
-          const richestUser = await client.users.fetch(
-            economyStats.richestUser.userId
-          )
+          const richestUser = await client.users.fetch(economyStats.richestUser.userId)
           embed.addFields({
             name: "👑 Richest User",
             value: `${richestUser.username}: ${economyStats.richestUser.balance.toLocaleString()} ${config.economy.currency.symbol}`,
@@ -71,9 +61,7 @@ const command: Command = {
       await interaction.reply({ embeds: [embed] })
     } catch (error: unknown) {
       client.logger.error("Error in bot-stats command:", error)
-      const errorEmbed = client.errorHandler.createUserError(
-        "An error occurred while fetching bot statistics."
-      )
+      const errorEmbed = client.errorHandler.createUserError("An error occurred while fetching bot statistics.")
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     }
   },

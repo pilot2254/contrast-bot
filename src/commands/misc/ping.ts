@@ -1,29 +1,17 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
 import type { ExtendedClient } from "../../structures/ExtendedClient"
 import type { Command } from "../../types/Command"
 
 const command: Command = {
-  data: new SlashCommandBuilder()
-    .setName("ping")
-    .setDescription("Check the bot's latency"),
+  data: new SlashCommandBuilder().setName("ping").setDescription("Check the bot's latency"),
   category: "misc",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
-    const sent = await interaction.reply({
-      content: "Pinging...",
-      fetchReply: true,
-    })
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+    const sent = await interaction.reply({ content: "Pinging...", fetchReply: true })
 
-    const roundtripLatency =
-      sent.createdTimestamp - interaction.createdTimestamp
+    const roundtripLatency = sent.createdTimestamp - interaction.createdTimestamp
     const websocketLatency = Math.round(client.ws.ping)
 
     const embed = CustomEmbedBuilder.info()
@@ -38,7 +26,7 @@ const command: Command = {
           name: "💓 Websocket Heartbeat",
           value: `${websocketLatency}ms`,
           inline: true,
-        }
+        },
       )
 
     // Add color based on latency

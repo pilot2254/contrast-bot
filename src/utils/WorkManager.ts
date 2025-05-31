@@ -65,10 +65,7 @@ export class WorkManager {
   // Calculate work reward based on level
   private calculateWorkReward(level: number): number {
     // Base reward increases with level, capped at max reward
-    const reward = Math.min(
-      config.economy.work.baseReward * level,
-      config.economy.work.maxReward
-    )
+    const reward = Math.min(config.economy.work.baseReward * level, config.economy.work.maxReward)
 
     // Add some randomness (±10%)
     const randomFactor = 0.9 + Math.random() * 0.2
@@ -77,12 +74,10 @@ export class WorkManager {
   }
 
   // Check if user can work (cooldown)
-  async canWork(
-    userId: string
-  ): Promise<{ canWork: boolean; timeLeft: number }> {
+  async canWork(userId: string): Promise<{ canWork: boolean; timeLeft: number }> {
     const cooldown = await this.client.database.get(
       "SELECT expires_at FROM cooldowns WHERE user_id = ? AND command = 'work'",
-      [userId]
+      [userId],
     )
 
     if (!cooldown) {
@@ -111,9 +106,7 @@ export class WorkManager {
     const { canWork, timeLeft } = await this.canWork(userId)
 
     if (!canWork) {
-      throw new Error(
-        `You need to wait ${Math.ceil(timeLeft / 1000)} seconds before working again`
-      )
+      throw new Error(`You need to wait ${Math.ceil(timeLeft / 1000)} seconds before working again`)
     }
 
     // Get user level
@@ -129,23 +122,15 @@ export class WorkManager {
     // Add reward to balance
     await this.client.database.transaction(async () => {
       // Update balance
-      await this.client.database.updateUser(userId, {
-        balance: user.balance + reward,
-      })
+      await this.client.database.updateUser(userId, { balance: user.balance + reward })
 
       // Log transaction
       await this.client.database.logTransaction(userId, "add", reward, "Work")
     })
 
     // Add XP
-    const levelingService = await import("../services/LevelingService").then(
-      (m) => new m.LevelingService(this.client)
-    )
-    const xpResult = await levelingService.addXP(
-      userId,
-      config.economy.work.xpReward,
-      "Work"
-    )
+    const levelingService = await import("../services/LevelingService").then((m) => new m.LevelingService(this.client))
+    const xpResult = await levelingService.addXP(userId, config.economy.work.xpReward, "Work")
 
     // Set cooldown
     const expiresAt = new Date(Date.now() + config.economy.work.cooldown)
@@ -155,7 +140,7 @@ export class WorkManager {
        VALUES (?, 'work', ?) 
        ON CONFLICT(user_id, command) 
        DO UPDATE SET expires_at = ?`,
-      [userId, expiresAt, expiresAt]
+      [userId, expiresAt, expiresAt],
     )
 
     return {

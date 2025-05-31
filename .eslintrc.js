@@ -2,11 +2,7 @@ module.exports = {
   root: true,
   parser: "@typescript-eslint/parser",
   plugins: ["@typescript-eslint", "prettier"],
-  extends: [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier",
-  ],
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   env: {
     node: true,
     es2022: true,
@@ -34,14 +30,5 @@ module.exports = {
     "prefer-const": "error",
     "no-var": "error",
   },
-  ignorePatterns: [
-    "dist/",
-    "node_modules/",
-    "coverage/",
-    "logs/",
-    "backups/",
-    "*.log",
-    "data/bot.db*",
-    ".github/",
-  ],
+  ignorePatterns: ["dist/", "node_modules/", "coverage/", "logs/", "backups/", "*.log", "data/bot.db*", ".github/"],
 }
