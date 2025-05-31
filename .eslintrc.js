@@ -13,7 +13,7 @@ module.exports = {
     project: "./tsconfig.json",
   },
   rules: {
-    "prettier/prettier": ["error", { endOfLine: "auto" }],
+    "prettier/prettier": ["error", { endOfLine: "lf" }], // Align with .prettierrc.js
     "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": [
       "warn",
