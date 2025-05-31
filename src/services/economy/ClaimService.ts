@@ -9,13 +9,16 @@ export class ClaimService {
     this.balanceService = new BalanceService(client)
   }
 
-  async claimDaily(userId: string): Promise<{ amount: number; streak: number }> {
+  async claimDaily(
+    userId: string
+  ): Promise<{ amount: number; streak: number }> {
     return await this.client.database.transaction(async () => {
       await this.client.database.createUser(userId)
 
-      const claim = await this.client.database.get("SELECT * FROM claims WHERE user_id = ? AND claim_type = 'daily'", [
-        userId,
-      ])
+      const claim = await this.client.database.get(
+        "SELECT * FROM claims WHERE user_id = ? AND claim_type = 'daily'",
+        [userId]
+      )
 
       const now = Date.now()
 
@@ -26,8 +29,12 @@ export class ClaimService {
         if (timeSinceClaim < 24 * 60 * 60 * 1000) {
           const timeLeft = 24 * 60 * 60 * 1000 - timeSinceClaim
           const hours = Math.floor(timeLeft / (1000 * 60 * 60))
-          const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
-          throw new Error(`You can claim your daily reward in ${hours}h ${minutes}m`)
+          const minutes = Math.floor(
+            (timeLeft % (1000 * 60 * 60)) / (1000 * 60)
+          )
+          throw new Error(
+            `You can claim your daily reward in ${hours}h ${minutes}m`
+          )
         }
 
         let streak = claim.streak
@@ -41,14 +48,14 @@ export class ClaimService {
         if (config.economy.daily.streak.enabled) {
           const streakMultiplier = Math.min(
             streak * config.economy.daily.streak.multiplier,
-            config.economy.daily.streak.maxMultiplier,
+            config.economy.daily.streak.maxMultiplier
           )
           amount = Math.floor(amount * (1 + streakMultiplier))
         }
 
         await this.client.database.run(
           "UPDATE claims SET last_claimed = ?, streak = ? WHERE user_id = ? AND claim_type = 'daily'",
-          [now, streak, userId],
+          [now, streak, userId]
         )
 
         await this.balanceService.addBalance(userId, amount, "Daily reward")
@@ -56,21 +63,28 @@ export class ClaimService {
       } else {
         await this.client.database.run(
           "INSERT INTO claims (user_id, claim_type, last_claimed, streak) VALUES (?, ?, ?, ?)",
-          [userId, "daily", now, 1],
+          [userId, "daily", now, 1]
         )
 
-        await this.balanceService.addBalance(userId, config.economy.daily.amount, "Daily reward")
+        await this.balanceService.addBalance(
+          userId,
+          config.economy.daily.amount,
+          "Daily reward"
+        )
         return { amount: config.economy.daily.amount, streak: 1 }
       }
     })
   }
 
-  async getDailyStatus(userId: string): Promise<{ claimed: boolean; timeLeft: number; streak: number }> {
+  async getDailyStatus(
+    userId: string
+  ): Promise<{ claimed: boolean; timeLeft: number; streak: number }> {
     await this.client.database.createUser(userId)
 
-    const claim = await this.client.database.get("SELECT * FROM claims WHERE user_id = ? AND claim_type = 'daily'", [
-      userId,
-    ])
+    const claim = await this.client.database.get(
+      "SELECT * FROM claims WHERE user_id = ? AND claim_type = 'daily'",
+      [userId]
+    )
 
     if (!claim) {
       return { claimed: false, timeLeft: 0, streak: 0 }

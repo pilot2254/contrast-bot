@@ -1,4 +1,8 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type EmbedBuilder,
+} from "discord.js"
 import { LevelingService } from "../../services/LevelingService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { Pagination } from "../../utils/Pagination"
@@ -13,12 +17,24 @@ const command: Command = {
       subcommand
         .setName("check")
         .setDescription("Check your level or another user's level")
-        .addUserOption((option) => option.setName("user").setDescription("The user to check").setRequired(false)),
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("The user to check")
+            .setRequired(false)
+        )
     )
-    .addSubcommand((subcommand) => subcommand.setName("leaderboard").setDescription("View the top users by level")),
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("leaderboard")
+        .setDescription("View the top users by level")
+    ),
   category: "levels",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const subcommand = interaction.options.getSubcommand()
     const levelingService = new LevelingService(client)
 
@@ -34,10 +50,12 @@ const command: Command = {
 async function handleLevelCheck(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  levelingService: LevelingService,
+  levelingService: LevelingService
 ) {
   const targetUser = interaction.options.getUser("user") || interaction.user
-  const { level, xp, requiredXP } = await levelingService.getUserLevel(targetUser.id)
+  const { level, xp, requiredXP } = await levelingService.getUserLevel(
+    targetUser.id
+  )
 
   // Calculate progress percentage - ensure it's between 0 and 100
   let progress = Math.floor((xp / requiredXP) * 100)
@@ -47,7 +65,9 @@ async function handleLevelCheck(
   const progressBar = createProgressBar(progress)
 
   const embed = CustomEmbedBuilder.level()
-    .setTitle(`${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Level`)
+    .setTitle(
+      `${targetUser.id === interaction.user.id ? "Your" : `${targetUser.username}'s`} Level`
+    )
     .setThumbnail(targetUser.displayAvatarURL())
     .addFields(
       {
@@ -64,7 +84,7 @@ async function handleLevelCheck(
         name: "📈 Progress",
         value: `${progressBar} ${progress}%`,
         inline: false,
-      },
+      }
     )
 
   await interaction.reply({ embeds: [embed] })
@@ -74,12 +94,14 @@ async function handleLevelCheck(
 async function handleLevelLeaderboard(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  levelingService: LevelingService,
+  levelingService: LevelingService
 ) {
   const topUsers = await levelingService.getLevelLeaderboard(50) // Get top 50 for pagination
 
   if (topUsers.length === 0) {
-    const embed = CustomEmbedBuilder.info().setDescription("No users found in the leaderboard yet.")
+    const embed = CustomEmbedBuilder.info().setDescription(
+      "No users found in the leaderboard yet."
+    )
     await interaction.reply({ embeds: [embed] })
     return
   }

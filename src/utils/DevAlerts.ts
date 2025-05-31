@@ -4,15 +4,23 @@ import type { ExtendedClient } from "../structures/ExtendedClient"
 export class DevAlerts {
   constructor(private client: ExtendedClient) {}
 
-  async sendDevCommandAlert(userId: string, command: string, guildId?: string): Promise<void> {
+  async sendDevCommandAlert(
+    userId: string,
+    command: string,
+    guildId?: string
+  ): Promise<void> {
     try {
       if (!process.env.DEV_ALERTS_CHANNEL) return
 
-      const channel = await this.client.channels.fetch(process.env.DEV_ALERTS_CHANNEL)
+      const channel = await this.client.channels.fetch(
+        process.env.DEV_ALERTS_CHANNEL
+      )
       if (!channel || !channel.isTextBased()) return
 
       const user = await this.client.users.fetch(userId).catch(() => null)
-      const guild = guildId ? await this.client.guilds.fetch(guildId).catch(() => null) : null
+      const guild = guildId
+        ? await this.client.guilds.fetch(guildId).catch(() => null)
+        : null
 
       const embed = {
         color: 0xff9900,
@@ -20,7 +28,9 @@ export class DevAlerts {
         fields: [
           {
             name: "User",
-            value: user ? `${user.tag} (${user.id})` : `Unknown User (${userId})`,
+            value: user
+              ? `${user.tag} (${user.id})`
+              : `Unknown User (${userId})`,
             inline: true,
           },
           {
@@ -30,7 +40,11 @@ export class DevAlerts {
           },
           {
             name: "Server",
-            value: guild ? `${guild.name} (${guild.id})` : guildId ? `Unknown Server (${guildId})` : "DM",
+            value: guild
+              ? `${guild.name} (${guild.id})`
+              : guildId
+                ? `Unknown Server (${guildId})`
+                : "DM",
             inline: true,
           },
         ],

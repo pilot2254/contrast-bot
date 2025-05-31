@@ -1,4 +1,9 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder, Collection } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+  type EmbedBuilder,
+  Collection,
+} from "discord.js"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
 import { Pagination } from "../../utils/Pagination"
@@ -8,13 +13,21 @@ import type { Command } from "../../types/Command"
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName("help")
-    .setDescription("View all available commands or get help for a specific command")
+    .setDescription(
+      "View all available commands or get help for a specific command"
+    )
     .addStringOption((option) =>
-      option.setName("command").setDescription("Get detailed help for a specific command").setRequired(false),
+      option
+        .setName("command")
+        .setDescription("Get detailed help for a specific command")
+        .setRequired(false)
     ),
   category: "misc",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const commandName = interaction.options.getString("command")
 
     if (commandName) {
@@ -29,12 +42,14 @@ const command: Command = {
 async function handleSpecificCommandHelp(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  commandName: string,
+  commandName: string
 ) {
   const command = client.commands.get(commandName)
 
   if (!command) {
-    const errorEmbed = client.errorHandler.createUserError(`Command \`/${commandName}\` not found.`)
+    const errorEmbed = client.errorHandler.createUserError(
+      `Command \`/${commandName}\` not found.`
+    )
     await interaction.reply({ embeds: [errorEmbed], flags: [64] }) // EPHEMERAL flag
     return
   }
@@ -45,7 +60,11 @@ async function handleSpecificCommandHelp(
   // Create embed
   const embed = CustomEmbedBuilder.info()
     .setTitle(`Command: /${data.name}`)
-    .addFields({ name: "Category", value: category.charAt(0).toUpperCase() + category.slice(1), inline: true })
+    .addFields({
+      name: "Category",
+      value: category.charAt(0).toUpperCase() + category.slice(1),
+      inline: true,
+    })
 
   // Safely access description
   if ("description" in data && data.description) {
@@ -53,7 +72,11 @@ async function handleSpecificCommandHelp(
   }
 
   if (cooldown) {
-    embed.addFields({ name: "Cooldown", value: `${cooldown} seconds`, inline: true })
+    embed.addFields({
+      name: "Cooldown",
+      value: `${cooldown} seconds`,
+      inline: true,
+    })
   }
 
   if (developerOnly) {
@@ -92,13 +115,19 @@ async function handleSpecificCommandHelp(
 }
 
 // Handle general help (list all commands)
-async function handleGeneralHelp(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+async function handleGeneralHelp(
+  interaction: ChatInputCommandInteraction,
+  client: ExtendedClient
+) {
   // Group commands by category
   const categories = new Collection<string, Command[]>()
 
   client.commands.forEach((cmd) => {
     // Skip developer commands for non-developers
-    if (cmd.developerOnly && !config.bot.developers.includes(interaction.user.id)) {
+    if (
+      cmd.developerOnly &&
+      !config.bot.developers.includes(interaction.user.id)
+    ) {
       return
     }
 
@@ -114,12 +143,17 @@ async function handleGeneralHelp(interaction: ChatInputCommandInteraction, clien
 
   categories.forEach((commands, category) => {
     const embed = CustomEmbedBuilder.info()
-      .setTitle(`${category.charAt(0).toUpperCase() + category.slice(1)} Commands`)
-      .setDescription(`Use \`/help <command>\` to get detailed information about a specific command.`)
+      .setTitle(
+        `${category.charAt(0).toUpperCase() + category.slice(1)} Commands`
+      )
+      .setDescription(
+        `Use \`/help <command>\` to get detailed information about a specific command.`
+      )
 
     let commandList = ""
     commands.forEach((cmd) => {
-      const description = "description" in cmd.data ? cmd.data.description : "No description"
+      const description =
+        "description" in cmd.data ? cmd.data.description : "No description"
       commandList += `\`/${cmd.data.name}\` - ${description}\n`
     })
 
@@ -131,7 +165,7 @@ async function handleGeneralHelp(interaction: ChatInputCommandInteraction, clien
   const infoEmbed = CustomEmbedBuilder.info()
     .setTitle(`${config.bot.name} Help`)
     .setDescription(
-      `Welcome to the help menu! ${config.bot.name} is a feature-rich Discord bot with economy, gambling, and leveling systems.`,
+      `Welcome to the help menu! ${config.bot.name} is a feature-rich Discord bot with economy, gambling, and leveling systems.`
     )
     .addFields(
       {
@@ -147,7 +181,7 @@ async function handleGeneralHelp(interaction: ChatInputCommandInteraction, clien
       {
         name: "Website",
         value: `Visit our [website](${config.bot.website}) for more information.`,
-      },
+      }
     )
     .setFooter({ text: `${config.bot.name} v${config.bot.version}` })
 

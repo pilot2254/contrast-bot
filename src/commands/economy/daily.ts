@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { EconomyService } from "../../services/EconomyService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -9,13 +12,20 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("daily")
     .setDescription("Claim your daily reward or check its status")
-    .addSubcommand((subcommand) => subcommand.setName("claim").setDescription("Claim your daily reward"))
     .addSubcommand((subcommand) =>
-      subcommand.setName("status").setDescription("Check the status of your daily reward"),
+      subcommand.setName("claim").setDescription("Claim your daily reward")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("status")
+        .setDescription("Check the status of your daily reward")
     ),
   category: "economy",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const subcommand = interaction.options.getSubcommand()
     const economyService = new EconomyService(client)
 
@@ -34,14 +44,18 @@ const command: Command = {
 async function handleDailyClaim(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   try {
-    const { amount, streak } = await economyService.claimDaily(interaction.user.id)
+    const { amount, streak } = await economyService.claimDaily(
+      interaction.user.id
+    )
 
     const embed = CustomEmbedBuilder.success()
       .setTitle("Daily Reward Claimed")
-      .setDescription(`You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your daily reward!`)
+      .setDescription(
+        `You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your daily reward!`
+      )
       .addFields(
         {
           name: "🔥 Current Streak",
@@ -52,13 +66,13 @@ async function handleDailyClaim(
           name: "✨ XP Gained",
           value: `+${config.economy.daily.xpReward} XP`,
           inline: true,
-        },
+        }
       )
 
     if (config.economy.daily.streak.enabled && streak > 1) {
       const streakBonus = Math.min(
         streak * config.economy.daily.streak.multiplier,
-        config.economy.daily.streak.maxMultiplier,
+        config.economy.daily.streak.maxMultiplier
       )
       embed.addFields({
         name: "🎁 Streak Bonus",
@@ -69,7 +83,9 @@ async function handleDailyClaim(
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError((error as Error).message)
+    const errorEmbed = client.errorHandler.createUserError(
+      (error as Error).message
+    )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -78,7 +94,7 @@ async function handleDailyClaim(
 async function handleDailyStatus(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService,
+  economyService: EconomyService
 ) {
   const status = await economyService.getDailyStatus(interaction.user.id)
 
@@ -95,7 +111,7 @@ async function handleDailyStatus(
     if (config.economy.daily.streak.enabled && status.streak > 0) {
       const nextStreakBonus = Math.min(
         (status.streak + 1) * config.economy.daily.streak.multiplier,
-        config.economy.daily.streak.maxMultiplier,
+        config.economy.daily.streak.maxMultiplier
       )
       embed.addFields({
         name: "🎁 Next Streak Bonus",
@@ -125,7 +141,7 @@ async function handleDailyStatus(
           name: "🔥 Current Streak",
           value: `${status.streak} day${status.streak !== 1 ? "s" : ""}`,
           inline: true,
-        },
+        }
       )
 
     await interaction.reply({ embeds: [embed] })

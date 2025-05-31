@@ -20,6 +20,12 @@ export interface Command {
   category: string
   cooldown?: number
   developerOnly?: boolean
-  execute: (interaction: ChatInputCommandInteraction, client: ExtendedClient) => Promise<void>
-  autocomplete?: (interaction: AutocompleteInteraction, client: ExtendedClient) => Promise<void>
+  execute: (
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) => Promise<void>
+  autocomplete?: (
+    interaction: AutocompleteInteraction,
+    client: ExtendedClient
+  ) => Promise<void>
 }

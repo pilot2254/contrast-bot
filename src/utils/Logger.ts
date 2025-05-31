@@ -36,11 +36,18 @@ export class Logger {
 
   command(userId: string, commandName: string, guildId?: string): void {
     if (config.logging.logCommands) {
-      this.info(`Command executed: /${commandName} by ${userId}${guildId ? ` in ${guildId}` : ""}`)
+      this.info(
+        `Command executed: /${commandName} by ${userId}${guildId ? ` in ${guildId}` : ""}`
+      )
     }
   }
 
-  transaction(userId: string, type: string, amount: number, reason: string): void {
+  transaction(
+    userId: string,
+    type: string,
+    amount: number,
+    reason: string
+  ): void {
     if (config.logging.logTransactions) {
       this.info(`Transaction: ${type} ${amount} for ${userId} - ${reason}`)
     }
@@ -54,19 +61,29 @@ export class Logger {
     let coloredMessage: string
     switch (level) {
       case "debug":
-        coloredMessage = chalk.gray(`[${timestamp}] ${contextStr}DEBUG: ${message}`)
+        coloredMessage = chalk.gray(
+          `[${timestamp}] ${contextStr}DEBUG: ${message}`
+        )
         break
       case "info":
-        coloredMessage = chalk.blue(`[${timestamp}] ${contextStr}INFO: ${message}`)
+        coloredMessage = chalk.blue(
+          `[${timestamp}] ${contextStr}INFO: ${message}`
+        )
         break
       case "warn":
-        coloredMessage = chalk.yellow(`[${timestamp}] ${contextStr}WARN: ${message}`)
+        coloredMessage = chalk.yellow(
+          `[${timestamp}] ${contextStr}WARN: ${message}`
+        )
         break
       case "error":
-        coloredMessage = chalk.red(`[${timestamp}] ${contextStr}ERROR: ${message}`)
+        coloredMessage = chalk.red(
+          `[${timestamp}] ${contextStr}ERROR: ${message}`
+        )
         break
       case "success":
-        coloredMessage = chalk.green(`[${timestamp}] ${contextStr}SUCCESS: ${message}`)
+        coloredMessage = chalk.green(
+          `[${timestamp}] ${contextStr}SUCCESS: ${message}`
+        )
         break
     }
 
@@ -78,7 +95,9 @@ export class Logger {
 
     // Write to file if enabled
     if (config.logging.enableFileLogging) {
-      this.writeToFile(level, timestamp, contextStr, message, data).catch(console.error)
+      this.writeToFile(level, timestamp, contextStr, message, data).catch(
+        console.error
+      )
     }
   }
 
@@ -87,7 +106,7 @@ export class Logger {
     timestamp: string,
     context: string,
     message: string,
-    data?: unknown,
+    data?: unknown
   ): Promise<void> {
     try {
       const logDir = config.logging.logDirectory
@@ -119,7 +138,10 @@ export class Logger {
       if (logFiles.length > config.logging.maxLogFiles) {
         // Sort by date and remove oldest files
         logFiles.sort()
-        const filesToDelete = logFiles.slice(0, logFiles.length - config.logging.maxLogFiles)
+        const filesToDelete = logFiles.slice(
+          0,
+          logFiles.length - config.logging.maxLogFiles
+        )
 
         for (const file of filesToDelete) {
           await fs.unlink(path.join(logDir, file))

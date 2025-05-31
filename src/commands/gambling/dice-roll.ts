@@ -1,4 +1,7 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
+import {
+  SlashCommandBuilder,
+  type ChatInputCommandInteraction,
+} from "discord.js"
 import { GamblingService } from "../../services/GamblingService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -10,10 +13,18 @@ const command: Command = {
     .setName("dice-roll")
     .setDescription("Roll dice and guess the total")
     .addIntegerOption((option) =>
-      option.setName("number").setDescription("Your guess for the total").setRequired(true).setMinValue(1),
+      option
+        .setName("number")
+        .setDescription("Your guess for the total")
+        .setRequired(true)
+        .setMinValue(1)
     )
     .addIntegerOption((option) =>
-      option.setName("bet").setDescription("Amount to bet").setRequired(true).setMinValue(config.gambling.minBet),
+      option
+        .setName("bet")
+        .setDescription("Amount to bet")
+        .setRequired(true)
+        .setMinValue(config.gambling.minBet)
     )
     .addIntegerOption((option) =>
       option
@@ -21,7 +32,7 @@ const command: Command = {
         .setDescription("Number of dice to roll (default: 1)")
         .setRequired(false)
         .setMinValue(1)
-        .setMaxValue(5),
+        .setMaxValue(5)
     )
     .addIntegerOption((option) =>
       option
@@ -29,11 +40,14 @@ const command: Command = {
         .setDescription("Number of times to play (max 10)")
         .setRequired(false)
         .setMinValue(1)
-        .setMaxValue(10),
+        .setMaxValue(10)
     ),
   category: "gambling",
   cooldown: 3,
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient
+  ) {
     const guess = interaction.options.getInteger("number")!
     const bet = interaction.options.getInteger("bet")!
     const diceCount = interaction.options.getInteger("dices") || 1
@@ -43,7 +57,7 @@ const command: Command = {
     // Validate guess is within possible range
     if (guess < diceCount || guess > diceCount * 6) {
       const errorEmbed = client.errorHandler.createUserError(
-        `Your guess must be between ${diceCount} and ${diceCount * 6}`,
+        `Your guess must be between ${diceCount} and ${diceCount * 6}`
       )
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
       return
@@ -62,7 +76,12 @@ const command: Command = {
 
       // Play multiple times
       for (let i = 0; i < repeats; i++) {
-        const result = await gamblingService.playDiceRoll(interaction.user.id, bet, guess, diceCount)
+        const result = await gamblingService.playDiceRoll(
+          interaction.user.id,
+          bet,
+          guess,
+          diceCount
+        )
 
         if (result.isWin) {
           totalWinnings += result.winnings
@@ -72,14 +91,16 @@ const command: Command = {
         }
 
         // Format dice results
-        const diceEmojis = result.results.map((die) => ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][die - 1]).join(" ")
+        const diceEmojis = result.results
+          .map((die) => ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][die - 1])
+          .join(" ")
 
         results.push(
           `**${i + 1}.** ${diceEmojis} = ${result.total} - ${
             result.isWin
               ? `Won ${result.winnings.toLocaleString()} ${config.economy.currency.symbol}`
               : `Lost ${bet.toLocaleString()} ${config.economy.currency.symbol}`
-          }`,
+          }`
         )
       }
 
@@ -112,7 +133,7 @@ const command: Command = {
             name: "💰 Net Result",
             value: `${(totalWinnings - totalLost).toLocaleString()} ${config.economy.currency.symbol}`,
             inline: true,
-          },
+          }
         )
 
       if (totalWinnings > totalLost) {
@@ -127,7 +148,9 @@ const command: Command = {
         await interaction.reply({ embeds: [embed] })
       }
     } catch (error: unknown) {
-      const errorEmbed = client.errorHandler.createUserError((error as Error).message)
+      const errorEmbed = client.errorHandler.createUserError(
+        (error as Error).message
+      )
       if (interaction.deferred) {
         await interaction.editReply({ embeds: [errorEmbed] })
       } else {

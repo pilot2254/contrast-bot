@@ -1,7 +1,8 @@
 export const botConfig = {
   name: "Contrast Bot",
   version: "2.0.0",
-  description: "A feature-rich Discord bot with economy, gambling, and leveling systems",
+  description:
+    "A feature-rich Discord bot with economy, gambling, and leveling systems",
   prefix: "?",
   developers: ["171395713064894465", "806496372093616128"],
   supportServer: "https://discord.gg/your-server",
