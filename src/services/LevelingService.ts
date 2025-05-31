@@ -24,9 +24,7 @@ export class LevelingService {
   constructor(private client: ExtendedClient) {}
 
   calculateRequiredXP(level: number): number {
-    return Math.floor(
-      config.leveling.baseXP * Math.pow(config.leveling.xpMultiplier, level - 1)
-    )
+    return Math.floor(config.leveling.baseXP * Math.pow(config.leveling.xpMultiplier, level - 1))
   }
 
   async getUserLevel(userId: string): Promise<UserLevelData> {
@@ -48,10 +46,7 @@ export class LevelingService {
     if (xp >= requiredXP && level < config.leveling.maxLevel) {
       let newLevel = level
       const currentTotalXP = xp // Use a different variable name to avoid confusion
-      while (
-        newLevel < config.leveling.maxLevel &&
-        currentTotalXP >= this.calculateRequiredXP(newLevel)
-      ) {
+      while (newLevel < config.leveling.maxLevel && currentTotalXP >= this.calculateRequiredXP(newLevel)) {
         newLevel++
       }
       if (newLevel > level) {
@@ -67,11 +62,7 @@ export class LevelingService {
     return { level, xp, requiredXP: this.calculateRequiredXP(level) }
   }
 
-  async addXP(
-    userId: string,
-    amount: number,
-    source: string
-  ): Promise<AddXPResult> {
+  async addXP(userId: string, amount: number, source: string): Promise<AddXPResult> {
     if (amount <= 0) {
       // No XP to add or invalid amount
       const currentData = await this.getUserLevel(userId)
@@ -84,10 +75,7 @@ export class LevelingService {
     let leveledUpThisTime = false
 
     let requiredXPForLevelUp = this.calculateRequiredXP(currentLevel)
-    while (
-      currentXP >= requiredXPForLevelUp &&
-      currentLevel < config.leveling.maxLevel
-    ) {
+    while (currentXP >= requiredXPForLevelUp && currentLevel < config.leveling.maxLevel) {
       currentXP -= requiredXPForLevelUp
       currentLevel++
       leveledUpThisTime = true
@@ -99,12 +87,12 @@ export class LevelingService {
         await economyService._addBalanceInternal(
           userId,
           config.leveling.levelUpBonus,
-          `Level up bonus (Level ${currentLevel})`
+          `Level up bonus (Level ${currentLevel})`,
         )
       } catch (e: unknown) {
         this.client.logger.error(
           `Failed to add level up bonus for user ${userId} (Level ${currentLevel}) during addXP:`,
-          e
+          e,
         )
         throw e // Re-throw to ensure calling transaction (if any) rolls back.
       }
@@ -114,16 +102,8 @@ export class LevelingService {
     // Ensure XP doesn't go negative if something unexpected happens
     currentXP = Math.max(0, currentXP)
 
-    await this.client.database.updateUser(userId, {
-      level: currentLevel,
-      xp: currentXP,
-    })
-    await this.client.database.logTransaction(
-      userId,
-      "xp_gain",
-      amount,
-      `XP from ${source}`
-    )
+    await this.client.database.updateUser(userId, { level: currentLevel, xp: currentXP })
+    await this.client.database.logTransaction(userId, "xp_gain", amount, `XP from ${source}`)
 
     return {
       level: currentLevel,
@@ -138,7 +118,7 @@ export class LevelingService {
     // Assuming 'users' table has user_id, level, xp
     return this.client.database.all<LeaderboardUser>(
       "SELECT user_id, level, xp FROM users ORDER BY level DESC, xp DESC LIMIT ?",
-      [limit]
+      [limit],
     )
   }
 }

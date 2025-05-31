@@ -1,27 +1,17 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
 import type { ExtendedClient } from "../../structures/ExtendedClient"
 import type { Command } from "../../types/Command"
 
 const command: Command = {
-  data: new SlashCommandBuilder()
-    .setName("list-developers")
-    .setDescription("View the bot developers"),
+  data: new SlashCommandBuilder().setName("list-developers").setDescription("View the bot developers"),
   category: "misc",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const embed = CustomEmbedBuilder.info()
       .setTitle("👨‍💻 Bot Developers")
-      .setDescription(
-        "The amazing people who develop and maintain Contrast Bot"
-      )
+      .setDescription("The amazing people who develop and maintain Contrast Bot")
 
     const developers: string[] = []
 

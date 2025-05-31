@@ -78,9 +78,7 @@ export class ConfigValidator {
     }
 
     if (gambling.maxBet < gambling.minBet) {
-      throw new Error(
-        "Maximum bet must be greater than or equal to minimum bet"
-      )
+      throw new Error("Maximum bet must be greater than or equal to minimum bet")
     }
 
     if (gambling.houseEdge < 0 || gambling.houseEdge > 1) {
@@ -115,11 +113,7 @@ export class ConfigValidator {
     const { embeds } = config
 
     Object.entries(embeds.colors).forEach(([colorName, colorValue]) => {
-      if (
-        typeof colorValue !== "number" ||
-        colorValue < 0 ||
-        colorValue > 0xffffff
-      ) {
+      if (typeof colorValue !== "number" || colorValue < 0 || colorValue > 0xffffff) {
         throw new Error(`Invalid color value for ${colorName}: ${colorValue}`)
       }
     })
@@ -133,9 +127,7 @@ export class ConfigValidator {
 
       if (typeof limitConfig === "object" && limitConfig !== null) {
         if (limitConfig.window < 1000) {
-          throw new Error(
-            `Rate limit window for ${limitName} must be at least 1 second`
-          )
+          throw new Error(`Rate limit window for ${limitName} must be at least 1 second`)
         }
 
         if (limitConfig.max < 1) {

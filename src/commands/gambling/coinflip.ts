@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { GamblingService } from "../../services/GamblingService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -17,17 +14,10 @@ const command: Command = {
         .setName("selection")
         .setDescription("Your choice")
         .setRequired(true)
-        .addChoices(
-          { name: "Heads", value: "heads" },
-          { name: "Tails", value: "tails" }
-        )
+        .addChoices({ name: "Heads", value: "heads" }, { name: "Tails", value: "tails" }),
     )
     .addIntegerOption((option) =>
-      option
-        .setName("bet")
-        .setDescription("Amount to bet")
-        .setRequired(true)
-        .setMinValue(config.gambling.minBet)
+      option.setName("bet").setDescription("Amount to bet").setRequired(true).setMinValue(config.gambling.minBet),
     )
     .addIntegerOption((option) =>
       option
@@ -35,17 +25,12 @@ const command: Command = {
         .setDescription("Number of times to play (max 10)")
         .setRequired(false)
         .setMinValue(1)
-        .setMaxValue(10)
+        .setMaxValue(10),
     ),
   category: "gambling",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
-    const selection = interaction.options.getString("selection")! as
-      | "heads"
-      | "tails"
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
+    const selection = interaction.options.getString("selection")! as "heads" | "tails"
     const bet = interaction.options.getInteger("bet")!
     const repeats = interaction.options.getInteger("repeats") || 1
     const gamblingService = new GamblingService(client)
@@ -63,11 +48,7 @@ const command: Command = {
 
       // Play multiple times
       for (let i = 0; i < repeats; i++) {
-        const result = await gamblingService.playCoinflip(
-          interaction.user.id,
-          bet,
-          selection
-        )
+        const result = await gamblingService.playCoinflip(interaction.user.id, bet, selection)
 
         if (result.isWin) {
           totalWinnings += result.winnings
@@ -83,7 +64,7 @@ const command: Command = {
             result.isWin
               ? `Won ${result.winnings.toLocaleString()} ${config.economy.currency.symbol}`
               : `Lost ${bet.toLocaleString()} ${config.economy.currency.symbol}`
-          }`
+          }`,
         )
       }
 
@@ -106,7 +87,7 @@ const command: Command = {
             name: "💰 Net Result",
             value: `${(totalWinnings - totalLost).toLocaleString()} ${config.economy.currency.symbol}`,
             inline: true,
-          }
+          },
         )
 
       if (totalWinnings > totalLost) {
@@ -121,9 +102,7 @@ const command: Command = {
         await interaction.reply({ embeds: [embed] })
       }
     } catch (error: unknown) {
-      const errorEmbed = client.errorHandler.createUserError(
-        (error as any).message
-      )
+      const errorEmbed = client.errorHandler.createUserError((error as any).message)
       if (interaction.deferred) {
         await interaction.editReply({ embeds: [errorEmbed] })
       } else {

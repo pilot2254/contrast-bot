@@ -71,19 +71,11 @@ export class ExtendedClient extends Client {
   }
 
   private setupProcessHandlers(): void {
-    process.on(
-      "unhandledRejection",
-      (reason: unknown, promise: Promise<unknown>) => {
-        this.logger.error("Unhandled promise rejection:", { reason, promise })
-        const errorToHandle =
-          reason instanceof Error
-            ? reason
-            : new Error(`Unhandled rejection: ${String(reason)}`)
-        this.errorHandler.handle(errorToHandle, {
-          context: "Unhandled Promise Rejection",
-        })
-      }
-    )
+    process.on("unhandledRejection", (reason: unknown, promise: Promise<unknown>) => {
+      this.logger.error("Unhandled promise rejection:", { reason, promise })
+      const errorToHandle = reason instanceof Error ? reason : new Error(`Unhandled rejection: ${String(reason)}`)
+      this.errorHandler.handle(errorToHandle, { context: "Unhandled Promise Rejection" })
+    })
 
     process.on("uncaughtException", (error: Error) => {
       this.logger.error("Uncaught exception:", error)
@@ -112,11 +104,7 @@ export class ExtendedClient extends Client {
   }
 
   private setInitialPresence(): void {
-    if (
-      !this.user ||
-      !config.presence.enabled ||
-      config.presence.activities.length === 0
-    ) {
+    if (!this.user || !config.presence.enabled || config.presence.activities.length === 0) {
       return
     }
     const activityConfig = config.presence.activities[0]
@@ -130,9 +118,7 @@ export class ExtendedClient extends Client {
       ],
       status: config.presence.status as PresenceStatusData,
     })
-    this.logger.debug(
-      `Initial presence set to: ${activityConfig.name} (${activityConfig.type})`
-    )
+    this.logger.debug(`Initial presence set to: ${activityConfig.name} (${activityConfig.type})`)
   }
 
   private startPresenceRotation(): void {
@@ -144,26 +130,20 @@ export class ExtendedClient extends Client {
     setInterval(() => {
       if (!this.user) return
 
-      const activityConfig =
-        config.presence.activities[this.currentActivityIndex]
+      const activityConfig = config.presence.activities[this.currentActivityIndex]
       this.user.setPresence({
         activities: [
           {
             name: activityConfig.name,
-            type: ActivityType[
-              activityConfig.type as keyof typeof ActivityType
-            ],
+            type: ActivityType[activityConfig.type as keyof typeof ActivityType],
             url: activityConfig.url || undefined,
           },
         ],
         status: config.presence.status as PresenceStatusData,
       })
 
-      this.currentActivityIndex =
-        (this.currentActivityIndex + 1) % config.presence.activities.length
-      this.logger.debug(
-        `Presence updated to: ${activityConfig.name} (${activityConfig.type})`
-      )
+      this.currentActivityIndex = (this.currentActivityIndex + 1) % config.presence.activities.length
+      this.logger.debug(`Presence updated to: ${activityConfig.name} (${activityConfig.type})`)
     }, config.presence.rotationInterval)
   }
 
@@ -182,10 +162,7 @@ export class ExtendedClient extends Client {
               activities: [
                 {
                   name: config.presence.activities[0].name,
-                  type: ActivityType[
-                    config.presence.activities[0]
-                      .type as keyof typeof ActivityType
-                  ],
+                  type: ActivityType[config.presence.activities[0].type as keyof typeof ActivityType],
                   url: config.presence.activities[0].url || undefined,
                 },
               ],

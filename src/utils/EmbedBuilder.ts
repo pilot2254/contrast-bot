@@ -1,5 +1,5 @@
 import { EmbedBuilder as DiscordEmbedBuilder, type User } from "discord.js"
-import { config } from "../config/bot.config"
+import { config } from "../config/config"
 
 export class CustomEmbedBuilder extends DiscordEmbedBuilder {
   constructor(type: keyof typeof config.embeds.colors = "primary") {
@@ -15,42 +15,34 @@ export class CustomEmbedBuilder extends DiscordEmbedBuilder {
     }
   }
 
-  // Economy embed
   static economy(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("economy")
   }
 
-  // Gambling embed
   static gambling(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("gambling")
   }
 
-  // Level embed
   static level(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("level")
   }
 
-  // Success embed
   static success(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("success")
   }
 
-  // Error embed
   static error(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("error")
   }
 
-  // Warning embed
   static warning(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("warning")
   }
 
-  // Info embed
   static info(): CustomEmbedBuilder {
     return new CustomEmbedBuilder("info")
   }
 
-  // Add author from Discord user
   setUserAuthor(user: User): this {
     return this.setAuthor({
       name: user.tag,
@@ -58,7 +50,6 @@ export class CustomEmbedBuilder extends DiscordEmbedBuilder {
     })
   }
 
-  // Format currency
   formatCurrency(amount: number): string {
     return `${amount.toLocaleString()} ${config.economy.currency.symbol}`
   }

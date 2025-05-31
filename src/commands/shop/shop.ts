@@ -1,8 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-  type EmbedBuilder,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction, type EmbedBuilder } from "discord.js"
 import { ShopService } from "../../services/ShopService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -27,27 +23,21 @@ const command: Command = {
             .addChoices(
               { name: "Upgrades", value: "upgrades" },
               { name: "Items", value: "items" },
-              { name: "Boosts", value: "boosts" }
-            )
-        )
+              { name: "Boosts", value: "boosts" },
+            ),
+        ),
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName("buy")
         .setDescription("Buy an item from the shop")
         .addStringOption((option) =>
-          option
-            .setName("id")
-            .setDescription("The ID of the item to buy")
-            .setRequired(true)
-        )
+          option.setName("id").setDescription("The ID of the item to buy").setRequired(true),
+        ),
     ),
   category: "economy",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const subcommand = interaction.options.getSubcommand()
     const shopService = new ShopService(client)
 
@@ -63,20 +53,15 @@ const command: Command = {
 async function handleShopList(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  shopService: ShopService
+  shopService: ShopService,
 ) {
   const category = interaction.options.getString("category")
 
   // Pass user ID for dynamic pricing
-  const items = await shopService.getShopItems(
-    category || undefined,
-    interaction.user.id
-  )
+  const items = await shopService.getShopItems(category || undefined, interaction.user.id)
 
   if (items.length === 0) {
-    const embed = CustomEmbedBuilder.info().setDescription(
-      "No items found in the shop."
-    )
+    const embed = CustomEmbedBuilder.info().setDescription("No items found in the shop.")
     await interaction.reply({ embeds: [embed] })
     return
   }
@@ -105,9 +90,7 @@ async function handleShopList(
 
     catItems.forEach((item) => {
       const priceText =
-        item.price > 0
-          ? `${item.price.toLocaleString()} ${config.economy.currency.symbol}`
-          : "Dynamic pricing"
+        item.price > 0 ? `${item.price.toLocaleString()} ${config.economy.currency.symbol}` : "Dynamic pricing"
 
       embed.addFields({
         name: `${item.name} - ${priceText}`,
@@ -132,22 +115,19 @@ async function handleShopList(
 async function handleShopBuy(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  shopService: ShopService
+  shopService: ShopService,
 ) {
   const itemId = interaction.options.getString("id")!
 
   try {
     // Buy item
-    const { success, item } = await shopService.buyItem(
-      interaction.user.id,
-      itemId
-    )
+    const { success, item } = await shopService.buyItem(interaction.user.id, itemId)
 
     if (success) {
       const embed = CustomEmbedBuilder.success()
         .setTitle("Purchase Successful!")
         .setDescription(
-          `You bought **${item.name}** for ${item.price.toLocaleString()} ${config.economy.currency.symbol}`
+          `You bought **${item.name}** for ${item.price.toLocaleString()} ${config.economy.currency.symbol}`,
         )
 
       if (item.category === "boosts" && item.xpAmount) {
@@ -169,9 +149,7 @@ async function handleShopBuy(
       await interaction.reply({ embeds: [embed] })
     }
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError(
-      (error as any).message
-    )
+    const errorEmbed = client.errorHandler.createUserError((error as any).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }

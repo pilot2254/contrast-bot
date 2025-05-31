@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { WorkManager } from "../../utils/WorkManager"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -9,27 +6,20 @@ import type { ExtendedClient } from "../../structures/ExtendedClient"
 import type { Command } from "../../types/Command"
 
 const command: Command = {
-  data: new SlashCommandBuilder()
-    .setName("work")
-    .setDescription("Work to earn coins"),
+  data: new SlashCommandBuilder().setName("work").setDescription("Work to earn coins"),
   category: "economy",
   cooldown: 10, // 10 seconds cooldown as specified in requirements
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const workManager = new WorkManager(client)
 
     try {
       // Check if user can work
-      const { canWork, timeLeft } = await workManager.canWork(
-        interaction.user.id
-      )
+      const { canWork, timeLeft } = await workManager.canWork(interaction.user.id)
 
       if (!canWork) {
         const seconds = Math.ceil(timeLeft / 1000)
         const errorEmbed = client.errorHandler.createUserError(
-          `You need to wait ${seconds} second${seconds !== 1 ? "s" : ""} before working again.`
+          `You need to wait ${seconds} second${seconds !== 1 ? "s" : ""} before working again.`,
         )
         await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
         return
@@ -52,7 +42,7 @@ const command: Command = {
             name: "✨ XP Gained",
             value: `+${result.xpGained} XP`,
             inline: true,
-          }
+          },
         )
 
       // Add level up notification if applicable
@@ -67,9 +57,7 @@ const command: Command = {
       await interaction.reply({ embeds: [embed] })
     } catch (error: unknown) {
       client.logger.error("Error in work command:", error)
-      const errorEmbed = client.errorHandler.createUserError(
-        (error as Error).message
-      )
+      const errorEmbed = client.errorHandler.createUserError((error as Error).message)
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
     }
   },

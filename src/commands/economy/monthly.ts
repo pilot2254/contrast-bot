@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { EconomyService } from "../../services/EconomyService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -12,20 +9,13 @@ const command: Command = {
   data: new SlashCommandBuilder()
     .setName("monthly")
     .setDescription("Claim your monthly reward or check its status")
+    .addSubcommand((subcommand) => subcommand.setName("claim").setDescription("Claim your monthly reward"))
     .addSubcommand((subcommand) =>
-      subcommand.setName("claim").setDescription("Claim your monthly reward")
-    )
-    .addSubcommand((subcommand) =>
-      subcommand
-        .setName("status")
-        .setDescription("Check the status of your monthly reward")
+      subcommand.setName("status").setDescription("Check the status of your monthly reward"),
     ),
   category: "economy",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const subcommand = interaction.options.getSubcommand()
     const economyService = new EconomyService(client)
 
@@ -44,7 +34,7 @@ const command: Command = {
 async function handleMonthlyClaim(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService
+  economyService: EconomyService,
 ) {
   try {
     const { amount } = await economyService.claimMonthly(interaction.user.id)
@@ -52,7 +42,7 @@ async function handleMonthlyClaim(
     const embed = CustomEmbedBuilder.success()
       .setTitle("Monthly Reward Claimed")
       .setDescription(
-        `You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your monthly reward!`
+        `You claimed ${amount.toLocaleString()} ${config.economy.currency.symbol} as your monthly reward!`,
       )
       .addFields({
         name: "✨ XP Gained",
@@ -62,9 +52,7 @@ async function handleMonthlyClaim(
 
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
-    const errorEmbed = client.errorHandler.createUserError(
-      (error as any).message
-    )
+    const errorEmbed = client.errorHandler.createUserError((error as any).message)
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }
 }
@@ -73,7 +61,7 @@ async function handleMonthlyClaim(
 async function handleMonthlyStatus(
   interaction: ChatInputCommandInteraction,
   client: ExtendedClient,
-  economyService: EconomyService
+  economyService: EconomyService,
 ) {
   try {
     const status = await economyService.getMonthlyStatus(interaction.user.id)
@@ -95,9 +83,7 @@ async function handleMonthlyStatus(
     // Calculate time remaining
     const timeLeft = status.timeLeft
     const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24))
-    const hours = Math.floor(
-      (timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    )
+    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
 
     const embed = CustomEmbedBuilder.info()
       .setTitle("Monthly Reward Status")
@@ -111,8 +97,7 @@ async function handleMonthlyStatus(
     await interaction.reply({ embeds: [embed] })
   } catch (error: unknown) {
     const errorEmbed = client.errorHandler.createUserError(
-      (error as any).message ||
-        "An error occurred while checking your monthly reward status."
+      (error as any).message || "An error occurred while checking your monthly reward status.",
     )
     await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
   }

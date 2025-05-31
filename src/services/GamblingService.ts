@@ -7,29 +7,23 @@ export class GamblingService {
   // Validate bet amount
   private async validateBet(userId: string, amount: number): Promise<void> {
     if (amount < config.gambling.minBet) {
-      throw new Error(
-        `Minimum bet is ${config.gambling.minBet} ${config.economy.currency.name}`
-      )
+      throw new Error(`Minimum bet is ${config.gambling.minBet} ${config.economy.currency.name}`)
     }
 
     if (amount > config.gambling.maxBet) {
-      throw new Error(
-        `Maximum bet is ${config.gambling.maxBet} ${config.economy.currency.name}`
-      )
+      throw new Error(`Maximum bet is ${config.gambling.maxBet} ${config.economy.currency.name}`)
     }
 
     const user = await this.client.database.getUser(userId)
     if (user.balance < amount) {
-      throw new Error(
-        `You don't have enough ${config.economy.currency.name} to place this bet`
-      )
+      throw new Error(`You don't have enough ${config.economy.currency.name} to place this bet`)
     }
   }
 
   // Slots game
   async playSlots(
     userId: string,
-    bet: number
+    bet: number,
   ): Promise<{
     result: string[]
     winnings: number
@@ -62,11 +56,7 @@ export class GamblingService {
       }
     }
     // Check for two of a kind
-    else if (
-      result[0] === result[1] ||
-      result[1] === result[2] ||
-      result[0] === result[2]
-    ) {
+    else if (result[0] === result[1] || result[1] === result[2] || result[0] === result[2]) {
       isWin = true
       multiplier = config.gambling.games.slots.payouts.two_matching
     }
@@ -80,33 +70,19 @@ export class GamblingService {
       if (isWin) {
         // Add winnings (net gain, so we add winnings - bet)
         const netGain = winnings - bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance + netGain,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "add",
-          netGain,
-          "Slots win"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Slots win")
       } else {
         // Remove bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance - bet,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "remove",
-          bet,
-          "Slots loss"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance - bet })
+        await this.client.database.logTransaction(userId, "remove", bet, "Slots loss")
       }
 
       // Add XP
-      await this.client.database.run(
-        "UPDATE users SET xp = xp + ? WHERE user_id = ?",
-        [config.leveling.xpSources.gambling, userId]
-      )
+      await this.client.database.run("UPDATE users SET xp = xp + ? WHERE user_id = ?", [
+        config.leveling.xpSources.gambling,
+        userId,
+      ])
     })
 
     return { result, winnings, multiplier, isWin }
@@ -116,16 +92,14 @@ export class GamblingService {
   async playCoinflip(
     userId: string,
     bet: number,
-    choice: "heads" | "tails"
+    choice: "heads" | "tails",
   ): Promise<{ result: string; winnings: number; isWin: boolean }> {
     await this.validateBet(userId, bet)
 
     const result = Math.random() < 0.5 ? "heads" : "tails"
     const isWin = result === choice
 
-    const winnings = isWin
-      ? Math.floor(bet * config.gambling.games.coinflip.winMultiplier)
-      : 0
+    const winnings = isWin ? Math.floor(bet * config.gambling.games.coinflip.winMultiplier) : 0
 
     // Update balance
     await this.client.database.transaction(async () => {
@@ -134,33 +108,19 @@ export class GamblingService {
       if (isWin) {
         // Add winnings (net gain)
         const netGain = winnings - bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance + netGain,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "add",
-          netGain,
-          "Coinflip win"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Coinflip win")
       } else {
         // Remove bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance - bet,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "remove",
-          bet,
-          "Coinflip loss"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance - bet })
+        await this.client.database.logTransaction(userId, "remove", bet, "Coinflip loss")
       }
 
       // Add XP
-      await this.client.database.run(
-        "UPDATE users SET xp = xp + ? WHERE user_id = ?",
-        [config.leveling.xpSources.gambling, userId]
-      )
+      await this.client.database.run("UPDATE users SET xp = xp + ? WHERE user_id = ?", [
+        config.leveling.xpSources.gambling,
+        userId,
+      ])
     })
 
     return { result, winnings, isWin }
@@ -171,7 +131,7 @@ export class GamblingService {
     userId: string,
     bet: number,
     guess: number,
-    range: number
+    range: number,
   ): Promise<{ result: number; winnings: number; isWin: boolean }> {
     await this.validateBet(userId, bet)
 
@@ -184,8 +144,7 @@ export class GamblingService {
 
     // Calculate multiplier based on difficulty (range)
     const multiplier =
-      config.gambling.games.numberGuess.baseMultiplier +
-      (range - 2) * config.gambling.games.numberGuess.difficultyBonus
+      config.gambling.games.numberGuess.baseMultiplier + (range - 2) * config.gambling.games.numberGuess.difficultyBonus
 
     const winnings = isWin ? Math.floor(bet * multiplier) : 0
 
@@ -196,33 +155,19 @@ export class GamblingService {
       if (isWin) {
         // Add winnings (net gain)
         const netGain = winnings - bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance + netGain,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "add",
-          netGain,
-          "Number guess win"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Number guess win")
       } else {
         // Remove bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance - bet,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "remove",
-          bet,
-          "Number guess loss"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance - bet })
+        await this.client.database.logTransaction(userId, "remove", bet, "Number guess loss")
       }
 
       // Add XP
-      await this.client.database.run(
-        "UPDATE users SET xp = xp + ? WHERE user_id = ?",
-        [config.leveling.xpSources.gambling, userId]
-      )
+      await this.client.database.run("UPDATE users SET xp = xp + ? WHERE user_id = ?", [
+        config.leveling.xpSources.gambling,
+        userId,
+      ])
     })
 
     return { result, winnings, isWin }
@@ -233,19 +178,12 @@ export class GamblingService {
     userId: string,
     bet: number,
     guess: number,
-    diceCount = 1
-  ): Promise<{
-    results: number[]
-    total: number
-    winnings: number
-    isWin: boolean
-  }> {
+    diceCount = 1,
+  ): Promise<{ results: number[]; total: number; winnings: number; isWin: boolean }> {
     await this.validateBet(userId, bet)
 
     if (guess < diceCount || guess > diceCount * 6) {
-      throw new Error(
-        `Your guess must be between ${diceCount} and ${diceCount * 6}`
-      )
+      throw new Error(`Your guess must be between ${diceCount} and ${diceCount * 6}`)
     }
 
     // Roll dice
@@ -268,42 +206,26 @@ export class GamblingService {
       if (isWin) {
         // Add winnings (net gain)
         const netGain = winnings - bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance + netGain,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "add",
-          netGain,
-          "Dice roll win"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Dice roll win")
       } else {
         // Remove bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance - bet,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "remove",
-          bet,
-          "Dice roll loss"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance - bet })
+        await this.client.database.logTransaction(userId, "remove", bet, "Dice roll loss")
       }
 
       // Add XP
-      await this.client.database.run(
-        "UPDATE users SET xp = xp + ? WHERE user_id = ?",
-        [config.leveling.xpSources.gambling, userId]
-      )
+      await this.client.database.run("UPDATE users SET xp = xp + ? WHERE user_id = ?", [
+        config.leveling.xpSources.gambling,
+        userId,
+      ])
     })
 
     return { results, total, winnings, isWin }
   }
 
   // Russian roulette (all-in)
-  async playRussianRoulette(
-    userId: string
-  ): Promise<{ survived: boolean; winnings: number }> {
+  async playRussianRoulette(userId: string): Promise<{ survived: boolean; winnings: number }> {
     // Get user's balance
     const user = await this.client.database.getUser(userId)
     const wallet = user.balance
@@ -331,31 +253,19 @@ export class GamblingService {
       if (survived) {
         // Add winnings (net gain)
         const netGain = winnings - bet
-        await this.client.database.updateUser(userId, {
-          balance: user.balance + netGain,
-        })
-        await this.client.database.logTransaction(
-          userId,
-          "add",
-          netGain,
-          "Russian roulette win"
-        )
+        await this.client.database.updateUser(userId, { balance: user.balance + netGain })
+        await this.client.database.logTransaction(userId, "add", netGain, "Russian roulette win")
       } else {
         // Remove all balance
         await this.client.database.updateUser(userId, { balance: 0 })
-        await this.client.database.logTransaction(
-          userId,
-          "remove",
-          bet,
-          "Russian roulette loss"
-        )
+        await this.client.database.logTransaction(userId, "remove", bet, "Russian roulette loss")
       }
 
       // Add XP
-      await this.client.database.run(
-        "UPDATE users SET xp = xp + ? WHERE user_id = ?",
-        [config.leveling.xpSources.gambling, userId]
-      )
+      await this.client.database.run("UPDATE users SET xp = xp + ? WHERE user_id = ?", [
+        config.leveling.xpSources.gambling,
+        userId,
+      ])
     })
 
     return { survived, winnings }

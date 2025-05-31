@@ -1,7 +1,8 @@
 import { Events, type Message } from "discord.js"
-import { config } from "../config/bot.config"
+import { config } from "../config/config"
 import { BlacklistManager } from "../utils/BlacklistManager"
 import { StatsManager } from "../utils/StatsManager"
+import { DevAlerts } from "../utils/DevAlerts"
 import type { ExtendedClient } from "../structures/ExtendedClient"
 
 export default {
@@ -16,11 +17,12 @@ export default {
         return
       }
 
-      const args = message.content
-        .slice(config.bot.prefix.length)
-        .trim()
-        .split(/ +/)
+      const args = message.content.slice(config.bot.prefix.length).trim().split(/ +/)
       const commandName = args.shift()?.toLowerCase()
+
+      // Send dev alert
+      const devAlerts = new DevAlerts(client)
+      await devAlerts.sendDevCommandAlert(message.author.id, `${config.bot.prefix}${commandName}`, message.guild?.id)
 
       switch (commandName) {
         case "data":
@@ -41,6 +43,7 @@ async function handleDataCommand(message: Message, client: ExtendedClient) {
     const totalCommands = await statsManager.getTotalCommandsUsed()
     const userCount = await statsManager.getUserCount()
     const economyStats = await statsManager.getEconomyStats()
+
     const response = `\`\`\`
 📊 Database Information
 ━━━━━━━━━━━━━━━━━━━━━
@@ -58,18 +61,12 @@ Average User Balance: ${Math.floor(economyStats.averageBalance).toLocaleString()
   }
 }
 
-async function handleBlacklistCommand(
-  message: Message,
-  args: string[],
-  client: ExtendedClient
-) {
+async function handleBlacklistCommand(message: Message, args: string[], client: ExtendedClient) {
   const blacklistManager = new BlacklistManager(client)
   const subcommand = args[0]?.toLowerCase()
 
   if (!subcommand || !["add", "remove", "list"].includes(subcommand)) {
-    await message.reply(
-      "Usage: `?blacklist <add/remove/list> [user_id] [reason]`"
-    )
+    await message.reply("Usage: `?blacklist <add/remove/list> [user_id] [reason]`")
     return
   }
 
@@ -89,15 +86,11 @@ async function handleBlacklistCommand(
       case "remove": {
         const userId = args[1]
         if (!userId) {
-          await message.reply(
-            "Please provide a user ID to remove from blacklist."
-          )
+          await message.reply("Please provide a user ID to remove from blacklist.")
           return
         }
         await blacklistManager.removeFromBlacklist(userId)
-        await message.reply(
-          `✅ User \`${userId}\` has been removed from the blacklist.`
-        )
+        await message.reply(`✅ User \`${userId}\` has been removed from the blacklist.`)
         break
       }
       case "list": {
@@ -112,6 +105,7 @@ async function handleBlacklistCommand(
           response += `ID: ${entry.user_id}\nReason: ${entry.reason}\nBy: ${entry.blacklisted_by}\nDate: ${date}\n━━━━━━━━━━━━━━━━━━━━━\n`
         }
         response += "```"
+
         if (response.length > 2000) {
           const chunks = response.match(/[\s\S]{1,1900}/g) || []
           for (const chunk of chunks) {

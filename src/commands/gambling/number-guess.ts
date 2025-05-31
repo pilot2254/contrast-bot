@@ -1,7 +1,4 @@
-import {
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js"
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js"
 import { GamblingService } from "../../services/GamblingService"
 import { CustomEmbedBuilder } from "../../utils/EmbedBuilder"
 import { config } from "../../config/bot.config"
@@ -13,11 +10,7 @@ const command: Command = {
     .setName("number-guess")
     .setDescription("Guess a number within a range")
     .addIntegerOption((option) =>
-      option
-        .setName("number")
-        .setDescription("Your guess")
-        .setRequired(true)
-        .setMinValue(1)
+      option.setName("number").setDescription("Your guess").setRequired(true).setMinValue(1),
     )
     .addIntegerOption((option) =>
       option
@@ -25,14 +18,10 @@ const command: Command = {
         .setDescription("Range of numbers (e.g., 10 means 1-10)")
         .setRequired(true)
         .setMinValue(2)
-        .setMaxValue(100)
+        .setMaxValue(100),
     )
     .addIntegerOption((option) =>
-      option
-        .setName("bet")
-        .setDescription("Amount to bet")
-        .setRequired(true)
-        .setMinValue(config.gambling.minBet)
+      option.setName("bet").setDescription("Amount to bet").setRequired(true).setMinValue(config.gambling.minBet),
     )
     .addIntegerOption((option) =>
       option
@@ -40,14 +29,11 @@ const command: Command = {
         .setDescription("Number of times to play (max 10)")
         .setRequired(false)
         .setMinValue(1)
-        .setMaxValue(10)
+        .setMaxValue(10),
     ),
   category: "gambling",
   cooldown: 3,
-  async execute(
-    interaction: ChatInputCommandInteraction,
-    client: ExtendedClient
-  ) {
+  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient) {
     const guess = interaction.options.getInteger("number")!
     const range = interaction.options.getInteger("range")!
     const bet = interaction.options.getInteger("bet")!
@@ -56,9 +42,7 @@ const command: Command = {
 
     // Validate guess is within range
     if (guess > range) {
-      const errorEmbed = client.errorHandler.createUserError(
-        `Your guess must be between 1 and ${range}`
-      )
+      const errorEmbed = client.errorHandler.createUserError(`Your guess must be between 1 and ${range}`)
       await interaction.reply({ embeds: [errorEmbed], ephemeral: true })
       return
     }
@@ -76,12 +60,7 @@ const command: Command = {
 
       // Play multiple times
       for (let i = 0; i < repeats; i++) {
-        const result = await gamblingService.playNumberGuess(
-          interaction.user.id,
-          bet,
-          guess,
-          range
-        )
+        const result = await gamblingService.playNumberGuess(interaction.user.id, bet, guess, range)
 
         if (result.isWin) {
           totalWinnings += result.winnings
@@ -96,7 +75,7 @@ const command: Command = {
             result.isWin
               ? `Won ${result.winnings.toLocaleString()} ${config.economy.currency.symbol}`
               : `Lost ${bet.toLocaleString()} ${config.economy.currency.symbol}`
-          }`
+          }`,
         )
       }
 
@@ -134,7 +113,7 @@ const command: Command = {
             name: "💰 Net Result",
             value: `${(totalWinnings - totalLost).toLocaleString()} ${config.economy.currency.symbol}`,
             inline: true,
-          }
+          },
         )
 
       if (totalWinnings > totalLost) {
@@ -149,9 +128,7 @@ const command: Command = {
         await interaction.reply({ embeds: [embed] })
       }
     } catch (error: unknown) {
-      const errorEmbed = client.errorHandler.createUserError(
-        (error as any).message
-      )
+      const errorEmbed = client.errorHandler.createUserError((error as any).message)
       if (interaction.deferred) {
         await interaction.editReply({ embeds: [errorEmbed] })
       } else {

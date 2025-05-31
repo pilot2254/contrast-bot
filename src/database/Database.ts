@@ -242,18 +242,12 @@ export class Database {
 
   async getUser(userId: string): Promise<UserRecord> {
     await this.createUser(userId)
-    const user = await this.get<UserRecord>(
-      "SELECT * FROM users WHERE user_id = ?",
-      [userId]
-    )
+    const user = await this.get<UserRecord>("SELECT * FROM users WHERE user_id = ?", [userId])
     if (!user) throw new Error("User not found after creation")
     return user
   }
 
-  async updateUser(
-    userId: string,
-    updates: Partial<Omit<UserRecord, "user_id" | "created_at">>
-  ): Promise<void> {
+  async updateUser(userId: string, updates: Partial<Omit<UserRecord, "user_id" | "created_at">>): Promise<void> {
     const fields = Object.keys(updates)
     const values = Object.values(updates)
 
@@ -266,16 +260,13 @@ export class Database {
   }
 
   // Transaction logging
-  async logTransaction(
-    userId: string,
-    type: TransactionRecord["type"],
-    amount: number,
-    reason: string
-  ): Promise<void> {
-    await this.run(
-      "INSERT INTO transactions (user_id, type, amount, reason) VALUES (?, ?, ?, ?)",
-      [userId, type, amount, reason]
-    )
+  async logTransaction(userId: string, type: TransactionRecord["type"], amount: number, reason: string): Promise<void> {
+    await this.run("INSERT INTO transactions (user_id, type, amount, reason) VALUES (?, ?, ?, ?)", [
+      userId,
+      type,
+      amount,
+      reason,
+    ])
   }
 
   // Command statistics
@@ -283,15 +274,13 @@ export class Database {
     await this.run(
       `INSERT INTO command_stats (command_name, usage_count) VALUES (?, 1)
        ON CONFLICT(command_name) DO UPDATE SET usage_count = usage_count + 1`,
-      [commandName]
+      [commandName],
     )
   }
 
   // Cleanup expired cooldowns
   async cleanupExpiredCooldowns(): Promise<void> {
-    await this.run(
-      "DELETE FROM cooldowns WHERE expires_at <= CURRENT_TIMESTAMP"
-    )
+    await this.run("DELETE FROM cooldowns WHERE expires_at <= CURRENT_TIMESTAMP")
   }
 
   async close(): Promise<void> {
