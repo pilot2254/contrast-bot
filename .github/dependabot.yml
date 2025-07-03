@@ -14,7 +14,7 @@ updates:
     target-branch: "canary"
     # Specify reviewers for pull requests
     reviewers:
-      - "your-github-username" # Replace with your GitHub username or team
+      - "pilot2254" # Main reviewer
       # - "another-reviewer"
     # Add a prefix to commit messages
     commit-message:
